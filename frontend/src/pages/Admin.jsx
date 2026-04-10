@@ -3,6 +3,12 @@ import { Link, Navigate } from 'react-router-dom';
 import client from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 
+const getBatchString = (year) => {
+  if (!year) return '';
+  const joinYear = 2026 - parseInt(year);
+  return `Batch ${String(joinYear).slice(-2)}-${String(joinYear + 4).slice(-2)}`;
+};
+
 export default function Admin() {
   const { user } = useAuth();
   const [students, setStudents] = useState([]);
@@ -78,7 +84,7 @@ export default function Admin() {
                       <div style={{ width: 36, height: 36, background: 'var(--gradient-primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#fff' }}>{s.name[0]}</div>
                       <div style={{ flex: 1 }}>
                         <Link to={`/profile/${s.id}`} style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{s.name}</Link>
-                        <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{s.class} · Year {s.year}</div>
+                        <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{s.class} · {getBatchString(s.year)}</div>
                       </div>
                       <span style={{ fontWeight: 800, color: 'var(--color-gold)', fontFamily: "'Space Grotesk', sans-serif" }}>{s.score} pts</span>
                     </div>
@@ -90,7 +96,7 @@ export default function Admin() {
             {tab === 'students' && (
               <div className="card animate-fadeIn" style={{ overflow: 'hidden' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 80px 80px 80px 100px', gap: 12, padding: '12px 20px', background: 'rgba(255,255,255,0.03)', fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: '1px solid var(--border)' }}>
-                  <span>Student</span><span>Year</span><span>Class</span><span>Achv.</span><span>Score</span>
+                  <span>Student</span><span style={{ whiteSpace: 'nowrap' }}>Batch</span><span>Class</span><span>Achv.</span><span>Score</span>
                 </div>
                 {students.map((s, i) => (
                   <div key={s.id} style={{ display: 'grid', gridTemplateColumns: '2fr 80px 80px 80px 100px', gap: 12, padding: '13px 20px', borderBottom: '1px solid var(--border)', alignItems: 'center', animation: `fadeInUp 0.3s ease ${i * 0.02}s both` }}>
@@ -101,7 +107,7 @@ export default function Admin() {
                         <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{s.email}</div>
                       </div>
                     </div>
-                    <span style={{ fontSize: 14, color: 'var(--color-text-muted)' }}>{s.year}</span>
+                    <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{getBatchString(s.year).replace('Batch ', '')}</span>
                     <span><span className="badge badge-violet">{s.class}</span></span>
                     <span style={{ fontSize: 14 }}>{s.achievement_count}</span>
                     <span style={{ fontWeight: 700, color: 'var(--color-gold)' }}>{s.score}</span>

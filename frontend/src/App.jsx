@@ -8,6 +8,8 @@ import Profile from './pages/Profile';
 import Leaderboard from './pages/Leaderboard';
 import Teams from './pages/Teams';
 import Admin from './pages/Admin';
+import Students from './pages/Students';
+import EditProfile from './pages/EditProfile';
 
 function ProtectedRoute({ children, adminOnly = false }) {
   const { user } = useAuth();
@@ -27,7 +29,9 @@ export default function App() {
           <Route path="/updates" element={<ProtectedRoute><Updates /></ProtectedRoute>} />
           <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
           <Route path="/teams" element={<ProtectedRoute><Teams /></ProtectedRoute>} />
+          <Route path="/students" element={<ProtectedRoute><Students /></ProtectedRoute>} />
           <Route path="/profile/:id" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

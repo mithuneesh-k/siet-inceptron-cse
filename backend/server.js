@@ -5,8 +5,9 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Init DB (creates tables & seeds on first run)
-require('./db/index');
+// Init DB
+// require('./db/index'); // Removed, now using Supabase
+
 
 app.use(cors({
   origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
@@ -38,3 +39,4 @@ app.listen(PORT, () => {
   console.log(`║   Running on http://localhost:${PORT}    ║`);
   console.log('╚════════════════════════════════════════╝\n');
 });
+

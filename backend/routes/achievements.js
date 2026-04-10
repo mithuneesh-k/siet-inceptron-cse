@@ -1,65 +1,99 @@
 const express = require('express');
 const router = express.Router();
-const { db, calcPoints, ids } = require('../db/index');
+const { supabase, calcPoints } = require('../db/supabase');
 const { authMiddleware, adminMiddleware } = require('../middleware/auth');
 
-// GET /api/achievements/all/pending — MUST be before /:id routes
-router.get('/all/pending', authMiddleware, adminMiddleware, (req, res) => {
-  const pending = db.get('achievements').filter({ verified: false }).value().map(a => {
-    const user = db.get('users').find({ id: a.user_id }).value();
-    return { ...a, student_name: user?.name, roll_no: user?.roll_no };
-  });
-  res.json(pending);
+// GET /api/achievements/all/pending
+router.get('/all/pending', authMiddleware, adminMiddleware, async (req, res) => {
+  const { data: pending, error } = await supabase
+    .from('achievements')
+    .select('*, users!achievements_user_id_fkey(name, roll_no)')
+    .eq('verified', false);
+
+  if (error) return res.status(500).json({ error: 'Failed to fetch pending achievements' });
+
+  const result = pending.map(a => ({
+    ...a,
+    student_name: a.users?.name,
+    roll_no: a.users?.roll_no
+  }));
+  res.json(result);
 });
 
 // GET /api/achievements/user/:userId
-router.get('/user/:userId', (req, res) => {
-  const achs = db.get('achievements')
-    .filter({ user_id: parseInt(req.params.userId) })
-    .value()
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+router.get('/user/:userId', async (req, res) => {
+  const { data: achs, error } = await supabase
+    .from('achievements')
+    .select('*')
+    .eq('user_id', req.params.userId)
+    .order('created_at', { ascending: false });
+
+  if (error) return res.status(500).json({ error: 'Failed to fetch achievements' });
   res.json(achs);
 });
 
 // POST /api/achievements
-router.post('/', authMiddleware, (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
   const { type, title, description, position, duration, proof_url } = req.body;
   if (!type || !title) return res.status(400).json({ error: 'Type and title are required.' });
 
   const points = calcPoints(type, position, duration);
-  ids.ach.current++;
+  
   const newAch = {
-    id: ids.ach.current,
     user_id: req.user.id,
-    type, title,
+    type, 
+    title,
     description: description || null,
     position: position || null,
     duration: duration || null,
     proof_url: proof_url || null,
     points,
-    verified: true,
-    created_at: new Date().toISOString()
+    verified: true // They seem to be auto-verified here based on original code
   };
-  db.get('achievements').push(newAch).write();
-  res.status(201).json(newAch);
+
+  const { data: inserted, error } = await supabase
+    .from('achievements')
+    .insert(newAch)
+    .select()
+    .single();
+
+  if (error || !inserted) return res.status(500).json({ error: 'Failed to add achievement' });
+  res.status(201).json(inserted);
 });
 
 // DELETE /api/achievements/:id
-router.delete('/:id', authMiddleware, (req, res) => {
-  const ach = db.get('achievements').find({ id: parseInt(req.params.id) }).value();
+router.delete('/:id', authMiddleware, async (req, res) => {
+  const { data: ach, error: fetchErr } = await supabase
+    .from('achievements')
+    .select('user_id')
+    .eq('id', req.params.id)
+    .maybeSingle();
+
   if (!ach) return res.status(404).json({ error: 'Achievement not found' });
   if (ach.user_id !== req.user.id && !req.user.is_admin) {
     return res.status(403).json({ error: 'Not authorized' });
   }
-  db.get('achievements').remove({ id: parseInt(req.params.id) }).write();
+
+  const { error: delErr } = await supabase
+    .from('achievements')
+    .delete()
+    .eq('id', req.params.id);
+
+  if (delErr) return res.status(500).json({ error: 'Failed to delete' });
   res.json({ message: 'Achievement deleted' });
 });
 
 // PATCH /api/achievements/:id/verify
-router.patch('/:id/verify', authMiddleware, adminMiddleware, (req, res) => {
+router.patch('/:id/verify', authMiddleware, adminMiddleware, async (req, res) => {
   const { verified } = req.body;
-  db.get('achievements').find({ id: parseInt(req.params.id) }).assign({ verified: !!verified }).write();
-  const ach = db.get('achievements').find({ id: parseInt(req.params.id) }).value();
+  const { data: ach, error } = await supabase
+    .from('achievements')
+    .update({ verified: !!verified })
+    .eq('id', req.params.id)
+    .select()
+    .single();
+
+  if (error || !ach) return res.status(500).json({ error: 'Failed to update' });
   res.json(ach);
 });
 

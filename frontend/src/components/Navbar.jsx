@@ -21,6 +21,7 @@ export default function Navbar() {
     { to: '/', label: 'Home', icon: '🏠' },
     { to: '/updates', label: 'Updates', icon: '⚡' },
     { to: '/leaderboard', label: 'Leaderboard', icon: '🏆' },
+    { to: '/students', label: 'Students', icon: '👨‍🎓' },
     { to: '/teams', label: 'Teams', icon: '👥' },
   ];
 

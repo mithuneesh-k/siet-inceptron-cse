@@ -1,23 +1,35 @@
 const express = require('express');
 const router = express.Router();
-const { db, ids } = require('../db/index');
+const { supabase } = require('../db/supabase');
 const { authMiddleware } = require('../middleware/auth');
 
-function getTeamFull(teamId, userId) {
-  const team = db.get('teams').find({ id: parseInt(teamId) }).value();
-  if (!team) return null;
-  const creator = db.get('users').find({ id: team.creator_id }).value();
-  const memberships = db.get('team_members').filter({ team_id: team.id }).value();
-  const members = memberships.map(m => {
-    const u = db.get('users').find({ id: m.user_id }).value();
-    if (!u) return null;
-    const achs = db.get('achievements').filter({ user_id: u.id, verified: true }).value();
-    return { id: u.id, name: u.name, roll_no: u.roll_no, year: u.year, class: u.class, avatar_url: u.avatar_url, role: m.role, joined_at: m.joined_at, score: achs.reduce((s, a) => s + a.points, 0) };
-  }).filter(Boolean).sort((a, b) => (a.role === 'leader') ? -1 : 1);
+async function getTeamFull(teamId, userId) {
+  const { data: team, error } = await supabase
+    .from('teams')
+    .select('*, users!teams_creator_id_fkey(name)')
+    .eq('id', teamId)
+    .maybeSingle();
+
+  if (error || !team) return null;
+
+  const { data: memberships, error: memErr } = await supabase
+    .from('team_members')
+    .select('role, joined_at, users!inner(id, name, roll_no, year, class, avatar_url, achievements(points, verified))')
+    .eq('team_id', team.id);
+
+  const members = (memberships || []).map(m => {
+    const u = m.users;
+    const verifiedAchs = (u.achievements || []).filter(a => a.verified);
+    const score = verifiedAchs.reduce((s, a) => s + (a.points || 0), 0);
+    return {
+      id: u.id, name: u.name, roll_no: u.roll_no, year: u.year, class: u.class,
+      avatar_url: u.avatar_url, role: m.role, joined_at: m.joined_at, score
+    };
+  }).sort((a, b) => (a.role === 'leader') ? -1 : 1);
 
   return {
     ...team,
-    creator_name: creator?.name,
+    creator_name: team.users?.name,
     member_count: members.length,
     members,
     is_member: userId ? members.some(m => m.id === userId) : false,
@@ -25,80 +37,104 @@ function getTeamFull(teamId, userId) {
 }
 
 // GET /api/teams
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const { type } = req.query;
-  let teams = db.get('teams').value();
-  if (type && type !== 'all') teams = teams.filter(t => t.type === type);
-  teams = teams.map(t => {
-    const creator = db.get('users').find({ id: t.creator_id }).value();
-    const memberCount = db.get('team_members').filter({ team_id: t.id }).size().value();
-    return { ...t, creator_name: creator?.name, member_count: memberCount };
-  }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  res.json(teams);
+  let query = supabase.from('teams').select('*, users!teams_creator_id_fkey(name), team_members(count)').order('created_at', { ascending: false });
+  if (type && type !== 'all') {
+    query = query.eq('type', type);
+  }
+
+  const { data: teams, error } = await query;
+  if (error) return res.status(500).json({ error: 'Failed to fetch teams' });
+
+  const result = teams.map(t => ({
+    ...t,
+    creator_name: t.users?.name,
+    member_count: t.team_members[0].count
+  }));
+  res.json(result);
 });
 
 // GET /api/teams/:id
-router.get('/:id', (req, res) => {
-  const team = getTeamFull(req.params.id, req.user?.id);
+router.get('/:id', async (req, res) => {
+  const team = await getTeamFull(req.params.id, req.user?.id);
   if (!team) return res.status(404).json({ error: 'Team not found' });
   res.json(team);
 });
 
 // POST /api/teams
-router.post('/', authMiddleware, (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
   const { name, description, type } = req.body;
   if (!name || !type) return res.status(400).json({ error: 'Name and type required.' });
-  ids.team.current++;
-  const newTeam = { id: ids.team.current, name, description: description || null, type, creator_id: req.user.id, is_open: true, created_at: new Date().toISOString() };
-  db.get('teams').push(newTeam).write();
-  db.get('team_members').push({ team_id: newTeam.id, user_id: req.user.id, role: 'leader', joined_at: new Date().toISOString() }).write();
-  res.status(201).json(getTeamFull(newTeam.id, req.user.id));
+
+  const { data: newTeam, error } = await supabase
+    .from('teams')
+    .insert({ name, description: description || null, type, creator_id: req.user.id, is_open: true })
+    .select()
+    .single();
+
+  if (error || !newTeam) return res.status(500).json({ error: 'Failed to create team' });
+
+  await supabase.from('team_members').insert({ team_id: newTeam.id, user_id: req.user.id, role: 'leader' });
+
+  res.status(201).json(await getTeamFull(newTeam.id, req.user.id));
 });
 
 // POST /api/teams/:id/join
-router.post('/:id/join', authMiddleware, (req, res) => {
-  const tid = parseInt(req.params.id);
-  const team = db.get('teams').find({ id: tid }).value();
+router.post('/:id/join', authMiddleware, async (req, res) => {
+  const tid = req.params.id;
+  
+  const { data: team } = await supabase.from('teams').select('is_open').eq('id', tid).single();
   if (!team) return res.status(404).json({ error: 'Team not found' });
   if (!team.is_open) return res.status(403).json({ error: 'This team is closed.' });
-  const existing = db.get('team_members').find({ team_id: tid, user_id: req.user.id }).value();
-  if (existing) return res.status(409).json({ error: 'Already a member.' });
-  db.get('team_members').push({ team_id: tid, user_id: req.user.id, role: 'member', joined_at: new Date().toISOString() }).write();
-  res.json(getTeamFull(tid, req.user.id));
+
+  const { error } = await supabase.from('team_members').insert({ team_id: tid, user_id: req.user.id, role: 'member' });
+  if (error) {
+    if (error.code === '23505') return res.status(409).json({ error: 'Already a member.' });
+    return res.status(500).json({ error: 'Failed to join team' });
+  }
+
+  res.json(await getTeamFull(tid, req.user.id));
 });
 
 // DELETE /api/teams/:id/leave
-router.delete('/:id/leave', authMiddleware, (req, res) => {
-  const tid = parseInt(req.params.id);
-  const team = db.get('teams').find({ id: tid }).value();
+router.delete('/:id/leave', authMiddleware, async (req, res) => {
+  const tid = req.params.id;
+  const { data: team } = await supabase.from('teams').select('creator_id').eq('id', tid).single();
+  
   if (!team) return res.status(404).json({ error: 'Team not found' });
   if (team.creator_id === req.user.id) return res.status(400).json({ error: 'Team creator cannot leave.' });
-  db.get('team_members').remove({ team_id: tid, user_id: req.user.id }).write();
+
+  await supabase.from('team_members').delete().match({ team_id: tid, user_id: req.user.id });
   res.json({ message: 'Left team' });
 });
 
 // PATCH /api/teams/:id
-router.patch('/:id', authMiddleware, (req, res) => {
-  const tid = parseInt(req.params.id);
-  const team = db.get('teams').find({ id: tid }).value();
+router.patch('/:id', authMiddleware, async (req, res) => {
+  const tid = req.params.id;
+  const { data: team } = await supabase.from('teams').select('creator_id').eq('id', tid).single();
+  
   if (!team) return res.status(404).json({ error: 'Team not found' });
   if (team.creator_id !== req.user.id && !req.user.is_admin) return res.status(403).json({ error: 'Only creator can edit.' });
+
   const { description, is_open } = req.body;
   const update = {};
   if (description !== undefined) update.description = description;
   if (is_open !== undefined) update.is_open = !!is_open;
-  db.get('teams').find({ id: tid }).assign(update).write();
-  res.json(getTeamFull(tid, req.user.id));
+
+  await supabase.from('teams').update(update).eq('id', tid);
+  res.json(await getTeamFull(tid, req.user.id));
 });
 
 // DELETE /api/teams/:id
-router.delete('/:id', authMiddleware, (req, res) => {
-  const tid = parseInt(req.params.id);
-  const team = db.get('teams').find({ id: tid }).value();
+router.delete('/:id', authMiddleware, async (req, res) => {
+  const tid = req.params.id;
+  const { data: team } = await supabase.from('teams').select('creator_id').eq('id', tid).single();
+  
   if (!team) return res.status(404).json({ error: 'Team not found' });
   if (team.creator_id !== req.user.id && !req.user.is_admin) return res.status(403).json({ error: 'Only creator can delete.' });
-  db.get('teams').remove({ id: tid }).write();
-  db.get('team_members').remove({ team_id: tid }).write();
+
+  await supabase.from('teams').delete().eq('id', tid);
   res.json({ message: 'Team deleted' });
 });
 

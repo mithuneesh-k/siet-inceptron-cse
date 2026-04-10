@@ -6,6 +6,12 @@ import ScoreBadge from '../components/ScoreBadge';
 const YEAR_TABS = ['all', '1', '2', '3', '4'];
 const CLASS_TABS = ['all', 'CSE-A', 'CSE-B', 'CSE-C', 'CSE-D', 'CSE-E'];
 
+const getBatchString = (year) => {
+  if (year === 'all') return 'All Batches';
+  const joinYear = 2026 - parseInt(year);
+  return `Batch ${String(joinYear).slice(-2)}-${String(joinYear + 4).slice(-2)}`;
+};
+
 export default function Leaderboard() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -57,11 +63,11 @@ export default function Leaderboard() {
         {/* Filters */}
         <div className="lb-filters animate-fadeInUp delay-2">
           <div>
-            <p className="filter-label">Filter by Year</p>
+            <p className="filter-label">Filter by Batch</p>
             <div className="tab-bar">
               {YEAR_TABS.map(y => (
                 <button key={y} className={`tab-item ${yearFilter === y ? 'active' : ''}`} onClick={() => setYearFilter(y)}>
-                  {y === 'all' ? 'All Years' : `Year ${y}`}
+                  {getBatchString(y)}
                 </button>
               ))}
             </div>
@@ -129,7 +135,7 @@ export default function Leaderboard() {
                       <div className="lb-ava">{s.name[0]}</div>
                       <div>
                         <div className="lb-name">{s.name}</div>
-                        <div className="lb-year">Year {s.year}</div>
+                        <div className="lb-year">{getBatchString(s.year)}</div>
                       </div>
                     </div>
                     <span className="lb-cell"><span className="badge badge-violet">{s.class}</span></span>

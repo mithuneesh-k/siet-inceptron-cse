@@ -5,6 +5,11 @@ import { useAuth } from '../contexts/AuthContext';
 const CLASSES = ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D'];
 const YEARS = [1, 2, 3, 4];
 
+const getBatchString = (year) => {
+  const joinYear = 2026 - parseInt(year);
+  return `Batch ${String(joinYear).slice(-2)}-${String(joinYear + 4).slice(-2)}`;
+};
+
 export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -67,7 +72,7 @@ export default function Register() {
             <div className="form-group">
               <label className="form-label">Year *</label>
               <select id="reg-year" className="form-select" value={form.year} onChange={set('year')}>
-                {YEARS.map(y => <option key={y} value={y}>{y}{['st','nd','rd','th'][Math.min(y-1,3)]} Year</option>)}
+                {YEARS.map(y => <option key={y} value={y}>{getBatchString(y)}</option>)}
               </select>
             </div>
             <div className="form-group">

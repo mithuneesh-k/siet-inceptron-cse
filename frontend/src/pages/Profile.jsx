@@ -9,6 +9,12 @@ const ACH_TYPES = ['hackathon', 'internship', 'course', 'project', 'certificatio
 const POSITIONS = ['1st', '2nd', '3rd', 'participated'];
 const DURATIONS = ['short', 'medium', 'long'];
 
+const getBatchString = (year) => {
+  if (!year) return '';
+  const joinYear = 2026 - parseInt(year);
+  return `Batch ${String(joinYear).slice(-2)}-${String(joinYear + 4).slice(-2)}`;
+};
+
 export default function Profile() {
   const { id } = useParams();
   const { user: authUser, refreshUser } = useAuth();
@@ -16,11 +22,9 @@ export default function Profile() {
   const [achievements, setAchievements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [editMode, setEditMode] = useState(false);
   const [form, setForm] = useState({ type: 'hackathon', title: '', description: '', position: '', duration: '', proof_url: '' });
-  const [editForm, setEditForm] = useState({});
   const [toast, setToast] = useState(null);
-  const isOwn = authUser?.id === parseInt(id);
+  const isOwn = authUser?.id === id;
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
@@ -35,7 +39,8 @@ export default function Profile() {
       ]);
       setUser(userRes.data);
       setAchievements(achRes.data);
-      setEditForm({ bio: userRes.data.bio || '', github: userRes.data.github || '', linkedin: userRes.data.linkedin || '' });
+      setUser(userRes.data);
+      setAchievements(achRes.data);
     } finally {
       setLoading(false);
     }
@@ -68,16 +73,6 @@ export default function Profile() {
     if (isOwn) refreshUser();
   };
 
-  const saveProfile = async () => {
-    try {
-      await client.put(`/users/${id}`, editForm);
-      setUser(u => ({ ...u, ...editForm }));
-      setEditMode(false);
-      showToast('Profile updated!');
-      if (isOwn) refreshUser();
-    } catch { showToast('Failed to save', 'error'); }
-  };
-
   if (loading) return <div className="loading-screen"><div className="spinner" /></div>;
   if (!user) return <div className="page-content container"><div className="empty-state"><h3>User not found</h3></div></div>;
 
@@ -106,43 +101,43 @@ export default function Profile() {
               <div className="profile-meta">
                 <span>📚 {user.class}</span>
                 <span>•</span>
-                <span>Year {user.year}</span>
+                <span>{getBatchString(user.year)}</span>
                 <span>•</span>
                 <span>🎓 Sri Shakthi Institute, Coimbatore</span>
               </div>
 
-              {editMode ? (
-                <textarea className="form-input" style={{ marginTop: 12, resize: 'vertical' }} rows={2} value={editForm.bio} onChange={e => setEditForm(f => ({ ...f, bio: e.target.value }))} placeholder="Tell something about yourself..." />
-              ) : (
-                user.bio && <p className="profile-bio">{user.bio}</p>
-              )}
+              {user.bio && <p className="profile-bio">{user.bio}</p>}
 
               <div className="profile-links">
-                {editMode ? (
-                  <>
-                    <input className="form-input" style={{ width: 200 }} placeholder="GitHub username" value={editForm.github} onChange={e => setEditForm(f => ({ ...f, github: e.target.value }))} />
-                    <input className="form-input" style={{ width: 200 }} placeholder="LinkedIn slug" value={editForm.linkedin} onChange={e => setEditForm(f => ({ ...f, linkedin: e.target.value }))} />
-                  </>
-                ) : (
-                  <>
-                    {user.github && <a href={`https://github.com/${user.github}`} target="_blank" rel="noopener noreferrer" className="profile-link">🔗 GitHub</a>}
-                    {user.linkedin && <a href={`https://linkedin.com/in/${user.linkedin}`} target="_blank" rel="noopener noreferrer" className="profile-link">💼 LinkedIn</a>}
-                  </>
-                )}
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
+                  {user.github && (
+                    <a href={`https://github.com/${user.github}`} target="_blank" rel="noopener noreferrer" className="profile-link">
+                      🔗 GitHub
+                    </a>
+                  )}
+                  {user.linkedin && (
+                    <a href={`https://linkedin.com/in/${user.linkedin}`} target="_blank" rel="noopener noreferrer" className="profile-link">
+                      💼 LinkedIn
+                    </a>
+                  )}
+                  {user.phone && (
+                    <a href={`https://wa.me/${user.phone.replace(/\D/g,'')}`} target="_blank" rel="noopener noreferrer" className="profile-link">
+                      📞 {user.phone}
+                    </a>
+                  )}
+                  {!user.github && !user.linkedin && !user.phone && isOwn && (
+                    <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>✏️ Click Edit Profile to add your links</span>
+                  )}
+                </div>
               </div>
             </div>
 
             <div className="profile-actions">
               <ScoreBadge score={user.score} size="lg" />
               {isOwn && (
-                editMode ? (
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-                    <button className="btn btn-primary btn-sm" onClick={saveProfile}>Save</button>
-                    <button className="btn btn-ghost btn-sm" onClick={() => setEditMode(false)}>Cancel</button>
-                  </div>
-                ) : (
-                  <button className="btn btn-secondary btn-sm" style={{ marginTop: '12px' }} onClick={() => setEditMode(true)}>✏️ Edit Profile</button>
-                )
+                <Link to="/edit-profile" className="btn btn-secondary btn-sm" style={{ marginTop: '12px' }}>
+                  ✏️ Edit Profile
+                </Link>
               )}
             </div>
           </div>
@@ -153,7 +148,7 @@ export default function Profile() {
             <div className="p-stat-divider" />
             <div className="p-stat"><div className="p-stat-n">{user.score}</div><div className="p-stat-l">Total Points</div></div>
             <div className="p-stat-divider" />
-            <div className="p-stat"><div className="p-stat-n">{user.year}{['st','nd','rd','th'][Math.min(user.year-1,3)]}</div><div className="p-stat-l">Year</div></div>
+            <div className="p-stat"><div className="p-stat-n">{getBatchString(user.year).replace('Batch ', '')}</div><div className="p-stat-l">Batch</div></div>
             <div className="p-stat-divider" />
             <div className="p-stat"><div className="p-stat-n">{user.class}</div><div className="p-stat-l">Section</div></div>
           </div>
