@@ -1,31 +1,38 @@
 const express = require('express');
 const router = express.Router();
-const { supabase } = require('../db/supabase');
+const { supabase, getAdminScope } = require('../db/supabase');
 const { authMiddleware, adminMiddleware } = require('../middleware/auth');
 
 // ─── GET /api/achievements/all/pending ───────────────────────────────────────
 router.get('/all/pending', authMiddleware, adminMiddleware, async (req, res) => {
-  const { data: pending, error } = await supabase
-    .from('achievements')
-    .select('*')
-    .eq('verified', false);
+  const scope = await getAdminScope(req.user.id, req.user.role);
+  
+  let query = supabase.from('achievements').select('*').eq('verified', false);
 
+  const { data: pending, error } = await query;
   if (error) return res.status(500).json({ error: 'Failed to fetch pending achievements' });
 
   // Enrich with student name and roll_no
   const userIds = [...new Set(pending.map(a => a.user_id))];
   const { data: studentProfiles } = await supabase
     .from('students')
-    .select('user_id, name, roll_no')
+    .select('user_id, name, roll_no, class, batch')
     .in('user_id', userIds);
 
   const profileMap = Object.fromEntries((studentProfiles || []).map(s => [s.user_id, s]));
 
-  const result = pending.map(a => ({
+  let result = pending.map(a => ({
     ...a,
     student_name: profileMap[a.user_id]?.name || 'Unknown',
     roll_no: profileMap[a.user_id]?.roll_no || '—',
+    class: profileMap[a.user_id]?.class,
+    batch: profileMap[a.user_id]?.batch,
   }));
+
+  // Filter if faculty advisor
+  if (!scope.hasFullAccess) {
+    result = result.filter(a => a.class === scope.advisingClass && a.batch === scope.advisingBatch);
+  }
 
   res.json(result);
 });
@@ -89,16 +96,29 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 
 // ─── PATCH /api/achievements/:id/verify ──────────────────────────────────────
 router.patch('/:id/verify', authMiddleware, adminMiddleware, async (req, res) => {
+  const scope = await getAdminScope(req.user.id, req.user.role);
   const { verified } = req.body;
-  const { data: ach, error } = await supabase
+
+  // If faculty, verify achievement student belongs to their class
+  if (!scope.hasFullAccess) {
+    const { data: ach } = await supabase.from('achievements').select('user_id').eq('id', req.params.id).single();
+    if (!ach) return res.status(404).json({ error: 'Achievement not found' });
+    
+    const { data: student } = await supabase.from('students').select('class, batch').eq('user_id', ach.user_id).single();
+    if (student?.class !== scope.advisingClass || student?.batch !== scope.advisingBatch) {
+      return res.status(403).json({ error: 'You can only verify achievements for your assigned class.' });
+    }
+  }
+
+  const { data: updatedAch, error } = await supabase
     .from('achievements')
     .update({ verified: !!verified })
     .eq('id', req.params.id)
     .select()
     .single();
 
-  if (error || !ach) return res.status(500).json({ error: 'Failed to update' });
-  res.json(ach);
+  if (error || !updatedAch) return res.status(500).json({ error: 'Failed to update' });
+  res.json(updatedAch);
 });
 
 module.exports = router;

@@ -60,6 +60,11 @@
   --shadow-md: 0 2px 8px rgba(15, 32, 9, 0.08);
   --shadow-lg: 0 4px 16px rgba(15, 32, 9, 0.1);
 
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, var(--green-600), var(--green-400));
+  --gradient-gold:    linear-gradient(135deg, var(--gold-600), var(--gold-400));
+  --gradient-dark:    linear-gradient(135deg, var(--green-900), var(--green-700));
+
   /* Radii — tighter for minimal feel */
   --radius-xs: 4px;
   --radius-sm: 6px;

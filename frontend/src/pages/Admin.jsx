@@ -6,6 +6,8 @@ import StudentActionModal from '../components/StudentActionModal';
 import ImportModal from '../components/ImportModal';
 import CustomSelect from '../components/CustomSelect';
 import FilterModal from '../components/FilterModal';
+import FacultyAdvisorModal from '../components/FacultyAdvisorModal';
+import FacultyActionModal from '../components/FacultyActionModal';
 
 const CLASSES = ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D', 'CSE-E'];
 
@@ -31,6 +33,12 @@ export default function Admin() {
   const [deleteConfirm, setDeleteConfirm] = useState(null); // student to delete
   const [selectedIds, setSelectedIds] = useState(new Set());
 
+  // Manage Faculty state
+  const [faculties, setFaculties] = useState([]);
+  const [facLoading, setFacLoading] = useState(false);
+  const [editFaculty, setEditFaculty] = useState(null);
+  const [showAddFacModal, setShowAddFacModal] = useState(false);
+
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
@@ -40,7 +48,7 @@ export default function Admin() {
   useEffect(() => {
     refreshUser();
     Promise.all([
-      client.get('/users'),
+      client.get('/admin/students'), // Simplified call for overview, we'll refactor later if needed
       client.get('/achievements/all/pending'),
     ]).then(([uRes, aRes]) => {
       setStudents(uRes.data);
@@ -68,9 +76,22 @@ export default function Admin() {
     }
   }, [search, filterClass, filterBatch]);
 
+  const loadFaculties = useCallback(async () => {
+    setFacLoading(true);
+    try {
+      const res = await client.get('/admin/faculty');
+      setFaculties(res.data);
+    } catch {
+      showToast('Failed to load faculty list.', 'error');
+    } finally {
+      setFacLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (tab === 'manage') loadManagedStudents();
-  }, [tab, loadManagedStudents]);
+    if (tab === 'faculty') loadFaculties();
+  }, [tab, loadManagedStudents, loadFaculties]);
 
   if (!user?.is_admin) return <Navigate to="/" replace />;
 
@@ -142,10 +163,21 @@ export default function Admin() {
     }
   };
 
+  const isFullAdmin = user?.role === 'admin' || user?.designation?.toUpperCase() === 'HOD';
+
+  // Auto-populate filters for restricted advisors
+  useEffect(() => {
+    if (user && !isFullAdmin) {
+      if (user.advising_class) setFilterClass(user.advising_class);
+      if (user.advising_batch) setFilterBatch(user.advising_batch);
+    }
+  }, [user, isFullAdmin]);
+
   const tabs = [
     { id: 'overview', l: '📊 Overview' },
     { id: 'students', l: '👩‍💻 Students' },
     { id: 'manage', l: '⚙️ Manage' },
+    ...(isFullAdmin ? [{ id: 'faculty', l: '🎓 Faculty' }] : []),
     { id: 'pending', l: `⏳ Pending (${achievements.length})` },
   ];
 
@@ -230,8 +262,19 @@ export default function Admin() {
             {/* ── MANAGE STUDENTS ── */}
             {tab === 'manage' && (
               <div className="animate-fadeIn">
-                {/* Toolbar */}
-                <div className="manage-toolbar">
+                {!isFullAdmin && (
+                  <div className="advisor-banner animate-fadeInUp">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <span style={{ fontSize: 24 }}>🛡️</span>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Advisor Mode</div>
+                        <div style={{ fontSize: 12, opacity: 0.8 }}>Managing students for <b>{user.advising_class}</b> ({user.advising_batch})</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="manage-toolbar card animate-fadeInUp" style={{ padding: '16px 20px', borderRadius: 'var(--radius-md) var(--radius-md) 0 0', marginTop: !isFullAdmin ? 12 : 0 }}>
                   <div style={{ display: 'flex', gap: 10, flex: 1, flexWrap: 'wrap' }}>
                     <input
                       className="form-input"
@@ -244,25 +287,34 @@ export default function Admin() {
                       <button 
                         className={`btn ${filterBatch || filterClass ? 'btn-primary' : 'btn-secondary'}`}
                         onClick={() => setShowFilters(true)}
+                        disabled={!isFullAdmin}
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
-                        Filters {(filterBatch || filterClass) && '(Active)'}
+                        {isFullAdmin ? `Filters ${(filterBatch || filterClass) ? '(Active)' : ''}` : `${user.advising_class || 'None'} (${user.advising_batch || 'None'})`}
                       </button>
                     </div>
                     <button className="btn btn-ghost btn-sm" onClick={loadManagedStudents}>🔄 Refresh</button>
                   </div>
                   <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                    {selectedIds.size > 0 && (
+                    {selectedIds.size > 0 && isFullAdmin && (
                       <button className="btn btn-danger btn-sm" onClick={() => setDeleteConfirm('bulk')}>
                         🗑️ Delete ({selectedIds.size})
                       </button>
                     )}
-                    <button className="btn btn-secondary btn-sm" onClick={() => setShowImportModal(true)}>
-                      📥 Import CSV
-                    </button>
-                    <button className="btn btn-primary btn-sm" onClick={() => setShowAddModal(true)}>
-                      ➕ Add Student
-                    </button>
+                    {isFullAdmin ? (
+                      <>
+                        <button className="btn btn-secondary btn-sm" onClick={() => setShowImportModal(true)}>
+                          📥 Import CSV
+                        </button>
+                        <button className="btn btn-primary btn-sm" onClick={() => setShowAddModal(true)}>
+                          ➕ Add Student
+                        </button>
+                      </>
+                    ) : (
+                      <button className="btn btn-primary btn-sm" onClick={() => setShowAddModal(true)}>
+                        ➕ Add Student
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -326,12 +378,16 @@ export default function Admin() {
                         className="manage-table-row"
                         style={{ background: selectedIds.has(s.id) ? 'var(--green-50)' : undefined, animation: `fadeInUp 0.25s ease ${i * 0.015}s both` }}
                       >
-                        <input
-                          type="checkbox"
-                          className="manage-checkbox"
-                          checked={selectedIds.has(s.id)}
-                          onChange={() => toggleSelect(s.id)}
-                        />
+                        {isFullAdmin ? (
+                          <input
+                            type="checkbox"
+                            className="manage-checkbox"
+                            checked={selectedIds.has(s.id)}
+                            onChange={() => toggleSelect(s.id)}
+                          />
+                        ) : (
+                          <div /> 
+                        )}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <div style={{ width: 34, height: 34, background: 'var(--color-green)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#fff', fontSize: 13, flexShrink: 0 }}>
                             {s.name[0]}
@@ -361,6 +417,55 @@ export default function Admin() {
                 </div>
               </div>
             )}
+            {/* ── MANAGE FACULTY ── */}
+            {tab === 'faculty' && isFullAdmin && (
+              <div className="animate-fadeIn">
+                <div className="section-header" style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <h3 style={{ fontSize: 18, fontWeight: 700 }}>🎓 CSE Faculty & Advisors</h3>
+                    <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Assigned class advisors have admin privileges for their specific class.</p>
+                  </div>
+                  <button className="btn btn-primary" onClick={() => setShowAddFacModal(true)}>➕ Add Faculty</button>
+                </div>
+
+                {facLoading ? (
+                  <div className="loading-screen" style={{ minHeight: 200 }}><div className="spinner" /></div>
+                ) : faculties.length === 0 ? (
+                  <div className="empty-state">No faculty members found.</div>
+                ) : (
+                  <div className="card" style={{ overflow: 'hidden' }}>
+                    <div className="manage-table-header" style={{ gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr 80px' }}>
+                      <span>Faculty Name</span>
+                      <span>Designation</span>
+                      <span>Department</span>
+                      <span>Advising Section</span>
+                      <span>Advising Batch</span>
+                      <span>Manage</span>
+                    </div>
+                    {faculties.map((f, i) => (
+                      <div key={f.id} className="manage-table-row" style={{ gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr 80px', animation: `fadeInUp 0.3s ease ${i * 0.02}s both` }}>
+                        <div style={{ fontWeight: 600 }}>{f.name}</div>
+                        <div style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{f.designation || '—'}</div>
+                        <div style={{ fontSize: 13 }}>{f.department || 'CSE'}</div>
+                        <div>{f.advising_class ? <span className="badge badge-green">{f.advising_class}</span> : <span style={{ color: 'var(--color-text-faint)' }}>—</span>}</div>
+                        <div>{f.advising_batch ? <span className="badge badge-violet">{f.advising_batch}</span> : <span style={{ color: 'var(--color-text-faint)' }}>—</span>}</div>
+                        <div>
+                          <button className="btn btn-primary btn-sm" onClick={() => setEditFaculty(f)}>Adjust</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+      {/* ── Faculty Action Modal ── */}
+      {showAddFacModal && (
+        <FacultyActionModal
+          onClose={() => setShowAddFacModal(false)}
+          onSaved={loadFaculties}
+          showToast={showToast}
+        />
+      )}
 
             {/* ── PENDING ACHIEVEMENTS ── */}
             {tab === 'pending' && (
@@ -423,8 +528,20 @@ export default function Admin() {
       {(showAddModal || editStudent) && (
         <StudentActionModal
           student={editStudent || null}
+          isFullAdmin={isFullAdmin}
+          advisorClass={user.advising_class}
+          advisorBatch={user.advising_batch}
           onClose={() => { setShowAddModal(false); setEditStudent(null); }}
           onSaved={handleStudentSaved}
+          showToast={showToast}
+        />
+      )}
+      {/* ── Faculty Advisor Modal ── */}
+      {editFaculty && (
+        <FacultyAdvisorModal
+          faculty={editFaculty}
+          onClose={() => setEditFaculty(null)}
+          onSaved={loadFaculties}
           showToast={showToast}
         />
       )}
@@ -444,6 +561,20 @@ export default function Admin() {
         .admin-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px; flex-wrap: wrap; gap: 12px; }
         .admin-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
         .admin-stat { padding: 20px; text-align: center; display: flex; flex-direction: column; gap: 6px; align-items: center; }
+        
+        .advisor-banner {
+          background: var(--gradient-primary);
+          color: white;
+          padding: 16px 20px;
+          border-radius: var(--radius-md);
+          margin-bottom: 8px;
+          box-shadow: var(--shadow-md);
+          border: 1px solid var(--border-strong);
+          display: flex;
+          align-items: center;
+          gap: 14px;
+        }
+        .advisor-banner b { color: var(--gold-200); }
 
         .manage-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 0; }
 

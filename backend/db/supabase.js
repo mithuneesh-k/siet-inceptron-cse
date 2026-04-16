@@ -53,7 +53,7 @@ async function getUserWithScore(id) {
   } else {
     const { data } = await supabase
       .from('faculty')
-      .select('name, designation, department, avatar_url')
+      .select('name, designation, department, avatar_url, advising_class, advising_batch')
       .eq('user_id', id)
       .maybeSingle();
     profile = data || {};
@@ -80,4 +80,20 @@ async function getUserWithScore(id) {
   };
 }
 
-module.exports = { supabase, calcPoints, getUserWithScore };
+// ─── getAdminScope ────────────────────────────────────────────────────────────
+// Identifies if user is full admin/HOD or restricted faculty advisor
+async function getAdminScope(userId, role) {
+  if (role === 'admin') return { hasFullAccess: true };
+  if (role === 'faculty') {
+    const { data } = await supabase.from('faculty').select('designation, advising_class, advising_batch').eq('user_id', userId).single();
+    if (data?.designation?.toUpperCase() === 'HOD') return { hasFullAccess: true };
+    return { 
+      hasFullAccess: false, 
+      advisingClass: data?.advising_class || null, 
+      advisingBatch: data?.advising_batch || null 
+    };
+  }
+  return { hasFullAccess: false };
+}
+
+module.exports = { supabase, calcPoints, getUserWithScore, getAdminScope };

@@ -88,7 +88,7 @@ export default function Profile() {
             <div className="profile-info">
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                 <h1 className="profile-name">{user.name}</h1>
-                <span className="badge badge-violet">{rank} Tier</span>
+                {user.role === 'student' && <span className="badge badge-violet">{rank} Tier</span>}
                 {user.is_admin && <span className="badge badge-gold">👨‍🏫 {user.role === 'admin' ? 'Admin' : 'Faculty'}</span>}
               </div>
               <div className="profile-meta">
@@ -124,7 +124,7 @@ export default function Profile() {
             </div>
 
             <div className="profile-actions">
-              <ScoreBadge score={user.score} size="lg" />
+              {user.role === 'student' && <ScoreBadge score={user.score} size="lg" />}
               {isOwn && (
                 <Link to="/edit-profile" className="btn btn-secondary btn-sm" style={{ marginTop: '12px' }}>
                   ✏️ Edit Profile
@@ -135,18 +135,32 @@ export default function Profile() {
 
           {/* Stats Row */}
           <div className="profile-stats">
-            <div className="p-stat"><div className="p-stat-n">{user.achievement_count}</div><div className="p-stat-l">Achievements</div></div>
-            <div className="p-stat-divider" />
-            <div className="p-stat"><div className="p-stat-n">{user.score}</div><div className="p-stat-l">Total Points</div></div>
-            <div className="p-stat-divider" />
-            <div className="p-stat"><div className="p-stat-n">{user.batch || '—'}</div><div className="p-stat-l">Batch</div></div>
-            <div className="p-stat-divider" />
-            <div className="p-stat"><div className="p-stat-n">{user.class || '—'}</div><div className="p-stat-l">Section</div></div>
+            {user.role === 'student' ? (
+              <>
+                <div className="p-stat"><div className="p-stat-n">{user.achievement_count}</div><div className="p-stat-l">Achievements</div></div>
+                <div className="p-stat-divider" />
+                <div className="p-stat"><div className="p-stat-n">{user.score}</div><div className="p-stat-l">Total Points</div></div>
+                <div className="p-stat-divider" />
+                <div className="p-stat"><div className="p-stat-n">{user.batch || '—'}</div><div className="p-stat-l">Batch</div></div>
+                <div className="p-stat-divider" />
+                <div className="p-stat"><div className="p-stat-n">{user.class || '—'}</div><div className="p-stat-l">Section</div></div>
+              </>
+            ) : (
+              <>
+                <div className="p-stat"><div className="p-stat-n" style={{ fontSize: 18 }}>{user.designation || 'Faculty'}</div><div className="p-stat-l">Designation</div></div>
+                <div className="p-stat-divider" />
+                <div className="p-stat"><div className="p-stat-n" style={{ fontSize: 18 }}>{user.department || 'CSE'}</div><div className="p-stat-l">Department</div></div>
+                <div className="p-stat-divider" />
+                <div className="p-stat"><div className="p-stat-n" style={{ fontSize: 18 }}>{user.advising_class || 'None'}</div><div className="p-stat-l">Advising Section</div></div>
+                <div className="p-stat-divider" />
+                <div className="p-stat"><div className="p-stat-n" style={{ fontSize: 18 }}>{user.advising_batch || 'None'}</div><div className="p-stat-l">Advising Batch</div></div>
+              </>
+            )}
           </div>
         </div>
 
         {/* Breakdown */}
-        {typeBreakdown.length > 0 && (
+        {user.role === 'student' && typeBreakdown.length > 0 && (
           <div className="breakdown-grid animate-fadeInUp delay-1">
             {typeBreakdown.map(b => (
               <div key={b.type} className={`breakdown-card card badge ${b.type === 'hackathon' ? 'type-hackathon' : b.type === 'internship' ? 'type-internship' : b.type === 'course' ? 'type-course' : b.type === 'project' ? 'type-project' : 'type-certification'}`} style={{ display: 'block', padding: '16px 20px' }}>
@@ -159,27 +173,29 @@ export default function Profile() {
         )}
 
         {/* Achievements */}
-        <div className="animate-fadeInUp delay-2">
-          <div className="section-header" style={{ marginTop: '36px' }}>
-            <h2 className="section-title">🏅 Achievements</h2>
-            {isOwn && <button id="add-achievement-btn" className="btn btn-primary btn-sm" onClick={() => setShowAddModal(true)}>+ Add Achievement</button>}
-          </div>
+        {user.role === 'student' && (
+          <div className="animate-fadeInUp delay-2">
+            <div className="section-header" style={{ marginTop: '36px' }}>
+              <h2 className="section-title">🏅 Achievements</h2>
+              {isOwn && <button id="add-achievement-btn" className="btn btn-primary btn-sm" onClick={() => setShowAddModal(true)}>+ Add Achievement</button>}
+            </div>
 
-          {achievements.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">🎯</div>
-              <h3>No achievements yet</h3>
-              <p>{isOwn ? 'Add your first achievement to start earning points!' : 'This student hasn\'t added any achievements yet.'}</p>
-              {isOwn && <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={() => setShowAddModal(true)}>+ Add First Achievement</button>}
-            </div>
-          ) : (
-            <div className="grid-auto">
-              {achievements.map(a => (
-                <AchievementCard key={a.id} achievement={a} showDelete={isOwn || authUser?.is_admin} onDelete={deleteAchievement} />
-              ))}
-            </div>
-          )}
-        </div>
+            {achievements.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">🎯</div>
+                <h3>No achievements yet</h3>
+                <p>{isOwn ? 'Add your first achievement to start earning points!' : 'This student hasn\'t added any achievements yet.'}</p>
+                {isOwn && <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={() => setShowAddModal(true)}>+ Add First Achievement</button>}
+              </div>
+            ) : (
+              <div className="grid-auto">
+                {achievements.map(a => (
+                  <AchievementCard key={a.id} achievement={a} showDelete={isOwn || authUser?.is_admin} onDelete={deleteAchievement} />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Add Achievement Modal */}

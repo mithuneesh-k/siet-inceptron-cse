@@ -3,15 +3,23 @@ import client from '../api/client';
 
 const CLASSES = ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D', 'CSE-E'];
 
-export default function StudentActionModal({ student, onClose, onSaved, showToast }) {
+export default function StudentActionModal({ 
+  student, 
+  onClose, 
+  onSaved, 
+  showToast, 
+  isFullAdmin, 
+  advisorClass, 
+  advisorBatch 
+}) {
   const isEdit = !!student;
   const [form, setForm] = useState({
     name: student?.name || '',
     roll_no: student?.roll_no || '',
     reg_no: student?.reg_no || '',
     email: student?.email || '',
-    class: student?.class || '',
-    batch: student?.batch || '',
+    class: student?.class || (isFullAdmin ? '' : (advisorClass || '')),
+    batch: student?.batch || (isFullAdmin ? '' : (advisorBatch || '')),
     date_of_birth: student?.date_of_birth || '',
   });
   const [saving, setSaving] = useState(false);
@@ -109,6 +117,8 @@ export default function StudentActionModal({ student, onClose, onSaved, showToas
                 className="form-select"
                 value={form.class}
                 onChange={e => set('class', e.target.value)}
+                disabled={!isFullAdmin}
+                style={!isFullAdmin ? { opacity: 0.7, cursor: 'not-allowed', background: 'var(--bg-secondary)' } : {}}
               >
                 <option value="">Select class…</option>
                 {CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -121,6 +131,8 @@ export default function StudentActionModal({ student, onClose, onSaved, showToas
                 value={form.batch}
                 onChange={e => set('batch', e.target.value)}
                 placeholder="2025-2029"
+                disabled={!isFullAdmin}
+                style={!isFullAdmin ? { opacity: 0.7, cursor: 'not-allowed', background: 'var(--bg-secondary)' } : {}}
               />
             </div>
           </div>
