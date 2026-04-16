@@ -67,7 +67,7 @@ router.post('/', authMiddleware, async (req, res) => {
       duration: duration || null,
       proof_url: proof_url || null,
       points,
-      verified: true,
+      verified: false,
     })
     .select()
     .single();

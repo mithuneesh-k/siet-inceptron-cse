@@ -99,9 +99,18 @@ export default function Admin() {
   const avgScore = students.length ? Math.round(totalScore / students.length) : 0;
 
   const verifyAch = async (id, verified) => {
-    await client.patch(`/achievements/${id}/verify`, { verified });
-    setAchievements(prev => prev.filter(a => a.id !== id));
-    showToast(verified ? 'Achievement verified ✅' : 'Achievement rejected');
+    try {
+      if (verified) {
+        await client.patch(`/achievements/${id}/verify`, { verified: true });
+        showToast('Achievement verified ✅');
+      } else {
+        await client.delete(`/achievements/${id}`);
+        showToast('Achievement rejected ✕', 'error');
+      }
+      setAchievements(prev => prev.filter(a => a.id !== id));
+    } catch {
+      showToast('Action failed.', 'error');
+    }
   };
 
   const handleStudentSaved = (savedStudent, isEdit) => {

@@ -16,6 +16,7 @@ export default function AchievementCard({ achievement, onDelete, showDelete }) {
     <div className="achievement-card card card-hover animate-fadeInUp">
       <div className="ach-top">
         <span className={cfg.cls}>{cfg.icon} {cfg.label}</span>
+        {!achievement.verified && <span className="badge badge-error">⏳ Pending Approval</span>}
         <span className="ach-points">+{achievement.points} pts</span>
       </div>
 
@@ -42,7 +43,7 @@ export default function AchievementCard({ achievement, onDelete, showDelete }) {
       </div>
 
       <style>{`
-        .achievement-card { padding: 20px; position: relative; }
+        .achievement-card { padding: 20px; position: relative; ${!achievement.verified ? 'opacity: 0.85; border: 1.5px dashed var(--border);' : ''} }
         .ach-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
         .ach-points { font-size: 14px; font-weight: 700; color: var(--color-gold); }
         .ach-title { font-size: 15px; font-weight: 700; line-height: 1.4; margin-bottom: 8px; color: var(--color-text); }

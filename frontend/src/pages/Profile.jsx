@@ -47,10 +47,11 @@ export default function Profile() {
     try {
       const { data } = await client.post('/achievements', form);
       setAchievements(prev => [data, ...prev]);
-      setUser(u => ({ ...u, score: u.score + data.points, achievement_count: u.achievement_count + 1 }));
+      // Points and count only update in DB/Refresh when verified.
+      // For now, just show a message.
       setShowAddModal(false);
       setForm({ type: 'hackathon', title: '', description: '', position: '', duration: '', proof_url: '' });
-      showToast(`+${data.points} points added! 🎉`);
+      showToast(`Achievement submitted for approval! ⏳`);
       if (isOwn) refreshUser();
     } catch (err) {
       showToast(err.response?.data?.error || 'Failed to add achievement', 'error');
