@@ -10,6 +10,10 @@ const authMiddleware = (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
+    // backward compat: if old token has is_admin, derive role
+    if (decoded.is_admin !== undefined && !decoded.role) {
+      req.user.role = decoded.is_admin ? 'faculty' : 'student';
+    }
     next();
   } catch (err) {
     return res.status(401).json({ error: 'Token expired or invalid' });
@@ -17,7 +21,7 @@ const authMiddleware = (req, res, next) => {
 };
 
 const adminMiddleware = (req, res, next) => {
-  if (!req.user?.is_admin) {
+  if (req.user?.role === 'student') {
     return res.status(403).json({ error: 'Admin access required' });
   }
   next();

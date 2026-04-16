@@ -7,7 +7,7 @@ async function seed() {
   
   console.log('👤 Inserting Admin...');
   await supabase.from('users').upsert({
-    name: 'Dr. Rajesh Venkataraman',
+    name: 'ADMIN CSE',
     roll_no: 'ADMIN001',
     reg_no: 'ADMIN',
     year: 0,

@@ -9,12 +9,6 @@ const ACH_TYPES = ['hackathon', 'internship', 'course', 'project', 'certificatio
 const POSITIONS = ['1st', '2nd', '3rd', 'participated'];
 const DURATIONS = ['short', 'medium', 'long'];
 
-const getBatchString = (year) => {
-  if (!year) return '';
-  const joinYear = 2026 - parseInt(year);
-  return `Batch ${String(joinYear).slice(-2)}-${String(joinYear + 4).slice(-2)}`;
-};
-
 export default function Profile() {
   const { id } = useParams();
   const { user: authUser, refreshUser } = useAuth();
@@ -87,7 +81,6 @@ export default function Profile() {
       <div className="container">
         {/* Profile Header */}
         <div className="profile-header card animate-fadeInUp">
-          <div className="profile-hero-bg" />
           <div className="profile-main">
             <div className="profile-avatar-wrap">
               <div className="profile-avatar">{user.name[0]}</div>
@@ -96,13 +89,11 @@ export default function Profile() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                 <h1 className="profile-name">{user.name}</h1>
                 <span className="badge badge-violet">{rank} Tier</span>
-                {user.is_admin && <span className="badge badge-gold">👨‍🏫 Admin</span>}
+                {user.is_admin && <span className="badge badge-gold">👨‍🏫 {user.role === 'admin' ? 'Admin' : 'Faculty'}</span>}
               </div>
               <div className="profile-meta">
-                <span>📚 {user.class}</span>
-                <span>•</span>
-                <span>{getBatchString(user.year)}</span>
-                <span>•</span>
+                {user.class && <><span>📚 {user.class}</span><span>•</span></>}
+                {user.batch && <><span>{user.batch}</span><span>•</span></>}
                 <span>🎓 Sri Shakthi Institute, Coimbatore</span>
               </div>
 
@@ -148,9 +139,9 @@ export default function Profile() {
             <div className="p-stat-divider" />
             <div className="p-stat"><div className="p-stat-n">{user.score}</div><div className="p-stat-l">Total Points</div></div>
             <div className="p-stat-divider" />
-            <div className="p-stat"><div className="p-stat-n">{getBatchString(user.year).replace('Batch ', '')}</div><div className="p-stat-l">Batch</div></div>
+            <div className="p-stat"><div className="p-stat-n">{user.batch || '—'}</div><div className="p-stat-l">Batch</div></div>
             <div className="p-stat-divider" />
-            <div className="p-stat"><div className="p-stat-n">{user.class}</div><div className="p-stat-l">Section</div></div>
+            <div className="p-stat"><div className="p-stat-n">{user.class || '—'}</div><div className="p-stat-l">Section</div></div>
           </div>
         </div>
 
@@ -265,17 +256,16 @@ export default function Profile() {
       {toast && <div className={`toast toast-${toast.type}`}>{toast.msg}</div>}
 
       <style>{`
-        .profile-header { overflow: hidden; position: relative; margin-bottom: 16px; }
-        .profile-hero-bg { position: absolute; top: 0; left: 0; right: 0; height: 100px; background: linear-gradient(135deg, rgba(124,58,237,0.15), rgba(59,130,246,0.1)); }
+        .profile-header { overflow: hidden; position: relative; margin-bottom: 16px; border-radius: var(--radius-lg); }
         .profile-main { position: relative; display: flex; align-items: flex-start; gap: 24px; padding: 28px 28px 20px; flex-wrap: wrap; }
         .profile-avatar-wrap { flex-shrink: 0; }
-        .profile-avatar { width: 90px; height: 90px; border-radius: 50%; background: var(--gradient-primary); display: flex; align-items: center; justify-content: center; font-size: 36px; font-weight: 700; color: #fff; border: 3px solid rgba(255,255,255,0.1); box-shadow: 0 8px 25px rgba(124,58,237,0.35); }
+        .profile-avatar { width: 90px; height: 90px; border-radius: 50%; background: var(--color-green); display: flex; align-items: center; justify-content: center; font-size: 36px; font-weight: 700; color: #fff; border: 3px solid rgba(255,255,255,0.8); box-shadow: 0 8px 25px rgba(34,197,94,0.25); }
         .profile-info { flex: 1; min-width: 0; padding-top: 8px; }
         .profile-name { font-size: 26px; font-weight: 800; font-family: 'Space Grotesk', sans-serif; }
         .profile-meta { display: flex; gap: 8px; font-size: 13px; color: var(--color-text-muted); margin-top: 6px; align-items: center; flex-wrap: wrap; }
         .profile-bio { font-size: 14px; color: var(--color-text-muted); margin-top: 10px; line-height: 1.6; }
         .profile-links { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
-        .profile-link { font-size: 13px; font-weight: 600; color: var(--color-violet-light); padding: 5px 12px; background: rgba(124,58,237,0.1); border: 1px solid rgba(124,58,237,0.2); border-radius: var(--radius-full); }
+        .profile-link { font-size: 13px; font-weight: 600; color: var(--color-green); padding: 5px 12px; background: var(--green-50); border: 1px solid rgba(34,197,94,0.2); border-radius: var(--radius-full); }
         .profile-actions { margin-left: auto; display: flex; flex-direction: column; align-items: center; padding-top: 8px; }
         .profile-stats { display: flex; gap: 0; border-top: 1px solid var(--border); padding: 16px 28px; align-items: center; }
         .p-stat { flex: 1; text-align: center; }

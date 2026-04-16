@@ -1,15 +1,23 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import client from '../api/client';
+import CustomSelect from '../components/CustomSelect';
+import FilterModal from '../components/FilterModal';
 
-const CLASSES = ['All', 'CSE-A', 'CSE-B', 'CSE-C', 'CSE-D', 'CSE-E'];
+
 
 export default function Students() {
   const [students, setStudents] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [classFilter, setClassFilter] = useState('All');
+  const [classFilter, setClassFilter] = useState('');
+  const [batchFilter, setBatchFilter] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Dynamically generated options based on loaded students
+  const availableClasses = [...new Set(students.map(s => s.class).filter(Boolean))].sort();
+  const availableBatches = [...new Set(students.map(s => s.batch).filter(Boolean))].sort();
 
   useEffect(() => {
     client.get('/users').then(res => {
@@ -22,7 +30,8 @@ export default function Students() {
 
   useEffect(() => {
     let result = students;
-    if (classFilter !== 'All') result = result.filter(s => s.class === classFilter);
+    if (batchFilter) result = result.filter(s => s.batch === batchFilter);
+    if (classFilter) result = result.filter(s => s.class === classFilter);
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter(s =>
@@ -32,7 +41,7 @@ export default function Students() {
       );
     }
     setFiltered(result);
-  }, [search, classFilter, students]);
+  }, [search, classFilter, batchFilter, students]);
 
   return (
     <div className="page-content">
@@ -42,7 +51,7 @@ export default function Students() {
           <div>
             <h1 className="section-title" style={{ fontSize: '32px' }}>👨‍🎓 Students</h1>
             <p style={{ color: 'var(--color-text-muted)', marginTop: 6 }}>
-              {filtered.length} of {students.length} students — CSE Batch 2025
+              {filtered.length} of {students.length} students {batchFilter ? `— ${batchFilter}` : ''} {classFilter ? `— ${classFilter}` : ''}
             </p>
           </div>
         </div>
@@ -57,18 +66,43 @@ export default function Students() {
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
-          <div className="students-class-tabs">
-            {CLASSES.map(c => (
-              <button
-                key={c}
-                className={`tab-btn ${classFilter === c ? 'active' : ''}`}
-                onClick={() => setClassFilter(c)}
-              >
-                {c}
-              </button>
-            ))}
+          <div style={{ display: 'flex', gap: 12 }}>
+            <button 
+              className={`btn ${batchFilter || classFilter ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => setShowFilters(true)}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+              Filters {(batchFilter || classFilter) && '(Active)'}
+            </button>
           </div>
         </div>
+
+        <FilterModal 
+          isOpen={showFilters} 
+          onClose={() => setShowFilters(false)}
+          onClear={() => { setBatchFilter(''); setClassFilter(''); }}
+        >
+          <div className="form-group">
+            <label className="form-label">Batch</label>
+            <CustomSelect
+              value={batchFilter}
+              onChange={setBatchFilter}
+              options={[{ value: '', label: 'All Batches' }, ...availableBatches.map(b => ({ value: b, label: b }))]}
+              placeholder="All Batches"
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Section</label>
+            <CustomSelect
+              value={classFilter}
+              onChange={setClassFilter}
+              options={[{ value: '', label: 'All Sections' }, ...availableClasses.map(c => ({ value: c, label: c }))]}
+              placeholder="All Sections"
+            />
+          </div>
+          {/* Add a spacer so the dropdown menu doesn't get cut off by overflow-y: auto of the modal */}
+          <div style={{ height: '120px' }}></div>
+        </FilterModal>
 
         {/* Grid */}
         {loading ? (
@@ -116,10 +150,6 @@ export default function Students() {
 
       <style>{`
         .students-filters { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
-        .students-class-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
-        .tab-btn { padding: 6px 14px; border-radius: var(--radius-full); border: 1px solid var(--border); background: transparent; color: var(--color-text-muted); font-size: 13px; cursor: pointer; transition: all 0.2s; }
-        .tab-btn:hover { border-color: var(--color-violet); color: var(--color-violet-light); }
-        .tab-btn.active { background: var(--gradient-primary); color: #fff; border-color: transparent; font-weight: 600; }
         .students-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
         .student-card { display: flex; align-items: center; gap: 14px; padding: 16px 18px; text-decoration: none; color: inherit; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
         .student-card:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(124,58,237,0.18); border-color: rgba(124,58,237,0.3); }

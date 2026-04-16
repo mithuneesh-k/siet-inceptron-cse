@@ -10,7 +10,7 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder_key');
 
-// Helper wrapper to easily extract single points
+// ─── Points calculator ────────────────────────────────────────────────────────
 function calcPoints(type, position, duration) {
   switch (type) {
     case 'hackathon':
@@ -22,34 +22,62 @@ function calcPoints(type, position, duration) {
       if (duration === 'long')   return 70;
       if (duration === 'medium') return 40;
       return 20;
-    case 'course':       return 15;
-    case 'project':      return 25;
-    case 'certification':return 10;
+    case 'course':        return 15;
+    case 'project':       return 25;
+    case 'certification': return 10;
     default: return 5;
   }
 }
 
-// Fetch user with score helper
+// ─── getUserWithScore ─────────────────────────────────────────────────────────
+// Fetches a merged user object from users + students/faculty + achievements
 async function getUserWithScore(id) {
-  const { data: user, error: userErr } = await supabase
+  // 1. Get auth info
+  const { data: authUser, error: authErr } = await supabase
     .from('users')
-    .select('*')
+    .select('id, email, role, created_at')
     .eq('id', id)
     .single();
 
-  if (userErr || !user) return null;
+  if (authErr || !authUser) return null;
 
-  const { password_hash, ...safeUser } = user;
+  // 2. Fetch profile based on role
+  let profile = {};
+  if (authUser.role === 'student') {
+    const { data } = await supabase
+      .from('students')
+      .select('name, roll_no, reg_no, year, class, batch, date_of_birth, bio, github, linkedin, avatar_url, phone')
+      .eq('user_id', id)
+      .maybeSingle();
+    profile = data || {};
+  } else {
+    const { data } = await supabase
+      .from('faculty')
+      .select('name, designation, department, avatar_url')
+      .eq('user_id', id)
+      .maybeSingle();
+    profile = data || {};
+  }
 
-  const { data: achs, error: achErr } = await supabase
+  // 3. Score from achievements
+  const { data: achs } = await supabase
     .from('achievements')
     .select('points')
     .eq('user_id', id)
     .eq('verified', true);
 
-  safeUser.score = achs ? achs.reduce((s, a) => s + a.points, 0) : 0;
-  safeUser.achievement_count = achs ? achs.length : 0;
-  return safeUser;
+  const score = (achs || []).reduce((s, a) => s + (a.points || 0), 0);
+
+  return {
+    id: authUser.id,
+    email: authUser.email,
+    role: authUser.role,
+    is_admin: authUser.role !== 'student',  // backward compat
+    created_at: authUser.created_at,
+    ...profile,
+    score,
+    achievement_count: achs?.length || 0,
+  };
 }
 
 module.exports = { supabase, calcPoints, getUserWithScore };

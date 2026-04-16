@@ -2,28 +2,25 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import client from '../api/client';
 import ScoreBadge from '../components/ScoreBadge';
+import CustomSelect from '../components/CustomSelect';
+import FilterModal from '../components/FilterModal';
 
-const YEAR_TABS = ['all', '1', '2', '3', '4'];
-const CLASS_TABS = ['all', 'CSE-A', 'CSE-B', 'CSE-C', 'CSE-D', 'CSE-E'];
-
-const getBatchString = (year) => {
-  if (year === 'all') return 'All Batches';
-  const joinYear = 2026 - parseInt(year);
-  return `Batch ${String(joinYear).slice(-2)}-${String(joinYear + 4).slice(-2)}`;
-};
+const BATCH_OPTIONS = ['2026-2030', '2025-2029', '2024-2028', '2023-2027', '2022-2026'];
+const CLASS_OPTIONS = ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D', 'CSE-E'];
 
 export default function Leaderboard() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [yearFilter, setYearFilter] = useState('all');
-  const [classFilter, setClassFilter] = useState('all');
+  const [batchFilter, setBatchFilter] = useState('');
+  const [classFilter, setClassFilter] = useState('');
   const [stats, setStats] = useState({});
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     setLoading(true);
     const params = new URLSearchParams();
-    if (yearFilter !== 'all') params.set('year', yearFilter);
-    if (classFilter !== 'all') params.set('class', classFilter);
+    if (batchFilter) params.set('batch', batchFilter);
+    if (classFilter) params.set('class', classFilter);
     Promise.all([
       client.get(`/leaderboard?${params.toString()}`),
       client.get('/leaderboard/stats'),
@@ -31,7 +28,7 @@ export default function Leaderboard() {
       setStudents(lRes.data);
       setStats(sRes.data);
     }).finally(() => setLoading(false));
-  }, [yearFilter, classFilter]);
+  }, [batchFilter, classFilter]);
 
   const top3 = students.slice(0, 3);
   const rest = students.slice(3);
@@ -62,27 +59,40 @@ export default function Leaderboard() {
 
         {/* Filters */}
         <div className="lb-filters animate-fadeInUp delay-2">
-          <div>
-            <p className="filter-label">Filter by Batch</p>
-            <div className="tab-bar">
-              {YEAR_TABS.map(y => (
-                <button key={y} className={`tab-item ${yearFilter === y ? 'active' : ''}`} onClick={() => setYearFilter(y)}>
-                  {getBatchString(y)}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <p className="filter-label">Filter by Section</p>
-            <div className="tab-bar">
-              {CLASS_TABS.map(c => (
-                <button key={c} className={`tab-item ${classFilter === c ? 'active' : ''}`} onClick={() => setClassFilter(c)}>
-                  {c === 'all' ? 'All Sections' : c}
-                </button>
-              ))}
-            </div>
-          </div>
+          <button 
+            className={`btn ${batchFilter || classFilter ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setShowFilters(true)}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+            Filters {(batchFilter || classFilter) && '(Active)'}
+          </button>
         </div>
+
+        <FilterModal 
+          isOpen={showFilters} 
+          onClose={() => setShowFilters(false)}
+          onClear={() => { setBatchFilter(''); setClassFilter(''); }}
+        >
+          <div className="form-group">
+            <label className="form-label">Batch</label>
+            <CustomSelect
+              value={batchFilter}
+              onChange={setBatchFilter}
+              options={[{ value: '', label: 'All Batches' }, ...BATCH_OPTIONS.map(b => ({ value: b, label: b }))]}
+              placeholder="All Batches"
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Section</label>
+            <CustomSelect
+              value={classFilter}
+              onChange={setClassFilter}
+              options={[{ value: '', label: 'All Sections' }, ...CLASS_OPTIONS.map(c => ({ value: c, label: c }))]}
+              placeholder="All Sections"
+            />
+          </div>
+          <div style={{ height: '120px' }}></div>
+        </FilterModal>
 
         {loading ? (
           <div className="loading-screen"><div className="spinner" /></div>
@@ -91,7 +101,7 @@ export default function Leaderboard() {
         ) : (
           <>
             {/* Top 3 Podium */}
-            {yearFilter === 'all' && classFilter === 'all' && top3.length === 3 && (
+            {!batchFilter && !classFilter && top3.length === 3 && (
               <div className="podium animate-fadeInUp delay-2">
                 {[top3[1], top3[0], top3[2]].map((s, i) => {
                   const actualRank = s.rank;
@@ -126,8 +136,8 @@ export default function Leaderboard() {
                 <span>Achievements</span>
                 <span>Score</span>
               </div>
-              {(yearFilter === 'all' && classFilter === 'all' ? rest : students).map((s, idx) => {
-                const displayRank = yearFilter === 'all' && classFilter === 'all' ? s.rank : idx + 1;
+              {(!batchFilter && !classFilter ? rest : students).map((s, idx) => {
+                const displayRank = !batchFilter && !classFilter ? s.rank : idx + 1;
                 return (
                   <Link to={`/profile/${s.id}`} key={s.id} className="lb-row" style={{ animationDelay: `${idx * 0.03}s` }}>
                     <span className={`lb-rank ${displayRank <= 3 ? `rank-${displayRank}` : ''}`}>#{displayRank}</span>
@@ -135,7 +145,7 @@ export default function Leaderboard() {
                       <div className="lb-ava">{s.name[0]}</div>
                       <div>
                         <div className="lb-name">{s.name}</div>
-                        <div className="lb-year">{getBatchString(s.year)}</div>
+                        <div className="lb-year">{s.batch || '—'}</div>
                       </div>
                     </div>
                     <span className="lb-cell"><span className="badge badge-violet">{s.class}</span></span>
