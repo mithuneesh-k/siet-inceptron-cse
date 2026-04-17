@@ -278,7 +278,7 @@ export default function Profile() {
         .profile-avatar-wrap { flex-shrink: 0; }
         .profile-avatar { width: 90px; height: 90px; border-radius: 50%; background: var(--color-green); display: flex; align-items: center; justify-content: center; font-size: 36px; font-weight: 700; color: #fff; border: 3px solid rgba(255,255,255,0.8); box-shadow: 0 8px 25px rgba(34,197,94,0.25); }
         .profile-info { flex: 1; min-width: 0; padding-top: 8px; }
-        .profile-name { font-size: 26px; font-weight: 800; font-family: 'Space Grotesk', sans-serif; }
+        .profile-name { font-size: 26px; font-weight: 800; font-family: 'Sekuya', sans-serif; }
         .profile-meta { display: flex; gap: 8px; font-size: 13px; color: var(--color-text-muted); margin-top: 6px; align-items: center; flex-wrap: wrap; }
         .profile-bio { font-size: 14px; color: var(--color-text-muted); margin-top: 10px; line-height: 1.6; }
         .profile-links { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
@@ -286,7 +286,7 @@ export default function Profile() {
         .profile-actions { margin-left: auto; display: flex; flex-direction: column; align-items: center; padding-top: 8px; }
         .profile-stats { display: flex; gap: 0; border-top: 1px solid var(--border); padding: 16px 28px; align-items: center; }
         .p-stat { flex: 1; text-align: center; }
-        .p-stat-n { font-size: 22px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; color: var(--color-text); }
+        .p-stat-n { font-size: 22px; font-weight: 700; font-family: 'Sekuya', sans-serif; color: var(--color-text); }
         .p-stat-l { font-size: 11px; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
         .p-stat-divider { width: 1px; background: var(--border); height: 32px; }
         .breakdown-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-bottom: 8px; }

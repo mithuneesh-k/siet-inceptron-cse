@@ -1,9 +1,9 @@
-export default function ScoreBadge({ score, size = 'md' }) {
+﻿export default function ScoreBadge({ score, size = 'md' }) {
   const tier =
-    score >= 300 ? { label: 'Platinum', color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE', icon: '💎' }
-    : score >= 200 ? { label: 'Gold',    color: '#B38200', bg: '#FFFAE8', border: '#FFD93D', icon: '🏆' }
-    : score >= 100 ? { label: 'Silver',  color: '#2A7D14', bg: '#EEF8E8', border: '#A8D98E', icon: '⭐' }
-    : { label: 'Bronze', color: '#92400E', bg: '#FFF7ED', border: '#FED7AA', icon: '🎯' };
+    score >= 300 ? { label: 'Platinum', color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE', icon: 'ðŸ’Ž' }
+    : score >= 200 ? { label: 'Gold',    color: '#B38200', bg: '#FFFAE8', border: '#FFD93D', icon: 'ðŸ†' }
+    : score >= 100 ? { label: 'Silver',  color: '#2A7D14', bg: '#EEF8E8', border: '#A8D98E', icon: 'â­' }
+    : { label: 'Bronze', color: '#92400E', bg: '#FFF7ED', border: '#FED7AA', icon: 'ðŸŽ¯' };
 
   const isLarge = size === 'lg';
 
@@ -22,7 +22,7 @@ export default function ScoreBadge({ score, size = 'md' }) {
           fontWeight: 900,
           color: tier.color,
           lineHeight: 1,
-          fontFamily: "'Space Grotesk', sans-serif",
+          fontFamily: "'Epilogue', sans-serif",
         }}>
           {score.toLocaleString()}
         </div>

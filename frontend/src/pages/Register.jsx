@@ -120,7 +120,7 @@ export default function Register() {
         .auth-orb-2 { width: 350px; height: 350px; background: rgba(59,130,246,0.12); bottom: 0; right: -80px; }
         .auth-card { width: 100%; padding: 40px 36px; }
         .auth-logo { text-align: center; margin-bottom: 28px; }
-        .auth-title { font-size: 26px; font-weight: 800; font-family: 'Space Grotesk', sans-serif; margin-bottom: 6px; }
+        .auth-title { font-size: 26px; font-weight: 800; font-family: 'Sekuya', sans-serif; margin-bottom: 6px; }
         .auth-subtitle { font-size: 14px; color: var(--color-text-muted); }
         .auth-link { text-align: center; font-size: 14px; color: var(--color-text-muted); margin-top: 20px; }
         .auth-link a { color: var(--color-violet-light); font-weight: 600; }

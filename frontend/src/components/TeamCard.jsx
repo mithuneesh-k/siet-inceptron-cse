@@ -1,9 +1,9 @@
-import { Link } from 'react-router-dom';
+﻿import { Link } from 'react-router-dom';
 
 const TYPE_CONFIG = {
-  hackathon: { icon: '⚡', gradient: 'linear-gradient(135deg, #7C3AED, #3B82F6)' },
-  project: { icon: '🚀', gradient: 'linear-gradient(135deg, #F97316, #EF4444)' },
-  research: { icon: '🔬', gradient: 'linear-gradient(135deg, #10B981, #3B82F6)' },
+  hackathon: { icon: 'âš¡', gradient: 'linear-gradient(135deg, #7C3AED, #3B82F6)' },
+  project: { icon: 'ðŸš€', gradient: 'linear-gradient(135deg, #F97316, #EF4444)' },
+  research: { icon: 'ðŸ”¬', gradient: 'linear-gradient(135deg, #10B981, #3B82F6)' },
 };
 
 export default function TeamCard({ team, onJoin, isJoining }) {
@@ -15,7 +15,7 @@ export default function TeamCard({ team, onJoin, isJoining }) {
         <div className="team-icon" style={{ background: cfg.gradient }}>{cfg.icon}</div>
         <div className="team-status">
           <span className={`badge ${team.is_open ? 'badge-green' : 'badge-red'}`}>
-            {team.is_open ? '✓ Open' : '✗ Closed'}
+            {team.is_open ? 'âœ“ Open' : 'âœ— Closed'}
           </span>
           <span className="badge badge-violet">{team.type}</span>
         </div>
@@ -25,8 +25,8 @@ export default function TeamCard({ team, onJoin, isJoining }) {
       {team.description && <p className="team-desc">{team.description}</p>}
 
       <div className="team-meta">
-        <span>👤 {team.member_count || 0} member{(team.member_count || 0) !== 1 ? 's' : ''}</span>
-        <span>• {team.creator_name}</span>
+        <span>ðŸ‘¤ {team.member_count || 0} member{(team.member_count || 0) !== 1 ? 's' : ''}</span>
+        <span>â€¢ {team.creator_name}</span>
       </div>
 
       <div className="team-actions">

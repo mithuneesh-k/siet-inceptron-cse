@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import client from '../api/client';
 
 export default function FacultyActionModal({ onClose, onSaved, showToast }) {
@@ -32,8 +32,8 @@ export default function FacultyActionModal({ onClose, onSaved, showToast }) {
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 450 }}>
         <div className="modal-header">
-          <h2 className="modal-title">👨‍🏫 Add New Faculty</h2>
-          <button className="modal-close btn btn-ghost btn-sm" onClick={onClose}>✕</button>
+          <h2 className="modal-title">ðŸ‘¨â€ðŸ« Add New Faculty</h2>
+          <button className="modal-close btn btn-ghost btn-sm" onClick={onClose}>âœ•</button>
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -81,7 +81,7 @@ export default function FacultyActionModal({ onClose, onSaved, showToast }) {
           </div>
 
           <div className="alert alert-info" style={{ fontSize: 12 }}>
-            💡 Default password will be <b>password123</b>. Faculty can change it after logging in.
+            ðŸ’¡ Default password will be <b>password123</b>. Faculty can change it after logging in.
           </div>
 
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: 10 }}>

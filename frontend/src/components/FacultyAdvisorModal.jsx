@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import client from '../api/client';
 import CustomSelect from './CustomSelect';
 
@@ -35,8 +35,8 @@ export default function FacultyAdvisorModal({ faculty, onClose, onSaved, showToa
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: 450 }}>
         <div className="modal-header">
-          <h2 className="modal-title">⚙️ Assign Advisor Role</h2>
-          <button className="modal-close btn btn-ghost btn-sm" onClick={onClose}>✕</button>
+          <h2 className="modal-title">âš™ï¸ Assign Advisor Role</h2>
+          <button className="modal-close btn btn-ghost btn-sm" onClick={onClose}>âœ•</button>
         </div>
 
         <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -76,7 +76,7 @@ export default function FacultyAdvisorModal({ faculty, onClose, onSaved, showToa
           </div>
 
           <div className="alert alert-info" style={{ fontSize: 12 }}>
-            💡 Advisors have full admin access <b>only</b> for students in their assigned Batch and Section.
+            ðŸ’¡ Advisors have full admin access <b>only</b> for students in their assigned Batch and Section.
           </div>
 
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: 10 }}>

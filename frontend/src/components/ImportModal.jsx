@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+﻿import { useState, useRef } from 'react';
 import client from '../api/client';
 
 const REQUIRED_HEADERS = ['name', 'regno', 'email', 'class', 'batch', 'dateofbirth'];
@@ -93,13 +93,13 @@ export default function ImportModal({ onClose, onImported, showToast }) {
         {stage === 'format' && (
           <>
             <div className="modal-header">
-              <h2 className="modal-title">📥 Import Students via CSV</h2>
-              <button className="modal-close btn btn-ghost btn-sm" onClick={onClose}>✕</button>
+              <h2 className="modal-title">ðŸ“¥ Import Students via CSV</h2>
+              <button className="modal-close btn btn-ghost btn-sm" onClick={onClose}>âœ•</button>
             </div>
 
             <div style={{ marginBottom: 20 }}>
               <div className="alert alert-info" style={{ marginBottom: 16 }}>
-                ⚠️ Please ensure your CSV file matches the <strong>exact format</strong> below before uploading.
+                âš ï¸ Please ensure your CSV file matches the <strong>exact format</strong> below before uploading.
               </div>
 
               <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 10, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Required CSV Format</h3>
@@ -124,7 +124,7 @@ export default function ImportModal({ onClose, onImported, showToast }) {
               </div>
 
               <div style={{ background: 'var(--green-50)', border: '1.5px solid var(--green-200)', borderRadius: 'var(--radius-sm)', padding: '12px 16px', fontSize: 13, color: 'var(--color-green-dark)', marginBottom: 20 }}>
-                💡 <strong>Default Password:</strong> All imported students will be assigned the password <code style={{ background: 'var(--green-100)', padding: '1px 6px', borderRadius: 3 }}>password123</code>. They can change it after logging in.
+                ðŸ’¡ <strong>Default Password:</strong> All imported students will be assigned the password <code style={{ background: 'var(--green-100)', padding: '1px 6px', borderRadius: 3 }}>password123</code>. They can change it after logging in.
               </div>
 
               <h3 style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Example Row</h3>
@@ -135,7 +135,7 @@ export default function ImportModal({ onClose, onImported, showToast }) {
 
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-              <button className="btn btn-primary" onClick={() => setStage('upload')}>✓ I Understand, Continue →</button>
+              <button className="btn btn-primary" onClick={() => setStage('upload')}>âœ“ I Understand, Continue â†’</button>
             </div>
           </>
         )}
@@ -144,8 +144,8 @@ export default function ImportModal({ onClose, onImported, showToast }) {
         {stage === 'upload' && (
           <>
             <div className="modal-header">
-              <h2 className="modal-title">📂 Select CSV File</h2>
-              <button className="modal-close btn btn-ghost btn-sm" onClick={onClose}>✕</button>
+              <h2 className="modal-title">ðŸ“‚ Select CSV File</h2>
+              <button className="modal-close btn btn-ghost btn-sm" onClick={onClose}>âœ•</button>
             </div>
 
             <label
@@ -153,7 +153,7 @@ export default function ImportModal({ onClose, onImported, showToast }) {
               className="csv-dropzone"
               onClick={() => fileRef.current?.click()}
             >
-              <div style={{ fontSize: 48, marginBottom: 12 }}>📄</div>
+              <div style={{ fontSize: 48, marginBottom: 12 }}>ðŸ“„</div>
               <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 4 }}>Click to select a CSV file</div>
               <div style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Supports .csv files only</div>
               <input
@@ -168,7 +168,7 @@ export default function ImportModal({ onClose, onImported, showToast }) {
             {parseError && <div className="alert alert-error" style={{ marginTop: 16 }}>{parseError}</div>}
 
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
-              <button className="btn btn-ghost" onClick={() => setStage('format')}>← Back</button>
+              <button className="btn btn-ghost" onClick={() => setStage('format')}>â† Back</button>
               <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
             </div>
           </>
@@ -179,12 +179,12 @@ export default function ImportModal({ onClose, onImported, showToast }) {
           <>
             <div className="modal-header">
               <div>
-                <h2 className="modal-title">👁️ Preview Import</h2>
+                <h2 className="modal-title">ðŸ‘ï¸ Preview Import</h2>
                 <div style={{ fontSize: 13, color: 'var(--color-text-muted)', marginTop: 2 }}>
-                  {fileName} — <strong>{preview.length}</strong> students found
+                  {fileName} â€” <strong>{preview.length}</strong> students found
                 </div>
               </div>
-              <button className="modal-close btn btn-ghost btn-sm" onClick={onClose}>✕</button>
+              <button className="modal-close btn btn-ghost btn-sm" onClick={onClose}>âœ•</button>
             </div>
 
             <div style={{ maxHeight: 340, overflowY: 'auto', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-sm)', marginBottom: 16 }}>
@@ -215,9 +215,9 @@ export default function ImportModal({ onClose, onImported, showToast }) {
             {parseError && <div className="alert alert-error" style={{ marginBottom: 12 }}>{parseError}</div>}
 
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-              <button className="btn btn-ghost" onClick={handleBackToUpload}>← Choose Different File</button>
+              <button className="btn btn-ghost" onClick={handleBackToUpload}>â† Choose Different File</button>
               <button className="btn btn-primary" onClick={handleImport}>
-                📥 Import {preview.length} Students
+                ðŸ“¥ Import {preview.length} Students
               </button>
             </div>
           </>
@@ -227,7 +227,7 @@ export default function ImportModal({ onClose, onImported, showToast }) {
         {stage === 'importing' && (
           <div style={{ textAlign: 'center', padding: '48px 24px' }}>
             <div className="spinner" style={{ margin: '0 auto 20px' }} />
-            <div style={{ fontWeight: 700, fontSize: 16 }}>Importing students…</div>
+            <div style={{ fontWeight: 700, fontSize: 16 }}>Importing studentsâ€¦</div>
             <div style={{ color: 'var(--color-text-muted)', fontSize: 14, marginTop: 6 }}>This may take a moment.</div>
           </div>
         )}
@@ -236,19 +236,19 @@ export default function ImportModal({ onClose, onImported, showToast }) {
         {stage === 'result' && result && (
           <>
             <div className="modal-header">
-              <h2 className="modal-title">✅ Import Complete</h2>
-              <button className="modal-close btn btn-ghost btn-sm" onClick={onClose}>✕</button>
+              <h2 className="modal-title">âœ… Import Complete</h2>
+              <button className="modal-close btn btn-ghost btn-sm" onClick={onClose}>âœ•</button>
             </div>
 
             <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
               <div className="admin-stat card" style={{ flex: 1, borderTop: '3px solid var(--color-green)' }}>
-                <div style={{ fontSize: 28 }}>✅</div>
-                <div style={{ fontSize: 32, fontWeight: 900, color: 'var(--color-green)', fontFamily: "'Space Grotesk', sans-serif" }}>{result.success}</div>
+                <div style={{ fontSize: 28 }}>âœ…</div>
+                <div style={{ fontSize: 32, fontWeight: 900, color: 'var(--color-green)', fontFamily: "'Epilogue', sans-serif" }}>{result.success}</div>
                 <div style={{ fontSize: 12, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Imported</div>
               </div>
               <div className="admin-stat card" style={{ flex: 1, borderTop: '3px solid var(--color-gold)' }}>
-                <div style={{ fontSize: 28 }}>⚠️</div>
-                <div style={{ fontSize: 32, fontWeight: 900, color: 'var(--color-gold)', fontFamily: "'Space Grotesk', sans-serif" }}>{result.skipped}</div>
+                <div style={{ fontSize: 28 }}>âš ï¸</div>
+                <div style={{ fontSize: 32, fontWeight: 900, color: 'var(--color-gold)', fontFamily: "'Epilogue', sans-serif" }}>{result.skipped}</div>
                 <div style={{ fontSize: 12, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Skipped</div>
               </div>
             </div>
