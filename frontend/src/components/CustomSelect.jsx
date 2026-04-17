@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+﻿import { useState, useRef, useEffect } from 'react';
 
 export default function CustomSelect({ value, onChange, options, placeholder, style }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -43,7 +43,7 @@ export default function CustomSelect({ value, onChange, options, placeholder, st
               }}
             >
               {opt.label}
-              {value === opt.value && <span className="check">✓</span>}
+              {value === opt.value && <span className="check">âœ“</span>}
             </div>
           ))}
         </div>

@@ -1,4 +1,4 @@
-export default function LiveFeedCard({ item, type }) {
+﻿export default function LiveFeedCard({ item, type }) {
   const config = {
     hackathon: { accent: 'var(--color-violet)', badgeCls: 'badge-violet', prizeLabel: 'Prize', dateLabel: 'Deadline', modeLabel: 'mode' },
     internship: { accent: 'var(--color-blue)', badgeCls: 'badge-blue', prizeLabel: 'Stipend', dateLabel: 'Deadline', modeLabel: 'location' },
@@ -18,7 +18,7 @@ export default function LiveFeedCard({ item, type }) {
         <span className="live-emoji">{item.logo}</span>
         <div className="live-badges">
           {item.difficulty && <span className={`badge ${config.badgeCls}`}>{item.difficulty}</span>}
-          {isExpiring && <span className="badge badge-red">🔥 Closing Soon</span>}
+          {isExpiring && <span className="badge badge-red">ðŸ”¥ Closing Soon</span>}
         </div>
       </div>
 
@@ -27,10 +27,10 @@ export default function LiveFeedCard({ item, type }) {
       {item.description && <p className="live-desc">{item.description}</p>}
 
       <div className="live-details">
-        {prize && <div className="live-detail"><span>💰</span><span>{prize}</span></div>}
-        {mode && <div className="live-detail"><span>📍</span><span>{mode}</span></div>}
-        {deadline && <div className="live-detail"><span>📅</span><span>Due: {deadline}</span></div>}
-        {item.duration && <div className="live-detail"><span>⏱️</span><span>{item.duration}</span></div>}
+        {prize && <div className="live-detail"><span>ðŸ’°</span><span>{prize}</span></div>}
+        {mode && <div className="live-detail"><span>ðŸ“</span><span>{mode}</span></div>}
+        {deadline && <div className="live-detail"><span>ðŸ“…</span><span>Due: {deadline}</span></div>}
+        {item.duration && <div className="live-detail"><span>â±ï¸</span><span>{item.duration}</span></div>}
       </div>
 
       {item.tags?.length > 0 && (
@@ -40,7 +40,7 @@ export default function LiveFeedCard({ item, type }) {
       )}
 
       <a href={item.link || '#'} target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-sm" style={{ width: '100%', justifyContent: 'center' }}>
-        Apply Now →
+        Apply Now â†’
       </a>
 
       <style>{`

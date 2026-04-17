@@ -1,8 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import client from '../api/client';
 import CustomSelect from '../components/CustomSelect';
 import FilterModal from '../components/FilterModal';
+
+gsap.registerPlugin(ScrollTrigger);
 
 
 
@@ -42,6 +46,24 @@ export default function Students() {
     }
     setFiltered(result);
   }, [search, classFilter, batchFilter, students]);
+
+  const gridRef = useRef(null);
+
+  // ─── GSAP Scroll Reveal for student cards ───
+  useEffect(() => {
+    if (loading || !gridRef.current) return;
+    const cards = gridRef.current.querySelectorAll('.student-card');
+    if (!cards.length) return;
+
+    gsap.fromTo(cards,
+      { opacity: 0, y: 25, scale: 0.95 },
+      {
+        opacity: 1, y: 0, scale: 1,
+        duration: 0.8, ease: 'elastic.out(1, 0.55)',
+        stagger: 0.03,
+      }
+    );
+  }, [loading, filtered.length]);
 
   return (
     <div className="page-content">
@@ -114,7 +136,7 @@ export default function Students() {
             <p>Try adjusting your search or class filter.</p>
           </div>
         ) : (
-          <div className="students-grid animate-fadeInUp">
+          <div className="students-grid" ref={gridRef}>
             {filtered.map(s => (
               <Link
                 key={s.id}

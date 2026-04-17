@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import client from '../api/client';
 
 const CLASSES = ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D', 'CSE-E'];
@@ -40,7 +40,7 @@ export default function StudentActionModal({
       }
       onSaved(res.data, isEdit);
       onClose();
-      showToast(isEdit ? '✅ Student updated!' : '✅ Student added!');
+      showToast(isEdit ? 'âœ… Student updated!' : 'âœ… Student added!');
     } catch (err) {
       setError(err.response?.data?.error || 'Something went wrong.');
     } finally {
@@ -58,9 +58,9 @@ export default function StudentActionModal({
       <div className="modal" style={{ maxWidth: 560 }}>
         <div className="modal-header">
           <h2 className="modal-title">
-            {isEdit ? '✏️ Edit Student' : '➕ Add New Student'}
+            {isEdit ? 'âœï¸ Edit Student' : 'âž• Add New Student'}
           </h2>
-          <button className="modal-close btn btn-ghost btn-sm" onClick={onClose}>✕</button>
+          <button className="modal-close btn btn-ghost btn-sm" onClick={onClose}>âœ•</button>
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -120,7 +120,7 @@ export default function StudentActionModal({
                 disabled={!isFullAdmin}
                 style={!isFullAdmin ? { opacity: 0.7, cursor: 'not-allowed', background: 'var(--bg-secondary)' } : {}}
               >
-                <option value="">Select class…</option>
+                <option value="">Select classâ€¦</option>
                 {CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
@@ -152,7 +152,7 @@ export default function StudentActionModal({
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 4 }}>
             <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
             <button type="submit" className="btn btn-primary" disabled={saving}>
-              {saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Add Student'}
+              {saving ? 'Savingâ€¦' : isEdit ? 'Save Changes' : 'Add Student'}
             </button>
           </div>
         </form>

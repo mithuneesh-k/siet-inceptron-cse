@@ -6,14 +6,39 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800&display=swap');
 
+/* Inceptron components styles */
+@import './InceptronStyles/base.css';
+@import './InceptronStyles/navbar.css';
+@import './InceptronStyles/hero.css';
+@import './InceptronStyles/motion-cards.css';
+@import './InceptronStyles/showreel.css';
+@import './InceptronStyles/cards.css';
+@import './InceptronStyles/marquee.css';
+@import './InceptronStyles/footer.css';
+@import './InceptronStyles/vimeo-hero.css';
+@import './InceptronStyles/cursor.css';
+@import './InceptronStyles/responsive.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* ─── CSS Variables ─────────────────────────── */
-:root {
+:root, [data-theme="light"] {
+  /* Tailwind standard variables */
+  --bg: 0 0% 98%;
+  --surface: 0 0% 100%;
+  --text: 0 0% 9%;
+  --muted: 0 0% 40%;
+  --stroke: 0 0% 90%;
+  --accent: 0 0% 15%;
+
   /* SIET Brand Colors */
   --green-900: #072A01;
   --green-800: #0D4005;
   --green-700: #155409;
   --green-600: #1E6B0E;
-  --green-500: #2A7D14;       /* Primary Green */
+  --green-500: #2A7D14;
   --green-400: #3A9B22;
   --green-300: #56B83A;
   --green-200: #A8D98E;
@@ -22,21 +47,21 @@
 
   --gold-700:  #916900;
   --gold-600:  #B38200;
-  --gold-500:  #D49B00;       /* Primary Gold */
+  --gold-500:  #D49B00;
   --gold-400:  #F0B400;
   --gold-300:  #F5C800;
   --gold-200:  #FFD93D;
   --gold-100:  #FFF0A0;
   --gold-50:   #FFFAE8;
 
-  /* Light theme surfaces */
+  /* Semantic Theme Surfaces */
   --bg-primary:    #F5F7F3;
   --bg-secondary:  #FFFFFF;
   --bg-card:       #FFFFFF;
   --bg-input:      #FFFFFF;
   --bg-hover:      #EEF8E8;
 
-  /* Core palette refs */
+  /* Core Palette Defs */
   --color-green:       #2A7D14;
   --color-green-dark:  #1E6B0E;
   --color-green-light: #3A9B22;
@@ -44,18 +69,18 @@
   --color-gold-dark:   #B38200;
   --color-gold-light:  #F5C800;
 
-  /* Text */
+  /* Text Roles */
   --color-text:       #0F2009;
   --color-text-muted: #4A6E37;
   --color-text-faint: #8AAD72;
 
-  /* Borders — flat, solid */
+  /* Borders */
   --border:        #D5EFC8;
   --border-strong: #A8D98E;
   --border-green:  #2A7D14;
   --border-gold:   #F0B400;
 
-  /* Shadows — minimal, flat-looking */
+  /* Shadows */
   --shadow-sm: 0 1px 3px rgba(15, 32, 9, 0.06);
   --shadow-md: 0 2px 8px rgba(15, 32, 9, 0.08);
   --shadow-lg: 0 4px 16px rgba(15, 32, 9, 0.1);
@@ -65,7 +90,7 @@
   --gradient-gold:    linear-gradient(135deg, var(--gold-600), var(--gold-400));
   --gradient-dark:    linear-gradient(135deg, var(--green-900), var(--green-700));
 
-  /* Radii — tighter for minimal feel */
+  /* Radii & Animation */
   --radius-xs: 4px;
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -78,13 +103,80 @@
   --navbar-height: 60px;
 }
 
+[data-theme="dark"] {
+  /* Tailwind standard variables for dark */
+  --bg: 0 0% 4%;
+  --surface: 0 0% 8%;
+  --text: 0 0% 96%;
+  --muted: 0 0% 53%;
+  --stroke: 0 0% 12%;
+  --accent: 0 0% 96%;
+
+  /* Semantic Theme Surfaces (Dark) */
+  --bg-primary:    #0a0a0a;
+  --bg-secondary:  #141414;
+  --bg-card:       #141414;
+  --bg-input:      #0f0f0f;
+  --bg-hover:      #1a1a1a;
+
+  /* Text Roles (Dark) */
+  --color-text:       #f5f5f5;
+  --color-text-muted: #a3a3a3;
+  --color-text-faint: #737373;
+
+  /* Borders (Dark) */
+  --border:        #262626;
+  --border-strong: #404040;
+  
+  /* Shadows (Dark - tighter, purely for depth perception against pure black) */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.7);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.9);
+}
+
+.inceptron-landing-wrapper {
+  /* Force dark variables locally for landing page components to keep True Dark */
+  --bg: 0 0% 4%;
+  --surface: 0 0% 8%;
+  --text: 0 0% 96%;
+  --muted: 0 0% 53%;
+  --stroke: 0 0% 12%;
+  --accent: 0 0% 96%;
+  
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #141414;
+  --color-text: #f5f5f5;
+}
+
+/* ─── View Transitions (Mask Wipe Integration) ─── */
+::view-transition-group(root) {
+  animation-duration: 0.7s;
+  animation-timing-function: cubic-bezier(0.87, 0, 0.13, 1);
+}
+::view-transition-new(root) {
+  animation-name: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) {
+  animation-name: none;
+  mix-blend-mode: normal;
+}
+.dark::view-transition-old(root) {
+  z-index: 100;
+}
+.dark::view-transition-new(root) {
+  z-index: 1;
+}
+
+
 /* ─── Reset ─────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 
 body {
-  font-family: 'Inter', system-ui, sans-serif;
-  background: var(--bg-primary);
+  font-family: 'Epilogue', system-ui, sans-serif;
+  @apply bg-bg text-text-primary;
+  background-color: var(--bg-primary);
   color: var(--color-text);
   min-height: 100vh;
   line-height: 1.6;
@@ -116,25 +208,37 @@ img { max-width: 100%; display: block; }
   background: var(--bg-card);
   border: 1.5px solid var(--border);
   border-radius: var(--radius-md);
-  transition: border-color var(--transition);
+  transition: border-color 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+              transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.35s ease;
 }
 
 .card-hover:hover {
   border-color: var(--color-green);
   background: var(--bg-hover);
+  transform: translateY(-3px) scale(1.01);
+  box-shadow: var(--shadow-md);
 }
 
-/* ─── Buttons — flat 2D ─────────────────────── */
+/* ─── Buttons — flat 2D with elastic feedback ── */
 .btn {
   display: inline-flex; align-items: center; gap: 7px;
   padding: 9px 20px;
   border-radius: var(--radius-sm);
   font-size: 14px; font-weight: 600;
-  transition: all var(--transition);
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
   white-space: nowrap;
   letter-spacing: 0.01em;
   cursor: pointer;
   border: 1.5px solid transparent;
+  transform: translateY(0);
+}
+.btn:hover {
+  transform: translateY(-1px);
+}
+.btn:active {
+  transform: translateY(0) scale(0.96);
+  transition-duration: 0.1s;
 }
 
 /* Primary — solid green */
@@ -309,18 +413,43 @@ img { max-width: 100%; display: block; }
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ─── Animations — subtle ───────────────────── */
-@keyframes fadeInUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+/* ─── Animations — bouncy elastic (matching landing page) ── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px) scale(0.97); }
+  60%  { opacity: 1; transform: translateY(-4px) scale(1.01); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
 @keyframes fadeIn   { from { opacity: 0; } to { opacity: 1; } }
 @keyframes pulse    { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0) rotate(-15deg); }
+  60%  { opacity: 1; transform: scale(1.08) rotate(2deg); }
+  to   { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-40px); }
+  60%  { opacity: 1; transform: translateX(5px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(40px); }
+  60%  { opacity: 1; transform: translateX(-5px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
 
-.animate-fadeInUp { animation: fadeInUp 0.4s ease both; }
-.animate-fadeIn   { animation: fadeIn 0.3s ease both; }
-.delay-1 { animation-delay: 0.07s; }
-.delay-2 { animation-delay: 0.14s; }
-.delay-3 { animation-delay: 0.21s; }
-.delay-4 { animation-delay: 0.28s; }
-.delay-5 { animation-delay: 0.35s; }
+.animate-fadeInUp  { animation: fadeInUp 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.animate-fadeIn    { animation: fadeIn 0.3s ease both; }
+.animate-popIn     { animation: popIn 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.animate-slideLeft { animation: slideInLeft 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.animate-slideRight{ animation: slideInRight 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.delay-1  { animation-delay: 0.07s; }
+.delay-2  { animation-delay: 0.14s; }
+.delay-3  { animation-delay: 0.21s; }
+.delay-4  { animation-delay: 0.28s; }
+.delay-5  { animation-delay: 0.35s; }
+.delay-6  { animation-delay: 0.42s; }
+.delay-7  { animation-delay: 0.49s; }
+.delay-8  { animation-delay: 0.56s; }
 
 /* ─── Rank colors ───────────────────────────── */
 .rank-1 { color: var(--gold-600); font-weight: 800; }
@@ -394,7 +523,7 @@ img { max-width: 100%; display: block; }
   border-top: 3px solid var(--color-green);
 }
 .stat-icon   { font-size: 26px; margin-bottom: 8px; }
-.stat-number { font-size: 34px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; color: var(--color-green); line-height: 1; }
+.stat-number { font-size: 34px; font-weight: 900; font-family: 'Epilogue', sans-serif; color: var(--color-green); line-height: 1; }
 .stat-label  { font-size: 11px; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 5px; font-weight: 600; }
 
 /* ─── Tags ──────────────────────────────────── */
@@ -407,10 +536,12 @@ img { max-width: 100%; display: block; }
   font-size: 12px; color: var(--color-text-muted);
 }
 
-/* ─── Modal ─────────────────────────────────── */
+/* ─── Modal — bouncy entrance ──────────────── */
 .modal-overlay {
   position: fixed; inset: 0;
   background: rgba(15, 32, 9, 0.35);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   z-index: 1000;
   display: flex; align-items: center; justify-content: center;
   padding: 24px;
@@ -423,11 +554,11 @@ img { max-width: 100%; display: block; }
   padding: 32px;
   width: 100%; max-width: 520px;
   max-height: 90vh; overflow-y: auto;
-  animation: fadeInUp 0.25s ease;
+  animation: popIn 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
   border-top: 4px solid var(--color-green);
 }
 .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
-.modal-title  { font-size: 20px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
+.modal-title  { font-size: 20px; font-weight: 700; font-family: 'Epilogue', sans-serif; }
 .modal-close  { color: var(--color-text-muted); font-size: 18px; padding: 5px 9px; border-radius: var(--radius-sm); }
 .modal-close:hover { background: var(--bg-primary); color: var(--color-text); }
 
@@ -446,4 +577,25 @@ img { max-width: 100%; display: block; }
   background: var(--color-gold);
   border-radius: var(--radius-full);
   margin-top: 8px;
+}
+
+/* ─── Inceptron Hub Custom ───────────────────── */
+.accent-gradient {
+  background: linear-gradient(90deg, #2A7D14 0%, #F0B400 100%);
+}
+
+@keyframes scroll-down {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(200%); }
+}
+
+@keyframes role-fade-in {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }

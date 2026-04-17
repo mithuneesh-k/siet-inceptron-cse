@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { gsap } from 'gsap';
 
 export default function Login() {
   const { login } = useAuth();
@@ -8,6 +9,59 @@ export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const cardRef = useRef(null);
+
+  // ─── Elastic Entrance (matching landing page sticker pop physics) ───
+  useEffect(() => {
+    const card = cardRef.current;
+    if (!card) return;
+
+    const ctx = gsap.context(() => {
+      // Card slides up with bounce
+      gsap.fromTo(card,
+        { opacity: 0, y: 60, scale: 0.92 },
+        { opacity: 1, y: 0, scale: 1, duration: 1.2, ease: 'elastic.out(1, 0.5)', delay: 0.15 }
+      );
+
+      // Logo pops in
+      const logo = card.querySelector('.auth-logo');
+      if (logo) {
+        gsap.fromTo(logo,
+          { opacity: 0, scale: 0, rotation: -20 },
+          { opacity: 1, scale: 1, rotation: 0, duration: 1.7, ease: 'elastic.out(1, 0.4)', delay: 0.3 }
+        );
+      }
+
+      // Form groups stagger in
+      const formGroups = card.querySelectorAll('.form-group');
+      if (formGroups.length) {
+        gsap.fromTo(formGroups,
+          { opacity: 0, x: -20 },
+          { opacity: 1, x: 0, duration: 0.8, ease: 'elastic.out(1, 0.6)', stagger: 0.08, delay: 0.45 }
+        );
+      }
+
+      // Submit button pops
+      const submitBtn = card.querySelector('#login-submit');
+      if (submitBtn) {
+        gsap.fromTo(submitBtn,
+          { opacity: 0, y: 15, scale: 0.9 },
+          { opacity: 1, y: 0, scale: 1, duration: 1.0, ease: 'elastic.out(1, 0.55)', delay: 0.6 }
+        );
+      }
+
+      // Demo buttons bounce
+      const demoBtns = card.querySelectorAll('.demo-btn');
+      if (demoBtns.length) {
+        gsap.fromTo(demoBtns,
+          { opacity: 0, scale: 0, rotation: -10 },
+          { opacity: 1, scale: 1, rotation: 0, duration: 1.7, ease: 'elastic.out(1, 0.4)', stagger: 0.1, delay: 0.7 }
+        );
+      }
+    }, card);
+
+    return () => ctx.revert();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,7 +81,7 @@ export default function Login() {
     <div className="auth-page">
       <div className="auth-bg" />
 
-      <div className="auth-card card animate-fadeInUp">
+      <div className="auth-card card" ref={cardRef} style={{ opacity: 0 }}>
         <div className="auth-logo">
           <div style={{ width: 80, height: 80, margin: '0 auto 16px' }}>
             <img src="/inceptron-logo.png" alt="Inceptron Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
@@ -70,17 +124,17 @@ export default function Login() {
         .auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 80px 24px 24px; position: relative; }
         .auth-bg { position: fixed; inset: 0; background: var(--bg-primary); z-index: -1; }
         
-        .auth-card { width: 100%; max-width: 420px; padding: 40px 36px; border: 1.5px solid var(--border); box-shadow: none; background: #fff; }
+        .auth-card { width: 100%; max-width: 420px; padding: 40px 36px; border: 1.5px solid var(--border); box-shadow: none; background: var(--bg-secondary); }
         
         .auth-logo { text-align: center; margin-bottom: 28px; }
-        .auth-title { font-size: 26px; font-weight: 800; font-family: 'Space Grotesk', sans-serif; margin-bottom: 6px; color: var(--color-green); }
+        .auth-title { font-size: 26px; font-weight: 800; font-family: 'Sekuya', sans-serif; margin-bottom: 6px; color: var(--color-green); }
         .auth-subtitle { font-size: 14px; color: var(--color-text-muted); }
         
         .auth-link { text-align: center; font-size: 14px; color: var(--color-text-muted); margin-top: 20px; }
         .auth-link a { color: var(--color-green); font-weight: 700; text-decoration: none; }
         .auth-link a:hover { text-decoration: underline; }
         
-        .demo-btn { padding: 6px 14px; background: #fff; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; color: var(--color-text-muted); cursor: pointer; transition: all var(--transition); font-weight: 600; }
+        .demo-btn { padding: 6px 14px; background: var(--bg-secondary); border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; color: var(--color-text-muted); cursor: pointer; transition: all var(--transition); font-weight: 600; }
         .demo-btn:hover { background: var(--green-50); color: var(--color-green); border-color: var(--color-green); }
       `}</style>
     </div>

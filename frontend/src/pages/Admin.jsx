@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import client from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
@@ -102,10 +102,10 @@ export default function Admin() {
     try {
       if (verified) {
         await client.patch(`/achievements/${id}/verify`, { verified: true });
-        showToast('Achievement verified ✅');
+        showToast('Achievement verified âœ…');
       } else {
         await client.delete(`/achievements/${id}`);
-        showToast('Achievement rejected ✕', 'error');
+        showToast('Achievement rejected âœ•', 'error');
       }
       setAchievements(prev => prev.filter(a => a.id !== id));
     } catch {
@@ -127,7 +127,7 @@ export default function Admin() {
       setManagedStudents(prev => prev.filter(st => st.id !== s.id));
       setSelectedIds(prev => { const n = new Set(prev); n.delete(s.id); return n; });
       setDeleteConfirm(null);
-      showToast(`🗑️ ${s.name} deleted.`);
+      showToast(`ðŸ—‘ï¸ ${s.name} deleted.`);
     } catch {
       showToast('Failed to delete student.', 'error');
     }
@@ -144,13 +144,13 @@ export default function Admin() {
     }
     setManagedStudents(prev => prev.filter(s => !selectedIds.has(s.id)));
     setSelectedIds(new Set());
-    showToast(`🗑️ ${count} students deleted.`);
+    showToast(`ðŸ—‘ï¸ ${count} students deleted.`);
   };
 
   const handleResetPassword = async (s) => {
     try {
       await client.post(`/admin/students/${s.id}/reset-password`);
-      showToast(`🔑 Password reset for ${s.name}.`);
+      showToast(`ðŸ”‘ Password reset for ${s.name}.`);
     } catch {
       showToast('Failed to reset password.', 'error');
     }
@@ -183,11 +183,11 @@ export default function Admin() {
   }, [user, isFullAdmin]);
 
   const tabs = [
-    { id: 'overview', l: '📊 Overview' },
-    { id: 'students', l: '👩‍💻 Students' },
-    { id: 'manage', l: '⚙️ Manage' },
-    ...(isFullAdmin ? [{ id: 'faculty', l: '🎓 Faculty' }] : []),
-    { id: 'pending', l: `⏳ Pending (${achievements.length})` },
+    { id: 'overview', l: 'ðŸ“Š Overview' },
+    { id: 'students', l: 'ðŸ‘©â€ðŸ’» Students' },
+    { id: 'manage', l: 'âš™ï¸ Manage' },
+    ...(isFullAdmin ? [{ id: 'faculty', l: 'ðŸŽ“ Faculty' }] : []),
+    { id: 'pending', l: `â³ Pending (${achievements.length})` },
   ];
 
   return (
@@ -195,10 +195,10 @@ export default function Admin() {
       <div className="container">
         <div className="admin-header animate-fadeInUp">
           <div>
-            <h1 className="section-title">🛡️ <span className="text-gradient">Admin Panel</span></h1>
-            <p className="section-subtitle">Sri Shakthi Institute of Engineering and Technology — CSE Department</p>
+            <h1 className="section-title">ðŸ›¡ï¸ <span className="text-gradient">Admin Panel</span></h1>
+            <p className="section-subtitle">Sri Shakthi Institute of Engineering and Technology â€” CSE Department</p>
           </div>
-          <div className="badge badge-gold" style={{ padding: '8px 16px', fontSize: 13 }}>👨‍🏫 {user.name}</div>
+          <div className="badge badge-gold" style={{ padding: '8px 16px', fontSize: 13 }}>ðŸ‘¨â€ðŸ« {user.name}</div>
         </div>
 
         <div className="tab-bar animate-fadeInUp delay-1" style={{ marginBottom: 28, flexWrap: 'wrap' }}>
@@ -209,42 +209,42 @@ export default function Admin() {
 
         {loading && tab !== 'manage' ? <div className="loading-screen"><div className="spinner" /></div> : (
           <>
-            {/* ── OVERVIEW ── */}
+            {/* â”€â”€ OVERVIEW â”€â”€ */}
             {tab === 'overview' && (
               <div className="animate-fadeIn">
                 <div className="admin-stats">
                   {[
-                    { n: students.length, l: 'Total Students', i: '👩‍💻', c: 'var(--color-violet)' },
-                    { n: students.reduce((s, u) => s + u.achievement_count, 0), l: 'Total Achievements', i: '🏅', c: 'var(--color-gold)' },
-                    { n: avgScore, l: 'Avg Score', i: '📈', c: 'var(--color-blue)' },
-                    { n: achievements.length, l: 'Pending Reviews', i: '⏳', c: 'var(--color-orange)' },
+                    { n: students.length, l: 'Total Students', i: 'ðŸ‘©â€ðŸ’»', c: 'var(--color-violet)' },
+                    { n: students.reduce((s, u) => s + u.achievement_count, 0), l: 'Total Achievements', i: 'ðŸ…', c: 'var(--color-gold)' },
+                    { n: avgScore, l: 'Avg Score', i: 'ðŸ“ˆ', c: 'var(--color-blue)' },
+                    { n: achievements.length, l: 'Pending Reviews', i: 'â³', c: 'var(--color-orange)' },
                   ].map((s, i) => (
                     <div key={i} className="admin-stat card" style={{ borderTop: `3px solid ${s.c}` }}>
                       <div style={{ fontSize: 28 }}>{s.i}</div>
-                      <div style={{ fontSize: 32, fontWeight: 900, fontFamily: "'Space Grotesk', sans-serif", color: s.c }}>{s.n}</div>
+                      <div style={{ fontSize: 32, fontWeight: 900, fontFamily: "'Epilogue', sans-serif", color: s.c }}>{s.n}</div>
                       <div style={{ fontSize: 12, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{s.l}</div>
                     </div>
                   ))}
                 </div>
 
                 <div className="card" style={{ padding: '20px 24px', marginTop: 20 }}>
-                  <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>📋 Top 5 Students by Score</h3>
+                  <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>ðŸ“‹ Top 5 Students by Score</h3>
                   {students.slice(0, 5).map((s, i) => (
                     <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
                       <span style={{ fontWeight: 700, fontSize: 16, minWidth: 24 }}>#{i + 1}</span>
                       <div style={{ width: 36, height: 36, background: 'var(--gradient-primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#fff' }}>{s.name[0]}</div>
                       <div style={{ flex: 1 }}>
                         <Link to={`/profile/${s.id}`} style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{s.name}</Link>
-                        <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{s.class} · {s.batch || 'No batch'}</div>
+                        <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{s.class} Â· {s.batch || 'No batch'}</div>
                       </div>
-                      <span style={{ fontWeight: 800, color: 'var(--color-gold)', fontFamily: "'Space Grotesk', sans-serif" }}>{s.score} pts</span>
+                      <span style={{ fontWeight: 800, color: 'var(--color-gold)', fontFamily: "'Epilogue', sans-serif" }}>{s.score} pts</span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* ── STUDENTS (view-only) ── */}
+            {/* â”€â”€ STUDENTS (view-only) â”€â”€ */}
             {tab === 'students' && (
               <div className="card animate-fadeIn" style={{ overflow: 'hidden' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 80px 80px 80px 100px', gap: 12, padding: '12px 20px', background: 'rgba(255,255,255,0.03)', fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: '1px solid var(--border)' }}>
@@ -259,7 +259,7 @@ export default function Admin() {
                         <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{s.email}</div>
                       </div>
                     </div>
-                    <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{s.batch || '—'}</span>
+                    <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{s.batch || 'â€”'}</span>
                     <span><span className="badge badge-violet">{s.class}</span></span>
                     <span style={{ fontSize: 14 }}>{s.achievement_count}</span>
                     <span style={{ fontWeight: 700, color: 'var(--color-gold)' }}>{s.score}</span>
@@ -268,13 +268,13 @@ export default function Admin() {
               </div>
             )}
 
-            {/* ── MANAGE STUDENTS ── */}
+            {/* â”€â”€ MANAGE STUDENTS â”€â”€ */}
             {tab === 'manage' && (
               <div className="animate-fadeIn">
                 {!isFullAdmin && (
                   <div className="advisor-banner animate-fadeInUp">
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <span style={{ fontSize: 24 }}>🛡️</span>
+                      <span style={{ fontSize: 24 }}>ðŸ›¡ï¸</span>
                       <div>
                         <div style={{ fontWeight: 700, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Advisor Mode</div>
                         <div style={{ fontSize: 12, opacity: 0.8 }}>Managing students for <b>{user.advising_class}</b> ({user.advising_batch})</div>
@@ -288,7 +288,7 @@ export default function Admin() {
                     <input
                       className="form-input"
                       style={{ maxWidth: 260 }}
-                      placeholder="🔍 Search by name…"
+                      placeholder="ðŸ” Search by nameâ€¦"
                       value={search}
                       onChange={e => setSearch(e.target.value)}
                     />
@@ -302,26 +302,26 @@ export default function Admin() {
                         {isFullAdmin ? `Filters ${(filterBatch || filterClass) ? '(Active)' : ''}` : `${user.advising_class || 'None'} (${user.advising_batch || 'None'})`}
                       </button>
                     </div>
-                    <button className="btn btn-ghost btn-sm" onClick={loadManagedStudents}>🔄 Refresh</button>
+                    <button className="btn btn-ghost btn-sm" onClick={loadManagedStudents}>ðŸ”„ Refresh</button>
                   </div>
                   <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                     {selectedIds.size > 0 && isFullAdmin && (
                       <button className="btn btn-danger btn-sm" onClick={() => setDeleteConfirm('bulk')}>
-                        🗑️ Delete ({selectedIds.size})
+                        ðŸ—‘ï¸ Delete ({selectedIds.size})
                       </button>
                     )}
                     {isFullAdmin ? (
                       <>
                         <button className="btn btn-secondary btn-sm" onClick={() => setShowImportModal(true)}>
-                          📥 Import CSV
+                          ðŸ“¥ Import CSV
                         </button>
                         <button className="btn btn-primary btn-sm" onClick={() => setShowAddModal(true)}>
-                          ➕ Add Student
+                          âž• Add Student
                         </button>
                       </>
                     ) : (
                       <button className="btn btn-primary btn-sm" onClick={() => setShowAddModal(true)}>
-                        ➕ Add Student
+                        âž• Add Student
                       </button>
                     )}
                   </div>
@@ -358,7 +358,7 @@ export default function Admin() {
                   <div className="loading-screen" style={{ minHeight: 200 }}><div className="spinner" /></div>
                 ) : managedStudents.length === 0 ? (
                   <div className="empty-state">
-                    <div className="empty-icon">👩‍💻</div>
+                    <div className="empty-icon">ðŸ‘©â€ðŸ’»</div>
                     <h3>No students found</h3>
                     <p>Try adjusting your filters or import a CSV.</p>
                   </div>
@@ -409,11 +409,11 @@ export default function Admin() {
                         <span style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--color-text-muted)' }}>{s.roll_no}</span>
                         <span><span className="badge badge-violet">{s.class}</span></span>
                         <span><span className="badge badge-blue">{s.batch}</span></span>
-                        <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{s.date_of_birth || '—'}</span>
+                        <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{s.date_of_birth || 'â€”'}</span>
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'nowrap' }}>
-                          <button className="btn btn-ghost btn-sm" title="Edit student" onClick={() => setEditStudent(s)}>✏️</button>
-                          <button className="btn btn-ghost btn-sm" title="Reset password to default" onClick={() => handleResetPassword(s)}>🔑</button>
-                          <button className="btn btn-danger btn-sm" title="Delete student" onClick={() => setDeleteConfirm(s)}>🗑️</button>
+                          <button className="btn btn-ghost btn-sm" title="Edit student" onClick={() => setEditStudent(s)}>âœï¸</button>
+                          <button className="btn btn-ghost btn-sm" title="Reset password to default" onClick={() => handleResetPassword(s)}>ðŸ”‘</button>
+                          <button className="btn btn-danger btn-sm" title="Delete student" onClick={() => setDeleteConfirm(s)}>ðŸ—‘ï¸</button>
                         </div>
                       </div>
                     ))}
@@ -422,19 +422,19 @@ export default function Admin() {
 
                 <div style={{ marginTop: 12, fontSize: 13, color: 'var(--color-text-muted)' }}>
                   Showing <strong>{managedStudents.length}</strong> student{managedStudents.length !== 1 ? 's' : ''}
-                  {selectedIds.size > 0 && <> · <strong>{selectedIds.size}</strong> selected</>}
+                  {selectedIds.size > 0 && <> Â· <strong>{selectedIds.size}</strong> selected</>}
                 </div>
               </div>
             )}
-            {/* ── MANAGE FACULTY ── */}
+            {/* â”€â”€ MANAGE FACULTY â”€â”€ */}
             {tab === 'faculty' && isFullAdmin && (
               <div className="animate-fadeIn">
                 <div className="section-header" style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <h3 style={{ fontSize: 18, fontWeight: 700 }}>🎓 CSE Faculty & Advisors</h3>
+                    <h3 style={{ fontSize: 18, fontWeight: 700 }}>ðŸŽ“ CSE Faculty & Advisors</h3>
                     <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Assigned class advisors have admin privileges for their specific class.</p>
                   </div>
-                  <button className="btn btn-primary" onClick={() => setShowAddFacModal(true)}>➕ Add Faculty</button>
+                  <button className="btn btn-primary" onClick={() => setShowAddFacModal(true)}>âž• Add Faculty</button>
                 </div>
 
                 {facLoading ? (
@@ -454,10 +454,10 @@ export default function Admin() {
                     {faculties.map((f, i) => (
                       <div key={f.id} className="manage-table-row" style={{ gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr 80px', animation: `fadeInUp 0.3s ease ${i * 0.02}s both` }}>
                         <div style={{ fontWeight: 600 }}>{f.name}</div>
-                        <div style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{f.designation || '—'}</div>
+                        <div style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{f.designation || 'â€”'}</div>
                         <div style={{ fontSize: 13 }}>{f.department || 'CSE'}</div>
-                        <div>{f.advising_class ? <span className="badge badge-green">{f.advising_class}</span> : <span style={{ color: 'var(--color-text-faint)' }}>—</span>}</div>
-                        <div>{f.advising_batch ? <span className="badge badge-violet">{f.advising_batch}</span> : <span style={{ color: 'var(--color-text-faint)' }}>—</span>}</div>
+                        <div>{f.advising_class ? <span className="badge badge-green">{f.advising_class}</span> : <span style={{ color: 'var(--color-text-faint)' }}>â€”</span>}</div>
+                        <div>{f.advising_batch ? <span className="badge badge-violet">{f.advising_batch}</span> : <span style={{ color: 'var(--color-text-faint)' }}>â€”</span>}</div>
                         <div>
                           <button className="btn btn-primary btn-sm" onClick={() => setEditFaculty(f)}>Adjust</button>
                         </div>
@@ -467,7 +467,7 @@ export default function Admin() {
                 )}
               </div>
             )}
-      {/* ── Faculty Action Modal ── */}
+      {/* â”€â”€ Faculty Action Modal â”€â”€ */}
       {showAddFacModal && (
         <FacultyActionModal
           onClose={() => setShowAddFacModal(false)}
@@ -476,11 +476,11 @@ export default function Admin() {
         />
       )}
 
-            {/* ── PENDING ACHIEVEMENTS ── */}
+            {/* â”€â”€ PENDING ACHIEVEMENTS â”€â”€ */}
             {tab === 'pending' && (
               <div className="animate-fadeIn">
                 {achievements.length === 0 ? (
-                  <div className="empty-state"><div className="empty-icon">✅</div><h3>All caught up!</h3><p>No pending achievement reviews.</p></div>
+                  <div className="empty-state"><div className="empty-icon">âœ…</div><h3>All caught up!</h3><p>No pending achievement reviews.</p></div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     {achievements.map(a => (
@@ -493,11 +493,11 @@ export default function Admin() {
                             </div>
                             <h4 style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{a.title}</h4>
                             {a.description && <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{a.description}</p>}
-                            {a.proof_url && <a href={a.proof_url} target="_blank" rel="noopener noreferrer" className="badge badge-violet" style={{ marginTop: 8, display: 'inline-flex' }}>🔗 View Proof</a>}
+                            {a.proof_url && <a href={a.proof_url} target="_blank" rel="noopener noreferrer" className="badge badge-violet" style={{ marginTop: 8, display: 'inline-flex' }}>ðŸ”— View Proof</a>}
                           </div>
                           <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                            <button className="btn btn-primary btn-sm" onClick={() => verifyAch(a.id, true)}>✅ Verify</button>
-                            <button className="btn btn-danger btn-sm" onClick={() => verifyAch(a.id, false)}>✕ Reject</button>
+                            <button className="btn btn-primary btn-sm" onClick={() => verifyAch(a.id, true)}>âœ… Verify</button>
+                            <button className="btn btn-danger btn-sm" onClick={() => verifyAch(a.id, false)}>âœ• Reject</button>
                           </div>
                         </div>
                       </div>
@@ -510,13 +510,13 @@ export default function Admin() {
         )}
       </div>
 
-      {/* ── Delete Confirmation Modal ── */}
+      {/* â”€â”€ Delete Confirmation Modal â”€â”€ */}
       {deleteConfirm && (
         <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setDeleteConfirm(null); }}>
           <div className="modal" style={{ maxWidth: 420 }}>
             <div className="modal-header">
-              <h2 className="modal-title">🗑️ Confirm Delete</h2>
-              <button className="modal-close btn btn-ghost btn-sm" onClick={() => setDeleteConfirm(null)}>✕</button>
+              <h2 className="modal-title">ðŸ—‘ï¸ Confirm Delete</h2>
+              <button className="modal-close btn btn-ghost btn-sm" onClick={() => setDeleteConfirm(null)}>âœ•</button>
             </div>
             <p style={{ fontSize: 15, marginBottom: 20, color: 'var(--color-text-muted)' }}>
               {deleteConfirm === 'bulk'
@@ -526,14 +526,14 @@ export default function Admin() {
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button className="btn btn-ghost" onClick={() => setDeleteConfirm(null)}>Cancel</button>
               <button className="btn btn-danger" onClick={() => deleteConfirm === 'bulk' ? handleBulkDelete() : handleDelete(deleteConfirm)}>
-                🗑️ Yes, Delete
+                ðŸ—‘ï¸ Yes, Delete
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── Add / Edit Student Modal ── */}
+      {/* â”€â”€ Add / Edit Student Modal â”€â”€ */}
       {(showAddModal || editStudent) && (
         <StudentActionModal
           student={editStudent || null}
@@ -545,7 +545,7 @@ export default function Admin() {
           showToast={showToast}
         />
       )}
-      {/* ── Faculty Advisor Modal ── */}
+      {/* â”€â”€ Faculty Advisor Modal â”€â”€ */}
       {editFaculty && (
         <FacultyAdvisorModal
           faculty={editFaculty}
@@ -555,7 +555,7 @@ export default function Admin() {
         />
       )}
 
-      {/* ── Import CSV Modal ── */}
+      {/* â”€â”€ Import CSV Modal â”€â”€ */}
       {showImportModal && (
         <ImportModal
           onClose={() => setShowImportModal(false)}

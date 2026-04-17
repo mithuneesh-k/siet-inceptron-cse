@@ -1,8 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import client from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import TeamCard from '../components/TeamCard';
+
+gsap.registerPlugin(ScrollTrigger);
 
 const TEAM_TYPES = ['hackathon', 'project', 'research'];
 
@@ -69,6 +73,24 @@ export default function Teams() {
     showToast('Left the team');
   };
 
+  const teamsListRef = useRef(null);
+
+  // ─── GSAP Scroll Reveal for team cards ───
+  useEffect(() => {
+    if (loading || !teamsListRef.current) return;
+    const items = teamsListRef.current.querySelectorAll('.team-list-item');
+    if (!items.length) return;
+
+    gsap.fromTo(items,
+      { opacity: 0, x: -30, scale: 0.96 },
+      {
+        opacity: 1, x: 0, scale: 1,
+        duration: 0.8, ease: 'elastic.out(1, 0.6)',
+        stagger: 0.06,
+      }
+    );
+  }, [loading, teams.length, typeFilter]);
+
   return (
     <div className="page-content">
       <div className="container">
@@ -91,7 +113,7 @@ export default function Teams() {
 
         <div className="teams-layout">
           {/* Team List */}
-          <div className="teams-list">
+          <div className="teams-list" ref={teamsListRef}>
             {loading ? (
               <div className="loading-screen" style={{ minHeight: '200px' }}><div className="spinner" /></div>
             ) : teams.length === 0 ? (

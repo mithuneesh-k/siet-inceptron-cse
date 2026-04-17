@@ -1,6 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import client from '../api/client';
 import LiveFeedCard from '../components/LiveFeedCard';
+
+gsap.registerPlugin(ScrollTrigger);
 
 const TABS = [
   { id: 'hackathons', label: '⚡ Hackathons', type: 'hackathon' },
@@ -19,6 +23,23 @@ export default function Updates() {
 
   const items = data[activeTab] || [];
   const type = TABS.find(t => t.id === activeTab)?.type;
+  const gridRef = useRef(null);
+
+  // ─── GSAP Scroll Reveal for feed cards ───
+  useEffect(() => {
+    if (loading || !gridRef.current) return;
+    const cards = gridRef.current.querySelectorAll('.card');
+    if (!cards.length) return;
+
+    gsap.fromTo(cards,
+      { opacity: 0, y: 35, scale: 0.95 },
+      {
+        opacity: 1, y: 0, scale: 1,
+        duration: 0.9, ease: 'elastic.out(1, 0.55)',
+        stagger: 0.06,
+      }
+    );
+  }, [loading, activeTab, items.length]);
 
   return (
     <div className="page-content">
@@ -47,7 +68,7 @@ export default function Updates() {
         {loading ? (
           <div className="loading-screen"><div className="spinner" /></div>
         ) : (
-          <div className="grid-auto animate-fadeIn">
+          <div className="grid-auto" ref={gridRef}>
             {items.map(item => (
               <LiveFeedCard key={item.id} item={item} type={type} />
             ))}

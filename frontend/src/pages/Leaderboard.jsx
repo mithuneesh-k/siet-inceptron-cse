@@ -1,9 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import client from '../api/client';
 import ScoreBadge from '../components/ScoreBadge';
 import CustomSelect from '../components/CustomSelect';
 import FilterModal from '../components/FilterModal';
+
+gsap.registerPlugin(ScrollTrigger);
 
 const BATCH_OPTIONS = ['2026-2030', '2025-2029', '2024-2028', '2023-2027', '2022-2026'];
 const CLASS_OPTIONS = ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D', 'CSE-E'];
@@ -32,9 +36,61 @@ export default function Leaderboard() {
 
   const top3 = students.slice(0, 3);
   const rest = students.slice(3);
+  const pageRef = useRef(null);
+
+  // ─── GSAP Scroll Reveal (matching landing page elastic physics) ───
+  useEffect(() => {
+    if (loading || !pageRef.current) return;
+
+    const ctx = gsap.context(() => {
+      // Stats cards pop in
+      const statCards = gsap.utils.toArray('.lb-stat');
+      if (statCards.length) {
+        gsap.fromTo(statCards,
+          { opacity: 0, y: 30, scale: 0.9 },
+          {
+            opacity: 1, y: 0, scale: 1,
+            duration: 1.0, ease: 'elastic.out(1, 0.55)',
+            stagger: 0.08,
+            scrollTrigger: { trigger: '.lb-stats-row', start: 'top 80%' }
+          }
+        );
+      }
+
+      // Podium bounces in
+      const podiumCols = gsap.utils.toArray('.podium-col');
+      if (podiumCols.length) {
+        gsap.fromTo(podiumCols,
+          { opacity: 0, y: 60, scale: 0.8, rotation: -5 },
+          {
+            opacity: 1, y: 0, scale: 1, rotation: 0,
+            duration: 1.7, ease: 'elastic.out(1, 0.4)',
+            stagger: 0.12,
+            scrollTrigger: { trigger: '.podium', start: 'top 75%' }
+          }
+        );
+      }
+
+      // Table rows stagger in
+      const rows = gsap.utils.toArray('.lb-row');
+      if (rows.length) {
+        gsap.fromTo(rows,
+          { opacity: 0, x: -25 },
+          {
+            opacity: 1, x: 0,
+            duration: 0.7, ease: 'elastic.out(1, 0.6)',
+            stagger: 0.04,
+            scrollTrigger: { trigger: '.lb-table', start: 'top 78%' }
+          }
+        );
+      }
+    }, pageRef);
+
+    return () => ctx.revert();
+  }, [loading, students]);
 
   return (
-    <div className="page-content">
+    <div className="page-content" ref={pageRef}>
       <div className="container">
         <div className="lb-header animate-fadeInUp">
           <h1 className="section-title">🏆 <span className="text-gradient">Leaderboard</span></h1>
@@ -165,7 +221,7 @@ export default function Leaderboard() {
         .lb-stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
         .lb-stat { padding: 18px; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; border-top: 3px solid var(--color-green); }
         .lb-stat-i { font-size: 22px; }
-        .lb-stat-n { font-size: 26px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; color: var(--color-green); }
+        .lb-stat-n { font-size: 26px; font-weight: 900; font-family: 'Sekuya', sans-serif; color: var(--color-green); }
         .lb-stat-l { font-size: 11px; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
         @media (max-width: 600px) { .lb-stats-row { grid-template-columns: repeat(2, 1fr); } }
 
@@ -175,7 +231,7 @@ export default function Leaderboard() {
         /* Podium — flat 2D */
         .podium { display: flex; justify-content: center; align-items: flex-end; gap: 16px; margin-bottom: 40px; }
         .podium-col { display: flex; flex-direction: column; align-items: center; }
-        .podium-student { padding: 16px 14px; border: 2px solid var(--border); border-radius: var(--radius-lg); text-align: center; text-decoration: none; color: inherit; transition: border-color var(--transition); min-width: 130px; background: #fff; }
+        .podium-student { padding: 16px 14px; border: 2px solid var(--border); border-radius: var(--radius-lg); text-align: center; text-decoration: none; color: inherit; transition: border-color var(--transition); min-width: 130px; background: var(--bg-secondary); }
         .podium-student:hover { border-color: var(--color-green); }
         .podium-ava { width: 60px; height: 60px; background: var(--color-green); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; color: #fff; margin: 0 auto 8px; }
         .podium-sname { font-size: 14px; font-weight: 700; margin-bottom: 2px; color: var(--color-text); }
@@ -188,13 +244,13 @@ export default function Leaderboard() {
         .lb-row { display: grid; grid-template-columns: 60px 2fr 100px 70px 120px 100px; gap: 12px; padding: 13px 20px; border-bottom: 1px solid var(--border); align-items: center; text-decoration: none; color: inherit; transition: background var(--transition); animation: fadeInUp 0.3s ease both; }
         .lb-row:last-child { border-bottom: none; }
         .lb-row:hover { background: var(--green-50); }
-        .lb-rank { font-size: 14px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; color: var(--color-text-muted); }
+        .lb-rank { font-size: 14px; font-weight: 700; font-family: 'Sekuya', sans-serif; color: var(--color-text-muted); }
         .lb-student { display: flex; align-items: center; gap: 10px; }
         .lb-ava { width: 34px; height: 34px; background: var(--color-green); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #fff; flex-shrink: 0; }
         .lb-name { font-size: 14px; font-weight: 600; color: var(--color-text); }
         .lb-year { font-size: 12px; color: var(--color-text-muted); }
         .lb-cell { font-size: 14px; color: var(--color-text-muted); }
-        .lb-score { font-size: 18px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; color: var(--color-green); }
+        .lb-score { font-size: 18px; font-weight: 900; font-family: 'Sekuya', sans-serif; color: var(--color-green); }
         @media (max-width: 768px) {
           .lb-table-header { display: none; }
           .lb-row { grid-template-columns: 40px 1fr auto; }

@@ -1,11 +1,12 @@
-/* ─── Navbar — Flat 2D Light ─────────────────── */
+/* ─── Navbar — Elastic Bouncy ─────────────────────── */
 .navbar {
   position: fixed;
   top: 0; left: 0; right: 0;
   height: var(--navbar-height);
-  background: var(--green-50);
-  border-bottom: 2px solid var(--green-200);
-  backdrop-filter: blur(10px);
+  background: var(--bg-primary);
+  border-bottom: 2px solid var(--border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   z-index: 1000;
 }
 
@@ -19,36 +20,44 @@
   gap: 28px;
 }
 
-/* Brand */
+/* Brand — wiggle handled by GSAP */
 .navbar-brand {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
   text-decoration: none;
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.navbar-brand:hover {
+  transform: scale(1.04);
 }
 .brand-logo {
   width: 36px; height: 36px;
-  background: #FFFFFF;
+  background: var(--bg-secondary);
   border-radius: var(--radius-sm);
   display: flex; align-items: center; justify-content: center;
   font-size: 18px;
   flex-shrink: 0;
   padding: 2px;
+  transition: box-shadow 0.4s ease;
+}
+.navbar-brand:hover .brand-logo {
+  box-shadow: 0 0 0 3px var(--green-200);
 }
 .brand-text { display: flex; flex-direction: column; line-height: 1.2; }
 .brand-name {
   font-size: 15px; font-weight: 800;
-  font-family: 'Space Grotesk', sans-serif;
-  color: var(--green-800);
+  font-family: 'Sekuya', sans-serif;
+  color: var(--color-text);
   letter-spacing: -0.01em;
 }
 .brand-dept {
-  font-size: 10px; color: var(--green-600);
+  font-size: 10px; color: var(--color-green);
   font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase;
 }
 
-/* Nav links */
+/* Nav links — elastic scale handled by GSAP, CSS handles color/bg */
 .navbar-links {
   display: flex;
   align-items: center;
@@ -63,18 +72,21 @@
   border-radius: var(--radius-sm);
   font-size: 14px; font-weight: 600;
   color: var(--green-700);
-  transition: all var(--transition);
+  transition: color 0.25s ease,
+              background 0.25s ease,
+              box-shadow 0.3s ease;
   text-decoration: none;
+  will-change: transform;
 }
 .nav-link:hover {
   color: var(--green-900);
   background: var(--green-100);
 }
 .nav-link.active {
-  color: var(--green-900);
-  background: #FFFFFF;
+  color: var(--color-text);
+  background: var(--bg-secondary);
   box-shadow: var(--shadow-sm);
-  border: 1.5px solid var(--green-400);
+  border: 1.5px solid var(--border-green);
 }
 .nav-icon { font-size: 14px; }
 
@@ -85,15 +97,16 @@
 .user-chip {
   display: flex; align-items: center; gap: 10px;
   padding: 4px 14px 4px 4px;
-  background: #FFFFFF;
-  border: 1.5px solid var(--green-200);
+  background: var(--bg-secondary);
+  border: 1.5px solid var(--border);
   border-radius: var(--radius-md);
   text-decoration: none;
-  transition: all var(--transition);
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .user-chip:hover { 
   border-color: var(--green-400);
   background: var(--green-50);
+  transform: translateY(-1px);
 }
 .user-avatar-sm {
   width: 28px; height: 28px;
@@ -101,19 +114,27 @@
   border-radius: var(--radius-xs);
   display: flex; align-items: center; justify-content: center;
   font-size: 13px; font-weight: 800; color: #FFFFFF;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.user-name { font-size: 13px; font-weight: 700; color: var(--green-800); }
+.user-chip:hover .user-avatar-sm {
+  transform: scale(1.1) rotate(-3deg);
+}
+.user-name { font-size: 13px; font-weight: 700; color: var(--color-text); }
 
 /* Mobile */
 .menu-toggle {
   display: none; flex-direction: column; gap: 5px;
   padding: 6px; cursor: pointer; background: none; border: none;
   border-radius: var(--radius-sm);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.menu-toggle:active {
+  transform: scale(0.9);
 }
 .menu-toggle span {
   display: block; width: 20px; height: 2px;
   background: var(--color-text-muted); border-radius: 2px;
-  transition: all var(--transition);
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @media (max-width: 768px) {
@@ -121,18 +142,18 @@
   .navbar-links {
     position: fixed;
     top: var(--navbar-height); left: 0; right: 0;
-    background: #fff;
+    background: var(--bg-primary);
     border-bottom: 1.5px solid var(--border);
     flex-direction: column;
     padding: 12px;
     gap: 4px;
     align-items: stretch;
-    transform: translateY(-110%);
+    transform: translateY(-110%) scale(0.98);
     opacity: 0;
     pointer-events: none;
-    transition: all var(--transition-slow);
+    transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
-  .navbar-links.open { transform: translateY(0); opacity: 1; pointer-events: all; }
+  .navbar-links.open { transform: translateY(0) scale(1); opacity: 1; pointer-events: all; }
   .nav-link { padding: 12px 14px; }
   .navbar-actions { margin-left: auto; }
   .user-name { display: none; }
