@@ -10,7 +10,11 @@ const PORT = process.env.PORT || 5000;
 
 
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  origin: function (origin, callback) {
+    // Allow any origin for testing/development. 
+    // In strict production, you'd replace this with your Vercel frontend URL.
+    callback(null, true);
+  },
   credentials: true
 }));
 app.use(express.json());
