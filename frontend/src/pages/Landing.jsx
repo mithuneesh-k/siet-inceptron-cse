@@ -143,8 +143,8 @@ export default function Landing() {
               Form your team. Build your career at <strong>SIET</strong>.
             </p>
             <div className="lp-ctas">
-              <a href="http://110.172.151.102/" className="btn btn-primary btn-lg">🚀 Sign In to Portal</a>
-              <Link to="/leaderboard" className="btn btn-secondary btn-lg">🏆 Leaderboard</Link>
+              <a href="http://110.172.151.102/" className="btn btn-primary btn-lg"><Rocket size={18} /> Sign In to Portal</a>
+              <Link to="/leaderboard" className="btn btn-secondary btn-lg"><Trophy size={18} /> Leaderboard</Link>
             </div>
           </div>
 

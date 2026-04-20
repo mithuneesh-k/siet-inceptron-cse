@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MapPin, Mail, Globe, Phone, Heart } from "lucide-react";
+import { MapPin, Mail, Globe, Phone } from "lucide-react";
 
 const Footer = () => {
   const [showTop, setShowTop] = useState(false);
@@ -305,7 +305,7 @@ const Footer = () => {
             <p className="footer-col-title">Contact &amp; Info</p>
 
             <div className="contact-item">
-              <div className="contact-icon"><MapPin size={15} /></div>
+              <div className="contact-icon"><MapPin size={16} /></div>
               <span>
                 Sri Shakthi Nagar, L&amp;T By-Pass,
                 Chinniyampalayam Post,
@@ -314,17 +314,17 @@ const Footer = () => {
             </div>
 
             <div className="contact-item">
-              <div className="contact-icon"><Mail size={15} /></div>
+              <div className="contact-icon"><Mail size={16} /></div>
               <span>cse@siet.ac.in</span>
             </div>
 
             <div className="contact-item">
-              <div className="contact-icon"><Globe size={15} /></div>
+              <div className="contact-icon"><Globe size={16} /></div>
               <a href="https://www.siet.ac.in" target="_blank" rel="noopener noreferrer" style={{color:"#8aaa8a", textDecoration:"none"}}>www.siet.ac.in</a>
             </div>
 
             <div className="contact-item">
-              <div className="contact-icon"><Phone size={15} /></div>
+              <div className="contact-icon"><Phone size={16} /></div>
               <span>+91 75041 69999 / 94446 20505</span>
             </div>
           </div>
@@ -337,7 +337,7 @@ const Footer = () => {
             © 2026 SIET CSE Department. All rights reserved.
           </span>
           <span className="footer-made">
-            Made with <span className="heart" style={{ display: 'inline-flex', alignItems: 'center', margin: '0 2px' }}><Heart size={12} fill="currentColor" /></span> by SIET CSE Students
+            Made with <span className="heart">♥</span> by SIET CSE Students
           </span>
         </div>
       </footer>

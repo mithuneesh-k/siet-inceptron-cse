@@ -80,7 +80,7 @@ export default function Updates() {
           <input 
             type="text" 
             className="form-input" 
-            placeholder="Search live feed..." 
+            placeholder="🔍 Search live feed..." 
             value={search} 
             onChange={e => setSearch(e.target.value)}
             style={{ flex: '1', minWidth: '200px' }}
