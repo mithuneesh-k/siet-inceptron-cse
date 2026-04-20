@@ -132,8 +132,12 @@ export default function Landing() {
               <span className="lp-pill-dot" />
               Sri Shakthi Institute of Engineering and Technology, Coimbatore
             </div>
-            <div style={{ display: 'flex', gap: '20px', alignItems: 'center', marginBottom: '18px' }}>
-              <img src="/white_background_,_202604201452-Photoroom.png" alt="Inceptron Logo" style={{ height: '90px', objectFit: 'contain' }} />
+            <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start', marginBottom: '18px' }}>
+              <img
+                src="/white_background_,_202604201452-Photoroom.png"
+                alt="Inceptron Logo"
+                style={{ height: 'clamp(90px, 10vw, 130px)', width: 'auto', objectFit: 'contain', flexShrink: 0, marginTop: '4px' }}
+              />
               <h1 className="lp-h1" style={{ marginBottom: 0 }}>
                 Inceptron<br />
                 <span className="lp-h1-accent">Achievement Hub</span>
