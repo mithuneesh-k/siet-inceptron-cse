@@ -5,6 +5,11 @@ import { useAuth } from '../contexts/AuthContext';
 import ScoreBadge from '../components/ScoreBadge';
 import AchievementCard from '../components/AchievementCard';
 import CustomSelect from '../components/CustomSelect';
+import TruncatedText from '../components/TruncatedText';
+import { 
+  Shield, Book, GraduationCap, Terminal, Briefcase, AtSign, 
+  Camera, Globe, Phone, Plus, Cake, Edit3, Award, Lightbulb, Hourglass 
+} from 'lucide-react';
 
 const ACH_TYPES = ['hackathon', 'internship', 'course', 'project', 'certification'];
 const POSITIONS = ['1st', '2nd', '3rd', 'participated'];
@@ -52,7 +57,7 @@ export default function Profile() {
       // For now, just show a message.
       setShowAddModal(false);
       setForm({ type: 'hackathon', title: '', description: '', position: '', duration: '', proof_url: '' });
-      showToast(`Achievement submitted for approval! ⏳`);
+      showToast(<span>Achievement submitted for approval! <Hourglass size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /></span>);
       if (isOwn) refreshUser();
     } catch (err) {
       showToast(err.response?.data?.error || 'Failed to add achievement', 'error');
@@ -69,10 +74,37 @@ export default function Profile() {
     if (isOwn) refreshUser();
   };
 
-  if (loading) return <div className="loading-screen"><div className="spinner" /></div>;
+  const renderSkeleton = () => (
+    <div className="page-content container">
+      <div className="profile-header card skeleton-card" style={{ padding: '28px', border: 'none' }}>
+        <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+          <div className="skeleton skeleton-circle" style={{ width: '90px', height: '90px' }} />
+          <div style={{ flex: 1 }}>
+            <div className="skeleton skeleton-text" style={{ width: '250px', height: '32px' }} />
+            <div className="skeleton skeleton-text" style={{ width: '150px' }} />
+            <div className="skeleton skeleton-text" style={{ width: '80%', marginTop: '16px', height: '60px' }} />
+          </div>
+        </div>
+      </div>
+      <div className="grid-auto" style={{ marginTop: '24px' }}>
+        <div className="skeleton skeleton-card" style={{ height: '140px' }} />
+        <div className="skeleton skeleton-card" style={{ height: '140px' }} />
+      </div>
+    </div>
+  );
+
+  if (loading) return renderSkeleton();
   if (!user) return <div className="page-content container"><div className="empty-state"><h3>User not found</h3></div></div>;
 
   const rank = user.score >= 300 ? 'Platinum' : user.score >= 200 ? 'Gold' : user.score >= 100 ? 'Silver' : 'Bronze';
+
+  // Calculate Profile Completion
+  let completionPct = 0;
+  if (user) {
+    const fields = ['bio', 'github', 'linkedin', 'portfolio', 'phone', 'date_of_birth'];
+    const filled = fields.filter(f => !!user[f]).length;
+    completionPct = Math.round((filled / fields.length) * 100);
+  }
   const typeBreakdown = ACH_TYPES.map(t => ({
     type: t, count: achievements.filter(a => a.type === t).length,
     pts: achievements.filter(a => a.type === t).reduce((s, a) => s + a.points, 0)
@@ -81,6 +113,20 @@ export default function Profile() {
   return (
     <div className="page-content">
       <div className="container">
+
+        {/* Admin Breadcrumbs */}
+        {authUser?.is_admin && !isOwn && (
+          <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--color-text-muted)' }}>
+            <Link to="/admin" style={{ color: 'var(--color-green)', fontWeight: '600' }}>Admin Panel</Link>
+            <span>/</span>
+            {user.batch && <><span>{user.batch}</span><span>/</span></>}
+            {user.class && <><span>{user.class}</span><span>/</span></>}
+            <span style={{ color: 'var(--color-text)' }}>{user.name}</span>
+          </div>
+        )}
+
+        {/* Profile Completion Bar removed by request */}
+
         {/* Profile Header */}
         <div className="profile-header card animate-fadeInUp">
           <div className="profile-main">
@@ -91,57 +137,63 @@ export default function Profile() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                 <h1 className="profile-name">{user.name}</h1>
                 {user.role === 'student' && <span className="badge badge-violet">{rank} Tier</span>}
-                {user.is_admin && <span className="badge badge-gold">👨‍🏫 {user.role === 'admin' ? 'Admin' : 'Faculty'}</span>}
+                {user.is_admin && <span className="badge badge-gold" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Shield size={14} /> {user.role === 'admin' ? 'Admin' : 'Faculty'}</span>}
               </div>
               <div className="profile-meta">
-                {user.class && <><span>📚 {user.class}</span><span>•</span></>}
-                {user.batch && <><span>{user.batch}</span><span>•</span></>}
-                <span>🎓 Sri Shakthi Institute, Coimbatore</span>
+                {user.class && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Book size={14} /> {user.class}</span>}
+                {user.class && <span style={{ opacity: 0.5 }}>•</span>}
+                {user.batch && <span>{user.batch}</span>}
+                {user.batch && <span style={{ opacity: 0.5 }}>•</span>}
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><GraduationCap size={14} /> Sri Shakthi Institute, Coimbatore</span>
               </div>
 
-              {user.bio && <p className="profile-bio">{user.bio}</p>}
+              {user.bio && (
+                <div style={{ marginTop: '10px' }}>
+                  <TruncatedText text={user.bio} maxLines={3} className="profile-bio" />
+                </div>
+              )}
 
               <div className="profile-links">
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
                   {user.github && (
                     <a href={user.github.startsWith('http') ? user.github : `https://github.com/${user.github.startsWith('@') ? user.github.slice(1) : user.github}`} target="_blank" rel="noopener noreferrer" className="profile-link">
-                      🐙 GitHub
+                      <Terminal size={14} /> GitHub
                     </a>
                   )}
                   {user.linkedin && (
                     <a href={user.linkedin.startsWith('http') ? user.linkedin : `https://linkedin.com/in/${user.linkedin}`} target="_blank" rel="noopener noreferrer" className="profile-link">
-                      💼 LinkedIn
+                      <Briefcase size={14} /> LinkedIn
                     </a>
                   )}
                   {user.twitter && (
                     <a href={user.twitter.startsWith('http') ? user.twitter : `https://twitter.com/${user.twitter.startsWith('@') ? user.twitter.slice(1) : user.twitter}`} target="_blank" rel="noopener noreferrer" className="profile-link">
-                      🐦 Twitter
+                      <AtSign size={14} /> Twitter
                     </a>
                   )}
                   {user.instagram && (
                     <a href={user.instagram.startsWith('http') ? user.instagram : `https://instagram.com/${user.instagram.startsWith('@') ? user.instagram.slice(1) : user.instagram}`} target="_blank" rel="noopener noreferrer" className="profile-link">
-                      📸 Instagram
+                      <Camera size={14} /> Instagram
                     </a>
                   )}
                   {user.portfolio && (
                     <a href={user.portfolio.startsWith('http') ? user.portfolio : `https://${user.portfolio}`} target="_blank" rel="noopener noreferrer" className="profile-link">
-                      🌐 Portfolio
+                      <Globe size={14} /> Portfolio
                     </a>
                   )}
                   {(user.phone && (user.phone_public || isOwn || authUser?.is_admin)) && (
                     <a href={`https://wa.me/${user.phone.replace(/\D/g,'')}`} target="_blank" rel="noopener noreferrer" className="profile-link">
-                      📞 {user.phone}
+                      <Phone size={14} /> {user.phone}
                     </a>
                   )}
                   {isOwn && (
                     <Link to="/edit-profile" className="profile-link profile-link-add">
-                      ➕ Add links
+                      <Plus size={14} /> Add links
                     </Link>
                   )}
                 </div>
                 {(user.date_of_birth && (user.dob_public || isOwn || authUser?.is_admin)) && (
-                   <div style={{ marginTop: '10px', fontSize: '13px', color: 'var(--color-text-muted)' }}>
-                     🎂 {new Date(user.date_of_birth).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+                   <div style={{ marginTop: '10px', fontSize: '13px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                     <Cake size={14} /> {new Date(user.date_of_birth).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
                    </div>
                 )}
               </div>
@@ -150,8 +202,8 @@ export default function Profile() {
             <div className="profile-actions">
               {user.role === 'student' && <ScoreBadge score={user.score} size="lg" />}
               {isOwn && (
-                <Link to="/edit-profile" className="btn btn-secondary btn-sm" style={{ marginTop: '12px' }}>
-                  ✏️ Edit Profile
+                <Link to="/edit-profile" className="btn btn-secondary btn-sm" style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Edit3 size={14} /> Edit Profile
                 </Link>
               )}
             </div>
@@ -199,17 +251,22 @@ export default function Profile() {
         {/* Achievements */}
         {user.role === 'student' && (
           <div className="animate-fadeInUp delay-2">
-            <div className="section-header" style={{ marginTop: '36px' }}>
-              <h2 className="section-title">🏅 Achievements</h2>
-              {isOwn && <button id="add-achievement-btn" className="btn btn-primary btn-sm" onClick={() => setShowAddModal(true)}>+ Add Achievement</button>}
+            <div className="section-header" style={{ marginTop: '36px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h2 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Award size={20} className="text-gradient" /> Achievements</h2>
+              {isOwn && <button id="add-achievement-btn" className="btn btn-primary btn-sm" onClick={() => setShowAddModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Plus size={16} /> Add</button>}
             </div>
 
             {achievements.length === 0 ? (
               <div className="empty-state">
-                <div className="empty-icon">🎯</div>
+                <div className="empty-icon">
+                  <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{color: 'var(--color-green)', opacity: 0.5}}>
+                    <circle cx="12" cy="8" r="7"></circle>
+                    <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
+                  </svg>
+                </div>
                 <h3>No achievements yet</h3>
                 <p>{isOwn ? 'Add your first achievement to start earning points!' : 'This student hasn\'t added any achievements yet.'}</p>
-                {isOwn && <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={() => setShowAddModal(true)}>+ Add First Achievement</button>}
+                {isOwn && <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={() => setShowAddModal(true)}>Log your first achievement →</button>}
               </div>
             ) : (
               <div className="grid-auto">
@@ -227,7 +284,7 @@ export default function Profile() {
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowAddModal(false)}>
           <div className="modal">
             <div className="modal-header">
-              <h2 className="modal-title">➕ Add Achievement</h2>
+              <h2 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Plus size={20} /> Add Achievement</h2>
               <button className="modal-close btn" onClick={() => setShowAddModal(false)}>✕</button>
             </div>
 
@@ -284,12 +341,13 @@ export default function Profile() {
                 <input className="form-input" type="url" value={form.proof_url} onChange={e => setForm(f => ({ ...f, proof_url: e.target.value }))} placeholder="https://..." />
               </div>
 
-              <div className="alert alert-info">
-                💡 Points: {
+              <div className="alert alert-info" style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                <Lightbulb size={16} style={{ flexShrink: 0, marginTop: 2 }} />
+                <span>Points: {
                   form.type === 'hackathon' ? (form.position === '1st' ? 100 : form.position === '2nd' ? 60 : form.position === '3rd' ? 40 : 10)
                   : form.type === 'internship' ? (form.duration === 'long' ? 70 : form.duration === 'medium' ? 40 : 20)
                   : form.type === 'course' ? 15 : form.type === 'project' ? 25 : 10
-                } pts will be added to your score.
+                } pts will be added to your score.</span>
               </div>
 
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
@@ -324,6 +382,18 @@ export default function Profile() {
         .p-stat-divider { width: 1px; background: var(--border); height: 32px; }
         .breakdown-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-bottom: 8px; }
         .breakdown-card { text-align: center; }
+
+        @media (max-width: 640px) {
+          .profile-main { flex-direction: column; align-items: center; text-align: center; padding: 24px 16px 16px; gap: 16px; }
+          .profile-info { padding-top: 0; display: flex; flex-direction: column; align-items: center; }
+          .profile-info > div:first-child { justify-content: center; margin-bottom: 8px; }
+          .profile-meta { justify-content: center; }
+          .profile-links { justify-content: center; }
+          .profile-actions { margin: 16px auto 0; width: 100%; display: flex; flex-direction: row; justify-content: center; gap: 12px; }
+          .profile-stats { flex-wrap: wrap; gap: 16px 0; padding: 20px 16px; }
+          .p-stat { flex: 0 0 50%; }
+          .p-stat-divider { display: none; }
+        }
       `}</style>
     </div>
   );

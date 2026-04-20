@@ -18,7 +18,7 @@ export default function CustomSelect({ value, onChange, options, placeholder, st
   const selectedOption = options.find(opt => opt.value === value) || null;
 
   return (
-    <div className="custom-select-container" style={style} ref={containerRef}>
+    <div className="custom-select-container" style={{ ...style, zIndex: isOpen ? 50 : 1 }} ref={containerRef}>
       <div 
         className={`custom-select-trigger ${isOpen ? 'active' : ''}`} 
         onClick={() => setIsOpen(!isOpen)}

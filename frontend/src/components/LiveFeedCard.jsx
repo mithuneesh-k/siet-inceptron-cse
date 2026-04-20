@@ -1,3 +1,7 @@
+import TruncatedText from './TruncatedText';
+import { Flame, Banknote, MapPin, Calendar, Clock } from 'lucide-react';
+import CompanyLogo from './CompanyLogo';
+
 export default function LiveFeedCard({ item, type }) {
   const config = {
     hackathon: { accent: 'var(--color-violet)', badgeCls: 'badge-violet', prizeLabel: 'Prize', dateLabel: 'Deadline', modeLabel: 'mode' },
@@ -15,22 +19,22 @@ export default function LiveFeedCard({ item, type }) {
   return (
     <div className="live-card card card-hover" style={{ borderLeft: `3px solid ${config.accent}` }}>
       <div className="live-top">
-        <span className="live-emoji">{item.logo}</span>
+        <span className="live-emoji"><CompanyLogo logo={item.logo} size={28} /></span>
         <div className="live-badges">
           {item.difficulty && <span className={`badge ${config.badgeCls}`}>{item.difficulty}</span>}
-          {isExpiring && <span className="badge badge-red">🔥 Closing Soon</span>}
+          {isExpiring && <span className="badge badge-red" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Flame size={12} /> Closing Soon</span>}
         </div>
       </div>
 
       <h3 className="live-title">{item.title}</h3>
       <p className="live-org">{organizer}</p>
-      {item.description && <p className="live-desc">{item.description}</p>}
+      {item.description && <TruncatedText text={item.description} className="live-desc" />}
 
       <div className="live-details">
-        {prize && <div className="live-detail"><span>💰</span><span>{prize}</span></div>}
-        {mode && <div className="live-detail"><span>📍</span><span>{mode}</span></div>}
-        {deadline && <div className="live-detail"><span>📅</span><span>Due: {deadline}</span></div>}
-        {item.duration && <div className="live-detail"><span>⏱️</span><span>{item.duration}</span></div>}
+        {prize && <div className="live-detail"><span className="live-icon"><Banknote size={14} /></span><span>{prize}</span></div>}
+        {mode && <div className="live-detail"><span className="live-icon"><MapPin size={14} /></span><span>{mode}</span></div>}
+        {deadline && <div className="live-detail"><span className="live-icon"><Calendar size={14} /></span><span>Due: {deadline}</span></div>}
+        {item.duration && <div className="live-detail"><span className="live-icon"><Clock size={14} /></span><span>{item.duration}</span></div>}
       </div>
 
       {item.tags?.length > 0 && (
@@ -52,7 +56,8 @@ export default function LiveFeedCard({ item, type }) {
         .live-org { font-size: 13px; color: var(--color-text-muted); margin-bottom: 10px; }
         .live-desc { font-size: 13px; color: var(--color-text-muted); line-height: 1.5; margin-bottom: 14px; }
         .live-details { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
-        .live-detail { display: flex; gap: 8px; font-size: 13px; color: var(--color-text-muted); align-items: center; }
+        .live-detail { display: flex; gap: 8px; font-size: 13px; color: var(--color-text-muted); align-items: flex-start; }
+        .live-icon { margin-top: 2px; color: var(--color-green); opacity: 0.8; }
       `}</style>
     </div>
   );

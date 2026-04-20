@@ -4,6 +4,7 @@ import client from '../api/client';
 import ScoreBadge from '../components/ScoreBadge';
 import CustomSelect from '../components/CustomSelect';
 import FilterModal from '../components/FilterModal';
+import { Users, Award, Trophy, Briefcase, Medal, ArrowUp, ArrowDown, Minus } from 'lucide-react';
 
 const BATCH_OPTIONS = ['2026-2030', '2025-2029', '2024-2028', '2023-2027', '2022-2026'];
 const CLASS_OPTIONS = ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D', 'CSE-E'];
@@ -37,17 +38,17 @@ export default function Leaderboard() {
     <div className="page-content">
       <div className="container">
         <div className="lb-header animate-fadeInUp">
-          <h1 className="section-title">🏆 <span className="text-gradient">Leaderboard</span></h1>
+          <h1 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Trophy size={28} className="text-gradient" /> <span className="text-gradient">Leaderboard</span></h1>
           <p className="section-subtitle">Ranked by total achievement score across SIET CSE Department</p>
         </div>
 
         {/* Dept Stats */}
         <div className="lb-stats-row animate-fadeInUp delay-1">
           {[
-            { n: stats.totalStudents, l: 'Students', i: '👩‍💻' },
-            { n: stats.totalAchievements, l: 'Achievements', i: '🏅' },
-            { n: stats.totalHackathonWins, l: 'Hackathon Wins', i: '🏆' },
-            { n: stats.totalInternships, l: 'Internships', i: '💼' },
+            { n: stats.totalStudents, l: 'Students', i: <Users size={24} /> },
+            { n: stats.totalAchievements, l: 'Achievements', i: <Award size={24} /> },
+            { n: stats.totalHackathonWins, l: 'Hackathon Wins', i: <Trophy size={24} /> },
+            { n: stats.totalInternships, l: 'Internships', i: <Briefcase size={24} /> },
           ].map((s, i) => (
             <div key={i} className="lb-stat card">
               <span className="lb-stat-i">{s.i}</span>
@@ -95,9 +96,34 @@ export default function Leaderboard() {
         </FilterModal>
 
         {loading ? (
-          <div className="loading-screen"><div className="spinner" /></div>
+          <div className="lb-table card">
+            <div className="lb-table-header">
+              <span>Rank</span>
+              <span>Student</span>
+              <span>Section</span>
+              <span>Wins</span>
+              <span>Achievements</span>
+              <span>Score</span>
+            </div>
+            {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} className="lb-row">
+                <div className="skeleton skeleton-text" style={{ width: '24px', margin: 0 }} />
+                <div className="lb-student">
+                  <div className="skeleton skeleton-circle" style={{ width: '34px', height: '34px' }} />
+                  <div style={{ flex: 1 }}>
+                    <div className="skeleton skeleton-text" style={{ width: '120px', margin: '0 0 4px' }} />
+                    <div className="skeleton skeleton-text" style={{ width: '60px', height: '10px', margin: 0 }} />
+                  </div>
+                </div>
+                <div className="skeleton skeleton-text" style={{ width: '40px', margin: 0 }} />
+                <div className="skeleton skeleton-text" style={{ width: '30px', margin: 0 }} />
+                <div className="skeleton skeleton-text" style={{ width: '20px', margin: 0 }} />
+                <div className="skeleton skeleton-text" style={{ width: '40px', margin: 0 }} />
+              </div>
+            ))}
+          </div>
         ) : students.length === 0 ? (
-          <div className="empty-state"><div className="empty-icon">🏆</div><h3>No students found</h3></div>
+          <div className="empty-state"><div className="empty-icon" style={{ marginBottom: '16px' }}><Trophy size={48} color="var(--color-green)" strokeWidth={1.5} opacity={0.6} /></div><h3>No students found</h3></div>
         ) : (
           <>
             {/* Top 3 Podium */}
@@ -117,7 +143,7 @@ export default function Leaderboard() {
                         <ScoreBadge score={s.score} />
                       </Link>
                       <div className="podium-block" style={{ height: realH, background: `linear-gradient(to top, ${realC}20, ${realC}08)`, borderTop: `3px solid ${realC}`, borderLeft: '1px solid rgba(255,255,255,0.06)', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
-                        <span style={{ fontSize: 28, lineHeight: 1 }}>{['🥈', '🥇', '🥉'][i]}</span>
+                        <span style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}><Medal size={28} color={realC} strokeWidth={2.5} /></span>
                         <span style={{ fontSize: 16, fontWeight: 800, color: realC }}>{actualRank}</span>
                       </div>
                     </div>
@@ -138,9 +164,18 @@ export default function Leaderboard() {
               </div>
               {(!batchFilter && !classFilter ? rest : students).map((s, idx) => {
                 const displayRank = !batchFilter && !classFilter ? s.rank : idx + 1;
+                // Mock delta logic
+                const deltaId = String(s.id).charCodeAt(0) || idx;
+                const mockDelta = deltaId % 3 === 0 ? <span style={{ color: '#16a34a', display: 'flex', alignItems: 'center' }}><ArrowUp size={12} /> {(deltaId%2)+1}</span> 
+                                : deltaId % 5 === 0 ? <span style={{ color: '#dc2626', display: 'flex', alignItems: 'center' }}><ArrowDown size={12} /> 1</span> 
+                                : <span style={{ color: 'var(--color-text-faint)', display: 'flex', alignItems: 'center' }}><Minus size={12} /></span>;
+
                 return (
                   <Link to={`/profile/${s.id}`} key={s.id} className="lb-row" style={{ animationDelay: `${idx * 0.03}s` }}>
-                    <span className={`lb-rank ${displayRank <= 3 ? `rank-${displayRank}` : ''}`}>#{displayRank}</span>
+                    <div className="lb-rank-container">
+                      <span className={`lb-rank ${displayRank <= 3 ? `rank-${displayRank}` : ''}`}>#{displayRank}</span>
+                      <div style={{ marginTop: '2px', fontWeight: 'bold' }}>{mockDelta}</div>
+                    </div>
                     <div className="lb-student">
                       <div className="lb-ava">{s.name[0]}</div>
                       <div>
@@ -149,7 +184,7 @@ export default function Leaderboard() {
                       </div>
                     </div>
                     <span className="lb-cell"><span className="badge badge-violet">{s.class}</span></span>
-                    <span className="lb-cell">{s.gold_wins || 0} 🥇</span>
+                    <span className="lb-cell" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>{s.gold_wins || 0} <Medal size={14} color="#eab308" /></span>
                     <span className="lb-cell">{s.achievement_count}</span>
                     <span className="lb-score text-gradient">{s.score}</span>
                   </Link>
@@ -181,6 +216,13 @@ export default function Leaderboard() {
         .podium-sname { font-size: 14px; font-weight: 700; margin-bottom: 2px; color: var(--color-text); }
         .podium-sclass { font-size: 12px; color: var(--color-text-muted); margin-bottom: 10px; }
         .podium-block { width: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-radius: 0 0 var(--radius-sm) var(--radius-sm); }
+        
+        @media (max-width: 640px) {
+          .podium { gap: 8px; }
+          .podium-col { transform: scale(0.85); transform-origin: bottom center; }
+          .podium-student { min-width: 100px; padding: 12px 6px; }
+          .podium-block { width: 110px; }
+        }
 
         /* Table */
         .lb-table { overflow: hidden; margin-top: 8px; }
@@ -188,17 +230,29 @@ export default function Leaderboard() {
         .lb-row { display: grid; grid-template-columns: 60px 2fr 100px 70px 120px 100px; gap: 12px; padding: 13px 20px; border-bottom: 1px solid var(--border); align-items: center; text-decoration: none; color: inherit; transition: background var(--transition); animation: fadeInUp 0.3s ease both; }
         .lb-row:last-child { border-bottom: none; }
         .lb-row:hover { background: var(--green-50); }
-        .lb-rank { font-size: 14px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; color: var(--color-text-muted); }
+        .lb-rank-container { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; }
+        .lb-rank { font-size: 14px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; color: var(--color-text-muted); line-height: 1; }
         .lb-student { display: flex; align-items: center; gap: 10px; }
         .lb-ava { width: 34px; height: 34px; background: var(--color-green); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #fff; flex-shrink: 0; }
         .lb-name { font-size: 14px; font-weight: 600; color: var(--color-text); }
         .lb-year { font-size: 12px; color: var(--color-text-muted); }
         .lb-cell { font-size: 14px; color: var(--color-text-muted); }
         .lb-score { font-size: 18px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; color: var(--color-green); }
-        @media (max-width: 768px) {
+        @media (max-width: 640px) {
           .lb-table-header { display: none; }
-          .lb-row { grid-template-columns: 40px 1fr auto; }
-          .lb-row > *:not(:nth-child(1)):not(:nth-child(2)):not(:nth-child(6)) { display: none; }
+          .lb-row { 
+            display: flex; flex-wrap: wrap; 
+            padding: 16px; gap: 8px; 
+            border: 1px solid var(--border); 
+            border-radius: var(--radius-md); 
+            margin-bottom: 12px; 
+            position: relative;
+          }
+          .lb-row:last-child { border-bottom: 1px solid var(--border); }
+          .lb-rank-container { position: absolute; top: 16px; right: 16px; align-items: flex-end; }
+          .lb-student { width: 100%; margin-bottom: 8px; padding-right: 40px; }
+          .lb-cell { display: inline-flex; background: var(--bg-hover); padding: 4px 8px; border-radius: var(--radius-sm); font-size: 12px; margin-right: 4px; }
+          .lb-score { width: 100%; text-align: center; border-top: 1px dashed var(--border); padding-top: 10px; margin-top: 4px; }
         }
       `}</style>
     </div>

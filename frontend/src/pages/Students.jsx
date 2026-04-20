@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import client from '../api/client';
 import CustomSelect from '../components/CustomSelect';
 import FilterModal from '../components/FilterModal';
+import { Search, Star, Link as LinkIcon, GraduationCap } from 'lucide-react';
 
 
 
@@ -49,7 +50,7 @@ export default function Students() {
         {/* Header */}
         <div className="section-header animate-fadeInUp" style={{ marginBottom: '28px' }}>
           <div>
-            <h1 className="section-title" style={{ fontSize: '32px' }}>👨‍🎓 Students</h1>
+            <h1 className="section-title" style={{ fontSize: '32px', display: 'flex', alignItems: 'center', gap: '8px' }}><GraduationCap size={32} className="text-gradient" /> Students</h1>
             <p style={{ color: 'var(--color-text-muted)', marginTop: 6 }}>
               {filtered.length} of {students.length} students {batchFilter ? `— ${batchFilter}` : ''} {classFilter ? `— ${classFilter}` : ''}
             </p>
@@ -58,14 +59,17 @@ export default function Students() {
 
         {/* Filters */}
         <div className="students-filters animate-fadeInUp" style={{ marginBottom: '24px' }}>
-          <input
-            id="student-search"
-            className="form-input"
-            style={{ maxWidth: 320 }}
-            placeholder="🔍 Search by name, roll no..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
+          <div style={{ position: 'relative', flex: 1, maxWidth: '320px' }}>
+            <Search size={16} color="var(--color-text-muted)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+            <input
+              id="student-search"
+              className="form-input"
+              style={{ paddingLeft: '36px', width: '100%' }}
+              placeholder="Search by name, roll no..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
           <div style={{ display: 'flex', gap: 12 }}>
             <button 
               className={`btn ${batchFilter || classFilter ? 'btn-primary' : 'btn-secondary'}`}
@@ -109,7 +113,7 @@ export default function Students() {
           <div className="loading-screen"><div className="spinner" /></div>
         ) : filtered.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">🔍</div>
+            <div className="empty-icon" style={{ marginBottom: '16px' }}><Search size={48} color="var(--color-green)" strokeWidth={1.5} opacity={0.6} /></div>
             <h3>No students found</h3>
             <p>Try adjusting your search or class filter.</p>
           </div>
@@ -131,13 +135,13 @@ export default function Students() {
                   </div>
                   {s.score > 0 && (
                     <div className="student-card-score">
-                      <span>⭐ {s.score} pts</span>
+                      <span style={{display: 'inline-flex', alignItems: 'center', gap: '4px'}}><Star size={12} fill="currentColor" /> {s.score} pts</span>
                       <span>· {s.achievement_count} achievements</span>
                     </div>
                   )}
                   {s.github && (
-                    <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 4 }}>
-                      🔗 {s.github}
+                    <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 4, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <LinkIcon size={12} /> {s.github}
                     </div>
                   )}
                 </div>

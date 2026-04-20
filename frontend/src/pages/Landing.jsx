@@ -3,6 +3,15 @@ import { Link } from 'react-router-dom';
 import client from '../api/client';
 import ScoreBadge from '../components/ScoreBadge';
 import { useAuth } from '../contexts/AuthContext';
+import { Users, Award, Trophy, Briefcase, UsersRound, Star, Zap, BookOpen, Rocket, Medal, Target } from 'lucide-react';
+import CompanyLogo from '../components/CompanyLogo';
+
+const RANK_ICONS = [
+  <Medal size={18} color="#B45309" strokeWidth={2.5} style={{ display: 'inline' }} />,
+  <Medal size={18} color="#4B5563" strokeWidth={2.5} style={{ display: 'inline' }} />,
+  <Medal size={18} color="#92400E" strokeWidth={2.5} style={{ display: 'inline' }} />,
+  '4', '5'
+];
 
 function AnimatedNumber({ target, duration = 1400 }) {
   const [current, setCurrent] = useState(0);
@@ -135,16 +144,16 @@ export default function Landing() {
               Form your team. Build your career at <strong>SIET</strong>.
             </p>
             <div className="lp-ctas">
-              <a href="http://110.172.151.102/" className="btn btn-primary btn-lg">🚀 Sign In to Portal</a>
-              <Link to="/leaderboard" className="btn btn-secondary btn-lg">🏆 Leaderboard</Link>
+              <a href="http://110.172.151.102/" className="btn btn-primary btn-lg"><Rocket size={18} /> Sign In to Portal</a>
+              <Link to="/leaderboard" className="btn btn-secondary btn-lg"><Trophy size={18} /> Leaderboard</Link>
             </div>
           </div>
 
           <div className="lp-hero-card animate-fadeInUp delay-2">
-            <div className="lp-hero-card-label">🌟 Top 5 Achievers</div>
+            <div className="lp-hero-card-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Star size={14} /> Top 5 Achievers</div>
             {topStudents.map((s, i) => (
               <Link to={`/profile/${s.id}`} key={s.id} className="lp-rank-row">
-                <span className="lp-rank-num">{['🥇','🥈','🥉','4','5'][i]}</span>
+                <span className="lp-rank-num" style={{ display: 'flex', justifyContent: 'center' }}>{RANK_ICONS[i]}</span>
                 <div className="lp-rank-ava">{s.name[0]}</div>
                 <div className="lp-rank-info">
                   <div className="lp-rank-name">{s.name}</div>
@@ -161,11 +170,11 @@ export default function Landing() {
       <section className="lp-stats">
         <div className="container lp-stats-grid">
           {[
-            { v: stats.totalStudents,      l: 'Students',       i: '👩‍💻' },
-            { v: stats.totalAchievements,  l: 'Achievements',   i: '🏅' },
-            { v: stats.totalHackathonWins, l: 'Hackathon Wins', i: '🏆' },
-            { v: stats.totalInternships,   l: 'Internships',    i: '💼' },
-            { v: stats.activeTeams,        l: 'Active Teams',   i: '👥' },
+            { v: stats.totalStudents,      l: 'Students',       i: <Users size={28} /> },
+            { v: stats.totalAchievements,  l: 'Achievements',   i: <Award size={28} /> },
+            { v: stats.totalHackathonWins, l: 'Hackathon Wins', i: <Trophy size={28} /> },
+            { v: stats.totalInternships,   l: 'Internships',    i: <Briefcase size={28} /> },
+            { v: stats.activeTeams,        l: 'Active Teams',   i: <UsersRound size={28} /> },
           ].map((s, i) => (
             <div key={i} className="stat-card card animate-fadeInUp" style={{ animationDelay: `${i * 0.06}s` }}>
               <div className="stat-icon">{s.i}</div>
@@ -181,7 +190,7 @@ export default function Landing() {
         <div className="container">
           <div className="section-header">
             <div>
-              <h2 className="section-title">🌟 Top Achievers</h2>
+              <h2 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Star size={24} className="text-gradient" /> Top Achievers</h2>
               <p className="section-subtitle">Ranked by total achievement score</p>
             </div>
             <Link to="/leaderboard" className="btn btn-secondary btn-sm">View All →</Link>
@@ -191,7 +200,7 @@ export default function Landing() {
             <div className="lp-podium-list">
               {topStudents.map((s, i) => (
                 <Link key={s.id} to={`/profile/${s.id}`} className="lp-podium-row card card-hover animate-fadeInUp" style={{ animationDelay: `${i * 0.06}s` }}>
-                  <span className="lp-pm-rank">{['🥇','🥈','🥉','4️⃣','5️⃣'][i]}</span>
+                  <span className="lp-pm-rank">{RANK_ICONS[i]}</span>
                   <div className="lp-pm-ava">{s.name[0]}</div>
                   <div className="lp-pm-info">
                     <div className="lp-pm-name">{s.name}</div>
@@ -210,17 +219,17 @@ export default function Landing() {
         <div className="container">
           <div className="section-header">
             <div>
-              <h2 className="section-title">⚡ Live Opportunities</h2>
+              <h2 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Zap size={24} className="text-gradient" /> Live Opportunities</h2>
               <p className="section-subtitle">Latest hackathons and jobs — updated regularly</p>
             </div>
             <Link to="/updates" className="btn btn-primary btn-sm">See All →</Link>
           </div>
           <div className="lp-opp-grid">
             <div>
-              <div className="lp-opp-cat">🏆 Hackathons</div>
+              <div className="lp-opp-cat" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Trophy size={16} /> Hackathons</div>
               {updates.hackathons?.slice(0, 3).map(h => (
                 <div key={h.id} className="lp-opp-row card">
-                  <span className="lp-opp-icon">{h.logo}</span>
+                  <span className="lp-opp-icon"><CompanyLogo logo={h.logo} size={22} /></span>
                   <div className="lp-opp-info">
                     <div className="lp-opp-title">{h.title}</div>
                     <div className="lp-opp-meta">{h.organizer} · {h.prize}</div>
@@ -230,10 +239,10 @@ export default function Landing() {
               ))}
             </div>
             <div>
-              <div className="lp-opp-cat">💼 Jobs</div>
+              <div className="lp-opp-cat" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Briefcase size={16} /> Jobs</div>
               {updates.jobs?.slice(0, 3).map(j => (
                 <div key={j.id} className="lp-opp-row card">
-                  <span className="lp-opp-icon">{j.logo}</span>
+                  <span className="lp-opp-icon"><CompanyLogo logo={j.logo} size={22} /></span>
                   <div className="lp-opp-info">
                     <div className="lp-opp-title">{j.title}</div>
                     <div className="lp-opp-meta">{j.company} · {j.package}</div>
@@ -250,20 +259,20 @@ export default function Landing() {
       <section className="lp-section">
         <div className="container">
           <div className="section-header" style={{ justifyContent: 'center', textAlign: 'center', flexDirection: 'column', gap: 0 }}>
-            <h2 className="section-title">🏅 How Scoring Works</h2>
+            <h2 className="section-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><Award size={24} className="text-gradient" /> How Scoring Works</h2>
             <p className="section-subtitle" style={{ marginTop: 6 }}>Every achievement contributes to your department rank</p>
           </div>
           <div className="lp-score-grid">
             {[
-              { icon: '⚡', title: 'Hackathon 1st Place',   pts: '+100', color: 'var(--gold-600)' },
-              { icon: '🥈', title: 'Hackathon 2nd Place',   pts: '+60',  color: '#6B7280' },
-              { icon: '🥉', title: 'Hackathon 3rd Place',   pts: '+40',  color: '#92400E' },
-              { icon: '🎖️', title: 'Participation',         pts: '+10',  color: 'var(--color-green)' },
-              { icon: '💼', title: 'Internship 3+ months',  pts: '+70',  color: 'var(--color-green)' },
-              { icon: '💼', title: 'Internship 1–3 months', pts: '+40',  color: 'var(--color-green)' },
-              { icon: '📚', title: 'Online Course',         pts: '+15',  color: '#1D4ED8' },
-              { icon: '🚀', title: 'Project',               pts: '+25',  color: '#C2410C' },
-              { icon: '🏅', title: 'Certification',         pts: '+10',  color: 'var(--gold-600)' },
+              { icon: <Zap size={28} />, title: 'Hackathon 1st Place',   pts: '+100', color: 'var(--gold-600)' },
+              { icon: <Medal size={28} />, title: 'Hackathon 2nd Place',   pts: '+60',  color: '#6B7280' },
+              { icon: <Medal size={28} />, title: 'Hackathon 3rd Place',   pts: '+40',  color: '#92400E' },
+              { icon: <Award size={28} />, title: 'Participation',         pts: '+10',  color: 'var(--color-green)' },
+              { icon: <Briefcase size={28} />, title: 'Internship 3+ months',  pts: '+70',  color: 'var(--color-green)' },
+              { icon: <Briefcase size={28} />, title: 'Internship 1–3 months', pts: '+40',  color: 'var(--color-green)' },
+              { icon: <BookOpen size={28} />, title: 'Online Course',         pts: '+15',  color: '#1D4ED8' },
+              { icon: <Rocket size={28} />, title: 'Project',               pts: '+25',  color: '#C2410C' },
+              { icon: <Award size={28} />, title: 'Certification',         pts: '+10',  color: 'var(--gold-600)' },
             ].map((item, i) => (
               <div key={i} className="lp-score-card card animate-fadeInUp" style={{ animationDelay: `${i * 0.04}s` }}>
                 <span className="lp-score-icon">{item.icon}</span>
