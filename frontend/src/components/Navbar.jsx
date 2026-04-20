@@ -44,7 +44,7 @@ export default function Navbar() {
             alt="Inceptron Logo"
             className="hero-logo"
           />
-          <div className="brand-text">
+          <div className="brand-text hero-title">
             <span className="brand-name">SIET</span>
             <span className="brand-dept">Inceptron</span>
           </div>

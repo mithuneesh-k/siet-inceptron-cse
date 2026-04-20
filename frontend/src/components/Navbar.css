@@ -29,19 +29,21 @@
 /* Brand */
 .navbar-brand {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   flex-shrink: 0;
   text-decoration: none;
   padding: 8px 12px;
   margin-left: -12px;
 }
 .hero-logo {
-  width: 48px;
-  height: 48px;
+  width: 72px;
+  height: 72px;
   object-fit: contain;
-  margin-right: 12px;
+  margin-right: 20px;
+  margin-top: 6px;
   flex-shrink: 0;
 }
+.hero-title { line-height: 1.1; }
 .brand-text { display: flex; flex-direction: column; line-height: 1.2; }
 .navbar-brand .brand-name {
   font-size: 15px; font-weight: 900;
