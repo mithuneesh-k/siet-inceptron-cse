@@ -1,5 +1,6 @@
 import TruncatedText from './TruncatedText';
 import { Flame, Banknote, MapPin, Calendar, Clock } from 'lucide-react';
+import CompanyLogo from './CompanyLogo';
 
 export default function LiveFeedCard({ item, type }) {
   const config = {
@@ -18,7 +19,7 @@ export default function LiveFeedCard({ item, type }) {
   return (
     <div className="live-card card card-hover" style={{ borderLeft: `3px solid ${config.accent}` }}>
       <div className="live-top">
-        <span className="live-emoji">{item.logo}</span>
+        <span className="live-emoji"><CompanyLogo logo={item.logo} size={28} /></span>
         <div className="live-badges">
           {item.difficulty && <span className={`badge ${config.badgeCls}`}>{item.difficulty}</span>}
           {isExpiring && <span className="badge badge-red" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Flame size={12} /> Closing Soon</span>}

@@ -4,6 +4,7 @@ import client from '../api/client';
 import ScoreBadge from '../components/ScoreBadge';
 import { useAuth } from '../contexts/AuthContext';
 import { Users, Award, Trophy, Briefcase, UsersRound, Star, Zap, BookOpen, Rocket, Medal, Target } from 'lucide-react';
+import CompanyLogo from '../components/CompanyLogo';
 
 const RANK_ICONS = [
   <Medal size={18} color="#B45309" strokeWidth={2.5} style={{ display: 'inline' }} />,
@@ -228,7 +229,7 @@ export default function Landing() {
               <div className="lp-opp-cat" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Trophy size={16} /> Hackathons</div>
               {updates.hackathons?.slice(0, 3).map(h => (
                 <div key={h.id} className="lp-opp-row card">
-                  <span className="lp-opp-icon">{h.logo}</span>
+                  <span className="lp-opp-icon"><CompanyLogo logo={h.logo} size={22} /></span>
                   <div className="lp-opp-info">
                     <div className="lp-opp-title">{h.title}</div>
                     <div className="lp-opp-meta">{h.organizer} · {h.prize}</div>
@@ -241,7 +242,7 @@ export default function Landing() {
               <div className="lp-opp-cat" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Briefcase size={16} /> Jobs</div>
               {updates.jobs?.slice(0, 3).map(j => (
                 <div key={j.id} className="lp-opp-row card">
-                  <span className="lp-opp-icon">{j.logo}</span>
+                  <span className="lp-opp-icon"><CompanyLogo logo={j.logo} size={22} /></span>
                   <div className="lp-opp-info">
                     <div className="lp-opp-title">{j.title}</div>
                     <div className="lp-opp-meta">{j.company} · {j.package}</div>
