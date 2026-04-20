@@ -101,7 +101,7 @@ export default function Landing() {
       <div className="lp">
         <section className="lp-hero" style={{ padding: '40px 0', minHeight: 'calc(100vh - 84px)', display: 'flex', alignItems: 'center' }}>
           <div className="container" style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '24px', marginBottom: '32px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', marginBottom: '32px' }}>
               <img 
                 src="/white_background_,_202604201452-Photoroom.png" 
                 alt="CSE Inceptron" 
@@ -133,7 +133,7 @@ export default function Landing() {
               <span className="lp-pill-dot" />
               Sri Shakthi Institute of Engineering and Technology, Coimbatore
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '18px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '18px' }}>
               <img 
                 src="/white_background_,_202604201452-Photoroom.png" 
                 alt="CSE Inceptron" 
