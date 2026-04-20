@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import CustomSelect from '../components/CustomSelect';
 
 const CLASSES = ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D'];
 const YEARS = [1, 2, 3, 4];
@@ -13,7 +14,20 @@ const getBatchString = (year) => {
 export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: '', roll_no: '', year: '3', class: 'CSE-A', email: '', password: '', github: '', linkedin: '', bio: '' });
+  const [form, setForm] = useState({ 
+    name: '', 
+    roll_no: '', 
+    year: '3', 
+    class: 'CSE-A', 
+    email: '', 
+    password: '', 
+    github: '', 
+    linkedin: '', 
+    twitter: '',
+    instagram: '',
+    portfolio: '',
+    bio: '' 
+  });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -71,15 +85,19 @@ export default function Register() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div className="form-group">
               <label className="form-label">Year *</label>
-              <select id="reg-year" className="form-select" value={form.year} onChange={set('year')}>
-                {YEARS.map(y => <option key={y} value={y}>{getBatchString(y)}</option>)}
-              </select>
+              <CustomSelect
+                value={form.year}
+                onChange={val => setForm(f => ({ ...f, year: val }))}
+                options={YEARS.map(y => ({ value: String(y), label: getBatchString(y) }))}
+              />
             </div>
             <div className="form-group">
               <label className="form-label">Section *</label>
-              <select id="reg-class" className="form-select" value={form.class} onChange={set('class')}>
-                {CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+              <CustomSelect
+                value={form.class}
+                onChange={val => setForm(f => ({ ...f, class: val }))}
+                options={CLASSES.map(c => ({ value: c, label: c }))}
+              />
             </div>
           </div>
 
@@ -90,13 +108,29 @@ export default function Register() {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div className="form-group">
-              <label className="form-label">GitHub (optional)</label>
-              <input type="text" className="form-input" placeholder="username" value={form.github} onChange={set('github')} />
+              <label className="form-label">GitHub URL (optional)</label>
+              <input type="text" className="form-input" placeholder="https://github.com/yourname" value={form.github} onChange={set('github')} />
             </div>
             <div className="form-group">
-              <label className="form-label">LinkedIn (optional)</label>
-              <input type="text" className="form-input" placeholder="profile-slug" value={form.linkedin} onChange={set('linkedin')} />
+              <label className="form-label">LinkedIn URL (optional)</label>
+              <input type="text" className="form-input" placeholder="https://linkedin.com/in/yourname" value={form.linkedin} onChange={set('linkedin')} />
             </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div className="form-group">
+              <label className="form-label">Twitter/X URL (optional)</label>
+              <input type="text" className="form-input" placeholder="https://twitter.com/..." value={form.twitter || ''} onChange={set('twitter')} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Instagram URL (optional)</label>
+              <input type="text" className="form-input" placeholder="https://instagram.com/..." value={form.instagram || ''} onChange={set('instagram')} />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Portfolio URL (optional)</label>
+            <input type="text" className="form-input" placeholder="https://yourportfolio.com" value={form.portfolio || ''} onChange={set('portfolio')} />
           </div>
 
           <div className="form-group">

@@ -105,7 +105,7 @@ export default function Landing() {
             <p className="lp-sub" style={{ margin: '0 auto 40px', fontSize: '18px' }}>
               The exclusive achievement hub for SIET CSE Department. Track your progress, discover opportunities, and climb the leaderboard.
             </p>
-            <Link to="/login" className="btn btn-primary btn-lg" style={{ padding: '16px 32px', fontSize: '16px' }}>Sign In to Portal →</Link>
+            <a href="http://110.172.151.102/" className="btn btn-primary btn-lg" style={{ padding: '16px 32px', fontSize: '16px' }}>Sign In to Portal →</a>
           </div>
         </section>
       </div>
@@ -135,7 +135,7 @@ export default function Landing() {
               Form your team. Build your career at <strong>SIET</strong>.
             </p>
             <div className="lp-ctas">
-              <Link to="/login" className="btn btn-primary btn-lg">🚀 Sign In to Portal</Link>
+              <a href="http://110.172.151.102/" className="btn btn-primary btn-lg">🚀 Sign In to Portal</a>
               <Link to="/leaderboard" className="btn btn-secondary btn-lg">🏆 Leaderboard</Link>
             </div>
           </div>
@@ -283,7 +283,7 @@ export default function Landing() {
             <p className="lp-cta-sub">Join the SIET Inceptron Achievement Portal and start building your profile today.</p>
           </div>
           <div className="lp-cta-btns">
-            <Link to="/login" className="btn btn-primary btn-lg">Sign Into Your Profile →</Link>
+            <a href="http://110.172.151.102/" className="btn btn-primary btn-lg">Sign Into Your Profile →</a>
             <Link to="/updates" className="btn btn-secondary btn-lg">Browse Opportunities</Link>
           </div>
         </div>

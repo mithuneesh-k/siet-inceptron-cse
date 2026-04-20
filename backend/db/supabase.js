@@ -46,7 +46,7 @@ async function getUserWithScore(id) {
   if (authUser.role === 'student') {
     const { data } = await supabase
       .from('students')
-      .select('name, roll_no, reg_no, year, class, batch, date_of_birth, bio, github, linkedin, avatar_url, phone')
+      .select('name, roll_no, reg_no, year, class, batch, date_of_birth, bio, github, linkedin, avatar_url, phone, phone_public, dob_public, instagram, twitter, portfolio')
       .eq('user_id', id)
       .maybeSingle();
     profile = data || {};

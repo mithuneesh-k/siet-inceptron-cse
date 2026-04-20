@@ -4,6 +4,7 @@ import client from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import ScoreBadge from '../components/ScoreBadge';
 import AchievementCard from '../components/AchievementCard';
+import CustomSelect from '../components/CustomSelect';
 
 const ACH_TYPES = ['hackathon', 'internship', 'course', 'project', 'certification'];
 const POSITIONS = ['1st', '2nd', '3rd', 'participated'];
@@ -103,24 +104,46 @@ export default function Profile() {
               <div className="profile-links">
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
                   {user.github && (
-                    <a href={`https://github.com/${user.github}`} target="_blank" rel="noopener noreferrer" className="profile-link">
-                      🔗 GitHub
+                    <a href={user.github.startsWith('http') ? user.github : `https://github.com/${user.github.startsWith('@') ? user.github.slice(1) : user.github}`} target="_blank" rel="noopener noreferrer" className="profile-link">
+                      🐙 GitHub
                     </a>
                   )}
                   {user.linkedin && (
-                    <a href={`https://linkedin.com/in/${user.linkedin}`} target="_blank" rel="noopener noreferrer" className="profile-link">
+                    <a href={user.linkedin.startsWith('http') ? user.linkedin : `https://linkedin.com/in/${user.linkedin}`} target="_blank" rel="noopener noreferrer" className="profile-link">
                       💼 LinkedIn
                     </a>
                   )}
-                  {user.phone && (
+                  {user.twitter && (
+                    <a href={user.twitter.startsWith('http') ? user.twitter : `https://twitter.com/${user.twitter.startsWith('@') ? user.twitter.slice(1) : user.twitter}`} target="_blank" rel="noopener noreferrer" className="profile-link">
+                      🐦 Twitter
+                    </a>
+                  )}
+                  {user.instagram && (
+                    <a href={user.instagram.startsWith('http') ? user.instagram : `https://instagram.com/${user.instagram.startsWith('@') ? user.instagram.slice(1) : user.instagram}`} target="_blank" rel="noopener noreferrer" className="profile-link">
+                      📸 Instagram
+                    </a>
+                  )}
+                  {user.portfolio && (
+                    <a href={user.portfolio.startsWith('http') ? user.portfolio : `https://${user.portfolio}`} target="_blank" rel="noopener noreferrer" className="profile-link">
+                      🌐 Portfolio
+                    </a>
+                  )}
+                  {(user.phone && (user.phone_public || isOwn || authUser?.is_admin)) && (
                     <a href={`https://wa.me/${user.phone.replace(/\D/g,'')}`} target="_blank" rel="noopener noreferrer" className="profile-link">
                       📞 {user.phone}
                     </a>
                   )}
-                  {!user.github && !user.linkedin && !user.phone && isOwn && (
-                    <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>✏️ Click Edit Profile to add your links</span>
+                  {isOwn && (
+                    <Link to="/edit-profile" className="profile-link profile-link-add">
+                      ➕ Add links
+                    </Link>
                   )}
                 </div>
+                {(user.date_of_birth && (user.dob_public || isOwn || authUser?.is_admin)) && (
+                   <div style={{ marginTop: '10px', fontSize: '13px', color: 'var(--color-text-muted)' }}>
+                     🎂 {new Date(user.date_of_birth).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+                   </div>
+                )}
               </div>
             </div>
 
@@ -211,9 +234,11 @@ export default function Profile() {
             <form onSubmit={addAchievement} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div className="form-group">
                 <label className="form-label">Type *</label>
-                <select className="form-select" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value, position: '', duration: '' }))}>
-                  {ACH_TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
-                </select>
+                <CustomSelect 
+                  value={form.type} 
+                  onChange={val => setForm(f => ({ ...f, type: val, position: '', duration: '' }))}
+                  options={ACH_TYPES.map(t => ({ value: t, label: t.charAt(0).toUpperCase() + t.slice(1) }))}
+                />
               </div>
 
               <div className="form-group">
@@ -222,29 +247,35 @@ export default function Profile() {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Description</label>
-                <textarea className="form-input" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} placeholder="Brief description..." style={{ resize: 'vertical' }} />
+                <label className="form-label">Description (max 300 chars)</label>
+                <textarea className="form-input" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} placeholder="Brief description..." maxLength={300} style={{ resize: 'vertical' }} />
               </div>
 
               {form.type === 'hackathon' && (
                 <div className="form-group">
                   <label className="form-label">Position *</label>
-                  <select className="form-select" value={form.position} onChange={e => setForm(f => ({ ...f, position: e.target.value }))} required>
-                    <option value="">Select position</option>
-                    {POSITIONS.map(p => <option key={p} value={p}>{p === 'participated' ? 'Participated' : `${p} Place`}</option>)}
-                  </select>
+                  <CustomSelect 
+                    value={form.position} 
+                    onChange={val => setForm(f => ({ ...f, position: val }))}
+                    placeholder="Select position"
+                    options={POSITIONS.map(p => ({ value: p, label: p === 'participated' ? 'Participated' : `${p} Place` }))}
+                  />
                 </div>
               )}
 
               {form.type === 'internship' && (
                 <div className="form-group">
                   <label className="form-label">Duration *</label>
-                  <select className="form-select" value={form.duration} onChange={e => setForm(f => ({ ...f, duration: e.target.value }))} required>
-                    <option value="">Select duration</option>
-                    <option value="short">Short (less than 1 month)</option>
-                    <option value="medium">Medium (1–3 months)</option>
-                    <option value="long">Long (3+ months)</option>
-                  </select>
+                  <CustomSelect 
+                    value={form.duration} 
+                    onChange={val => setForm(f => ({ ...f, duration: val }))}
+                    placeholder="Select duration"
+                    options={[
+                      { value: 'short', label: 'Short (less than 1 month)' },
+                      { value: 'medium', label: 'Medium (1–3 months)' },
+                      { value: 'long', label: 'Long (3+ months)' }
+                    ]}
+                  />
                 </div>
               )}
 
@@ -282,7 +313,9 @@ export default function Profile() {
         .profile-meta { display: flex; gap: 8px; font-size: 13px; color: var(--color-text-muted); margin-top: 6px; align-items: center; flex-wrap: wrap; }
         .profile-bio { font-size: 14px; color: var(--color-text-muted); margin-top: 10px; line-height: 1.6; }
         .profile-links { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
-        .profile-link { font-size: 13px; font-weight: 600; color: var(--color-green); padding: 5px 12px; background: var(--green-50); border: 1px solid rgba(34,197,94,0.2); border-radius: var(--radius-full); }
+        .profile-link { font-size: 13px; font-weight: 600; color: var(--color-green); padding: 5px 12px; background: var(--green-50); border: 1px solid rgba(34,197,94,0.2); border-radius: var(--radius-full); text-decoration: none; display: flex; align-items: center; gap: 4px; }
+        .profile-link-add { background: var(--color-bg); border-style: dashed; color: var(--color-text-muted); }
+        .profile-link-add:hover { border-color: var(--color-green); color: var(--color-green); background: var(--green-50); }
         .profile-actions { margin-left: auto; display: flex; flex-direction: column; align-items: center; padding-top: 8px; }
         .profile-stats { display: flex; gap: 0; border-top: 1px solid var(--border); padding: 16px 28px; align-items: center; }
         .p-stat { flex: 1; text-align: center; }

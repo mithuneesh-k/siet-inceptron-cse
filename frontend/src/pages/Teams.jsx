@@ -164,8 +164,8 @@ export default function Teams() {
                 <input className="form-input" value={createForm.name} onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Bug Busters" required />
               </div>
               <div className="form-group">
-                <label className="form-label">Description</label>
-                <textarea className="form-input" value={createForm.description} onChange={e => setCreateForm(f => ({ ...f, description: e.target.value }))} rows={3} placeholder="What are you building? Who are you looking for?" style={{ resize: 'vertical' }} />
+                <label className="form-label">Description (max 300 chars)</label>
+                <textarea className="form-input" value={createForm.description} onChange={e => setCreateForm(f => ({ ...f, description: e.target.value }))} rows={3} placeholder="What are you building? Who are you looking for?" maxLength={300} style={{ resize: 'vertical' }} />
               </div>
               <div className="form-group">
                 <label className="form-label">Team Type *</label>

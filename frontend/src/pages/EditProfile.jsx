@@ -12,7 +12,12 @@ export default function EditProfile() {
     bio: '', 
     github: '', 
     linkedin: '',
-    phone: ''
+    twitter: '',
+    instagram: '',
+    portfolio: '',
+    phone: '',
+    phone_public: false,
+    dob_public: false
   });
 
   const [passwordForm, setPasswordForm] = useState({
@@ -36,7 +41,12 @@ export default function EditProfile() {
           bio: res.data.bio || '',
           github: res.data.github || '',
           linkedin: res.data.linkedin || '',
-          phone: res.data.phone || ''
+          twitter: res.data.twitter || '',
+          instagram: res.data.instagram || '',
+          portfolio: res.data.portfolio || '',
+          phone: res.data.phone || '',
+          phone_public: res.data.phone_public || false,
+          dob_public: res.data.dob_public || false
         });
       })
       .catch(err => {
@@ -90,55 +100,111 @@ export default function EditProfile() {
           <form onSubmit={handleProfileSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             
             <div className="form-group">
-              <label className="form-label">Bio</label>
+              <label className="form-label">Bio (max 160 chars)</label>
               <textarea 
                 className="form-input" 
                 rows="3" 
                 style={{ resize: 'vertical' }}
                 placeholder="Tell others about yourself..."
+                maxLength={160}
                 value={profileForm.bio}
                 onChange={e => setProfileForm(prev => ({ ...prev, bio: e.target.value }))}
               />
             </div>
 
-            <div className="form-group">
-              <label className="form-label">LinkedIn Slug</label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span>linkedin.com/in/</span>
+            <div className="grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div className="form-group">
+                <label className="form-label">LinkedIn URL</label>
                 <input 
                   className="form-input" 
-                  placeholder="john-doe-123"
-                  value={profileForm.linkedin}
+                  placeholder="https://linkedin.com/in/username"
+                  value={profileForm.linkedin || ''}
                   onChange={e => setProfileForm(prev => ({ ...prev, linkedin: e.target.value }))}
                 />
               </div>
-            </div>
 
-            <div className="form-group">
-              <label className="form-label">GitHub Username</label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span>github.com/</span>
+              <div className="form-group">
+                <label className="form-label">GitHub URL</label>
                 <input 
                   className="form-input" 
-                  placeholder="johndoe"
-                  value={profileForm.github}
+                  placeholder="https://github.com/username"
+                  value={profileForm.github || ''}
                   onChange={e => setProfileForm(prev => ({ ...prev, github: e.target.value }))}
                 />
               </div>
             </div>
 
+            <div className="grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div className="form-group">
+                <label className="form-label">Twitter/X URL</label>
+                <input 
+                  className="form-input" 
+                  placeholder="https://twitter.com/username"
+                  value={profileForm.twitter || ''}
+                  onChange={e => setProfileForm(prev => ({ ...prev, twitter: e.target.value }))}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Instagram URL</label>
+                <input 
+                  className="form-input" 
+                  placeholder="https://instagram.com/username"
+                  value={profileForm.instagram || ''}
+                  onChange={e => setProfileForm(prev => ({ ...prev, instagram: e.target.value }))}
+                />
+              </div>
+            </div>
+
             <div className="form-group">
-              <label className="form-label">Phone / WhatsApp</label>
+              <label className="form-label">Portfolio URL</label>
               <input 
                 className="form-input" 
-                type="tel"
-                placeholder="+91..."
-                value={profileForm.phone}
-                onChange={e => setProfileForm(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="https://yourportfolio.com"
+                value={profileForm.portfolio || ''}
+                onChange={e => setProfileForm(prev => ({ ...prev, portfolio: e.target.value }))}
               />
             </div>
 
-            <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>Save Profile</button>
+            <div className="form-group">
+              <label className="form-label">Phone / WhatsApp</label>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <input 
+                  className="form-input" 
+                  type="tel"
+                  style={{ flex: 1 }}
+                  placeholder="+91..."
+                  value={profileForm.phone}
+                  onChange={e => setProfileForm(prev => ({ ...prev, phone: e.target.value }))}
+                />
+                <label className="checkbox-group">
+                  <input 
+                    type="checkbox" 
+                    className="checkbox-custom"
+                    checked={profileForm.phone_public} 
+                    onChange={e => setProfileForm(prev => ({ ...prev, phone_public: e.target.checked }))} 
+                  />
+                  <span>Public</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Privacy Settings</label>
+              <div style={{ display: 'flex', gap: '20px' }}>
+                <label className="checkbox-group">
+                  <input 
+                    type="checkbox" 
+                    className="checkbox-custom"
+                    checked={profileForm.dob_public} 
+                    onChange={e => setProfileForm(prev => ({ ...prev, dob_public: e.target.checked }))} 
+                  />
+                  <span>Show Birthday on Profile</span>
+                </label>
+              </div>
+            </div>
+
+            <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start', marginTop: '8px' }}>Save Profile Changes</button>
           </form>
         </div>
 

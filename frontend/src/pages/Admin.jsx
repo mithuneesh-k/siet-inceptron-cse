@@ -366,13 +366,13 @@ export default function Admin() {
                   <div className="card" style={{ overflow: 'hidden', marginTop: 16 }}>
                     {/* Table header */}
                     <div className="manage-table-header">
-                      <input
-                        type="checkbox"
-                        className="manage-checkbox"
-                        checked={selectedIds.size === managedStudents.length && managedStudents.length > 0}
-                        onChange={toggleSelectAll}
-                        title="Select all"
-                      />
+                        <input
+                          type="checkbox"
+                          className="checkbox-custom"
+                          checked={selectedIds.size === managedStudents.length && managedStudents.length > 0}
+                          onChange={toggleSelectAll}
+                          title="Select all"
+                        />
                       <span>Student</span>
                       <span>Roll No</span>
                       <span>Class</span>
@@ -390,7 +390,7 @@ export default function Admin() {
                         {isFullAdmin ? (
                           <input
                             type="checkbox"
-                            className="manage-checkbox"
+                            className="checkbox-custom"
                             checked={selectedIds.has(s.id)}
                             onChange={() => toggleSelect(s.id)}
                           />
@@ -611,7 +611,6 @@ export default function Admin() {
         }
         .manage-table-row:hover { background: var(--bg-hover); }
         .manage-table-row:last-child { border-bottom: none; }
-        .manage-checkbox { width: 16px; height: 16px; cursor: pointer; accent-color: var(--color-green); }
 
         .csv-dropzone {
           display: flex; flex-direction: column; align-items: center; justify-content: center;

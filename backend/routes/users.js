@@ -69,8 +69,11 @@ router.put('/:id', authMiddleware, async (req, res) => {
     return res.status(403).json({ error: "Cannot edit another user's profile" });
   }
 
-  const { name, bio, github, linkedin, avatar_url, phone } = req.body;
-
+  const { 
+    name, bio, github, linkedin, instagram, twitter, portfolio, 
+    avatar_url, phone, phone_public, dob_public 
+  } = req.body;
+  
   // Determine which profile table to update
   const table = req.user.role === 'student' ? 'students' : 'faculty';
   const updates = {};
@@ -78,8 +81,17 @@ router.put('/:id', authMiddleware, async (req, res) => {
   if (bio !== undefined) updates.bio = bio;
   if (github !== undefined) updates.github = github;
   if (linkedin !== undefined) updates.linkedin = linkedin;
+  if (instagram !== undefined) updates.instagram = instagram;
+  if (twitter !== undefined) updates.twitter = twitter;
+  if (portfolio !== undefined) updates.portfolio = portfolio;
   if (avatar_url !== undefined) updates.avatar_url = avatar_url;
-  if (phone !== undefined && req.user.role === 'student') updates.phone = phone;
+  
+  if (req.user.role === 'student') {
+    if (phone !== undefined) updates.phone = phone;
+    if (phone_public !== undefined) updates.phone_public = phone_public;
+    if (dob_public !== undefined) updates.dob_public = dob_public;
+  }
+  
   updates.updated_at = new Date().toISOString();
 
   const { error } = await supabase.from(table).update(updates).eq('user_id', uid);
