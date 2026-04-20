@@ -39,9 +39,11 @@ export default function Navbar() {
     <nav className={`navbar ${scrolled ? 'scrolled' : ''}`}>
       <div className="navbar-inner">
         <Link to="/" className="navbar-brand">
-          <div className="brand-logo" style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <img src="/white_background_,_202604201452-Photoroom.png" alt="Inceptron Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-          </div>
+          <img
+            src="/white_background_,_202604201452-Photoroom.png"
+            alt="Inceptron Logo"
+            style={{ height: '32px', width: 'auto', objectFit: 'contain', flexShrink: 0 }}
+          />
           <div className="brand-text">
             <span className="brand-name">SIET</span>
             <span className="brand-dept">Inceptron</span>
