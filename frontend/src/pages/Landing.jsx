@@ -101,16 +101,13 @@ export default function Landing() {
       <div className="lp">
         <section className="lp-hero" style={{ padding: '40px 0', minHeight: 'calc(100vh - 84px)', display: 'flex', alignItems: 'center' }}>
           <div className="container" style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
-              <img src="/white_background_,_202604201452-Photoroom.png" alt="Inceptron Logo" style={{ height: '130px', objectFit: 'contain' }} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '24px', marginBottom: '32px' }}>
+              <img src="/white_background_,_202604201452-Photoroom.png" alt="CSE Inceptron" style={{ width: '80px', height: '80px' }} />
+              <div style={{ textAlign: 'left' }}>
+                <h1 style={{ fontSize: '2.8rem', fontWeight: 700, margin: 0, lineHeight: 1.1 }}>Welcome to</h1>
+                <h1 style={{ fontSize: '3rem', fontWeight: 800, color: 'var(--color-green)', margin: 0, lineHeight: 1.1 }}>Inceptron Hub</h1>
+              </div>
             </div>
-            <div className="lp-pill" style={{ margin: '0 auto 24px' }}>
-              <span className="lp-pill-dot" />
-              Sri Shakthi Institute of Engineering and Technology, Coimbatore
-            </div>
-            <h1 className="lp-h1" style={{ marginBottom: '16px', fontSize: 'clamp(36px, 5vw, 56px)' }}>
-              Welcome to <br/><span className="lp-h1-accent">Inceptron Hub</span>
-            </h1>
             <p className="lp-sub" style={{ margin: '0 auto 40px', fontSize: '18px' }}>
               The exclusive achievement hub for SIET CSE Department. Track your progress, discover opportunities, and climb the leaderboard.
             </p>
