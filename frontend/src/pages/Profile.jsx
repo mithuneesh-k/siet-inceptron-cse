@@ -20,6 +20,8 @@ export default function Profile() {
   const { user: authUser, refreshUser } = useAuth();
   const [user, setUser] = useState(null);
   const [achievements, setAchievements] = useState([]);
+  const [teams, setTeams] = useState([]);
+  const [invites, setInvites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [form, setForm] = useState({ type: 'hackathon', title: '', description: '', position: '', duration: '', proof_url: '' });
@@ -33,16 +35,32 @@ export default function Profile() {
 
   const fetchData = async () => {
     try {
-      const [userRes, achRes] = await Promise.all([
+      const [userRes, achRes, teamRes] = await Promise.all([
         client.get(`/users/${id}`),
-        client.get(`/achievements/user/${id}`)
+        client.get(`/achievements/user/${id}`),
+        client.get(`/teams/user/${id}`)
       ]);
       setUser(userRes.data);
       setAchievements(achRes.data);
-      setUser(userRes.data);
-      setAchievements(achRes.data);
+      setTeams(teamRes.data);
+
+      if (authUser?.id === id) {
+        const { data: invRes } = await client.get('/teams/my-invites');
+        setInvites(invRes);
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleInviteAction = async (inviteId, action) => {
+    try {
+      if (action === 'approve') await client.post(`/teams/invites/${inviteId}/approve`);
+      else await client.delete(`/teams/invites/${inviteId}`);
+      showToast(action === 'approve' ? 'Joined team! 🎉' : 'Invite declined');
+      fetchData();
+    } catch (err) {
+      showToast('Action failed', 'error');
     }
   };
 
@@ -114,6 +132,27 @@ export default function Profile() {
     <div className="page-content">
       <div className="container">
 
+        {/* Invitations Alert */}
+        {isOwn && invites.length > 0 && (
+          <div className="invite-alert animate-fadeIn">
+            <div className="invite-alert-content">
+              <Plus size={20} className="shake" />
+              <span>You have <strong>{invites.length}</strong> pending team invite{invites.length > 1 ? 's' : ''}!</span>
+            </div>
+            <div className="invite-cards">
+              {invites.map(inv => (
+                <div key={inv.id} className="invite-card-mini">
+                  <div className="inv-info"><strong>{inv.teams.name}</strong></div>
+                  <div className="inv-actions">
+                    <button className="btn-mini acc" onClick={() => handleInviteAction(inv.id, 'approve')}>Accept</button>
+                    <button className="btn-mini dec" onClick={() => handleInviteAction(inv.id, 'decline')}>✕</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Admin Breadcrumbs */}
         {authUser?.is_admin && !isOwn && (
           <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--color-text-muted)' }}>
@@ -124,8 +163,6 @@ export default function Profile() {
             <span style={{ color: 'var(--color-text)' }}>{user.name}</span>
           </div>
         )}
-
-        {/* Profile Completion Bar removed by request */}
 
         {/* Profile Header */}
         <div className="profile-header card animate-fadeInUp">
@@ -234,6 +271,26 @@ export default function Profile() {
             )}
           </div>
         </div>
+
+        {/* My Teams */}
+        {teams.length > 0 && (
+          <div className="animate-fadeInUp delay-1" style={{ marginBottom: '32px' }}>
+            <h2 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}><Plus size={20} className="text-gradient" /> My Teams</h2>
+            <div className="grid-auto">
+              {teams.map(t => (
+                <Link key={t.id} to={`/teams?selected=${t.id}`} className="mini-team-card card card-hover">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div className="mini-team-icon">{t.type === 'hackathon' ? '⚡' : t.type === 'project' ? '🚀' : '🔬'}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: 15 }}>{t.name}</div>
+                      <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{t.role === 'leader' ? '👑 Leader' : 'Member'}</div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Breakdown */}
         {user.role === 'student' && typeBreakdown.length > 0 && (

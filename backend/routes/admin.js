@@ -28,28 +28,29 @@ router.get('/students', async (req, res) => {
 
   if (search) query = query.ilike('name', `%${search}%`);
 
-  const { data: profiles, error: pErr } = await query;
-  if (pErr) return res.status(500).json({ error: 'Failed to fetch students', details: pErr.message });
+  // Parallel fetch: profiles and all verified achievements
+  const [pRes, aRes] = await Promise.all([
+    query,
+    supabase.from('achievements').select('user_id, points').eq('verified', true)
+  ]);
 
-  // Get emails
+  if (pRes.error) return res.status(500).json({ error: 'Failed to fetch students', details: pRes.error.message });
+  const profiles = pRes.data || [];
+  const achs = aRes.data || [];
+
+  if (!profiles.length) return res.json([]);
+
   const userIds = profiles.map(s => s.user_id);
-  if (!userIds.length) return res.json([]);
 
-  const { data: authRows } = await supabase
-    .from('users')
-    .select('id, email')
-    .in('id', userIds);
-  const emailMap = Object.fromEntries((authRows || []).map(u => [u.id, u.email]));
+  // Fetch emails and group achievements in parallel
+  const [uRes] = await Promise.all([
+    supabase.from('users').select('id, email').in('id', userIds)
+  ]);
 
-  // Get scores
-  const { data: achs } = await supabase
-    .from('achievements')
-    .select('user_id, points')
-    .in('user_id', userIds)
-    .eq('verified', true);
-
+  const emailMap = Object.fromEntries((uRes.data || []).map(u => [u.id, u.email]));
+  
   const achMap = {};
-  for (const a of (achs || [])) {
+  for (const a of achs) {
     if (!achMap[a.user_id]) achMap[a.user_id] = { score: 0, count: 0 };
     achMap[a.user_id].score += a.points || 0;
     achMap[a.user_id].count++;

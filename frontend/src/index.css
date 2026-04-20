@@ -540,3 +540,85 @@ img { max-width: 100%; display: block; }
   border-radius: var(--radius-full);
   margin-top: 8px;
 }
+
+/* ─── Profile Teams & Invites ───────────────── */
+.invite-alert {
+  background: var(--green-100);
+  border: 1.5px solid var(--color-green);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  margin-bottom: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 4px 15px rgba(42, 125, 20, 0.1);
+}
+
+.invite-alert-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  color: var(--green-900);
+}
+
+.invite-alert-content strong { color: var(--color-green); }
+
+.invite-cards {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.invite-card-mini {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.inv-info { font-size: 13px; font-weight: 600; color: var(--color-text); }
+
+.inv-actions { display: flex; gap: 6px; }
+.btn-mini {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800; cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-mini.acc { background: var(--color-green); color: white; border: none; width: auto; padding: 0 10px; }
+.btn-mini.acc:hover { background: var(--color-green-dark); }
+.btn-mini.dec { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
+.btn-mini.dec:hover { background: #fecaca; }
+
+.mini-team-card {
+  padding: 16px;
+  text-decoration: none;
+}
+
+.mini-team-icon {
+  width: 40px; height: 40px;
+  background: var(--green-50);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+}
+
+.shake { animation: shake 2.5s infinite; }
+@keyframes shake {
+  0%, 100% { transform: rotate(0); }
+  10%, 30%, 50%, 70%, 90% { transform: rotate(-5deg); }
+  20%, 40%, 60%, 80% { transform: rotate(5deg); }
+}
+
+.anim-stagg > * { opacity: 0; animation: fadeInUp 0.4s ease forwards; }
+.anim-stagg > *:nth-child(1) { animation-delay: 0.1s; }
+.anim-stagg > *:nth-child(2) { animation-delay: 0.15s; }
+.anim-stagg > *:nth-child(3) { animation-delay: 0.2s; }
+.anim-stagg > *:nth-child(4) { animation-delay: 0.25s; }
+.anim-stagg > *:nth-child(5) { animation-delay: 0.3s; }
+
