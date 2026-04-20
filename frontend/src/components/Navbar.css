@@ -141,7 +141,10 @@
   }
   .navbar-links.open { transform: translateY(0); opacity: 1; pointer-events: all; }
   .nav-link { padding: 12px 14px; }
-  .navbar-actions { margin-left: auto; }
+  .navbar-actions { margin-left: auto; gap: 4px; }
   .user-name { display: none; }
-  .menu-toggle { display: flex; }
+  .user-chip { padding: 2px; }
+  .user-menu { gap: 4px; }
+  .navbar-actions .btn { padding: 6px 8px; font-size: 12px; }
+  .menu-toggle { display: flex; margin-left: 6px; }
 }

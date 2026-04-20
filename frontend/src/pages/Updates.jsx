@@ -85,7 +85,7 @@ export default function Updates() {
             onChange={e => setSearch(e.target.value)}
             style={{ flex: '1', minWidth: '200px' }}
           />
-          <div style={{ width: '150px' }}>
+          <div style={{ flex: '1 1 140px' }}>
             <CustomSelect 
               value={filterType} 
               onChange={setFilterType} 
@@ -93,7 +93,7 @@ export default function Updates() {
               options={[{value: '', label: 'All Types'}, {value: 'hackathon', label: 'Hackathons'}, {value: 'job', label: 'Jobs'}]} 
             />
           </div>
-          <div style={{ width: '150px' }}>
+          <div style={{ flex: '1 1 140px' }}>
             <CustomSelect 
               value={filterBatch} 
               onChange={setFilterBatch} 
@@ -101,7 +101,7 @@ export default function Updates() {
               options={[{value: '', label: 'All Batches'}, {value: '2026-2030', label: '2026-2030'}, {value: '2025-2029', label: '2025-2029'}]} 
             />
           </div>
-          <div style={{ width: '160px' }}>
+          <div style={{ flex: '1 1 140px' }}>
             <CustomSelect 
               value={filterDate} 
               onChange={setFilterDate} 
