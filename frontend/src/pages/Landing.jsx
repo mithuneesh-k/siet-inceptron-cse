@@ -102,7 +102,7 @@ export default function Landing() {
         <section className="lp-hero" style={{ padding: '40px 0', minHeight: 'calc(100vh - 84px)', display: 'flex', alignItems: 'center' }}>
           <div className="container" style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto' }}>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
-              <img src="/inceptron-logo.png" alt="Inceptron Logo" style={{ height: '120px', objectFit: 'contain', background: '#fff', borderRadius: '12px', padding: '8px' }} />
+              <img src="/white_background_,_202604201452-Photoroom.png" alt="Inceptron Logo" style={{ height: '130px', objectFit: 'contain' }} />
             </div>
             <div className="lp-pill" style={{ margin: '0 auto 24px' }}>
               <span className="lp-pill-dot" />
@@ -133,7 +133,7 @@ export default function Landing() {
               Sri Shakthi Institute of Engineering and Technology, Coimbatore
             </div>
             <div style={{ display: 'flex', gap: '20px', alignItems: 'center', marginBottom: '18px' }}>
-              <img src="/inceptron-logo.png" alt="Inceptron Logo" style={{ height: '90px', objectFit: 'contain', background: '#fff', borderRadius: '12px', padding: '8px' }} />
+              <img src="/white_background_,_202604201452-Photoroom.png" alt="Inceptron Logo" style={{ height: '90px', objectFit: 'contain' }} />
               <h1 className="lp-h1" style={{ marginBottom: 0 }}>
                 Inceptron<br />
                 <span className="lp-h1-accent">Achievement Hub</span>
