@@ -4,9 +4,16 @@
   top: 0; left: 0; right: 0;
   height: var(--navbar-height);
   background: var(--green-50);
-  border-bottom: 2px solid var(--green-200);
+  border-bottom: 1.5px solid var(--border);
   backdrop-filter: blur(10px);
   z-index: 1000;
+  transition: all var(--transition);
+}
+
+.navbar.scrolled {
+  background: rgba(255, 255, 255, 0.95);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
 }
 
 .navbar-inner {
@@ -37,15 +44,15 @@
   padding: 2px;
 }
 .brand-text { display: flex; flex-direction: column; line-height: 1.2; }
-.brand-name {
-  font-size: 15px; font-weight: 800;
+.navbar-brand .brand-name {
+  font-size: 15px; font-weight: 900;
   font-family: 'Space Grotesk', sans-serif;
-  color: var(--green-800);
+  color: #0d4005;
   letter-spacing: -0.01em;
 }
-.brand-dept {
-  font-size: 10px; color: var(--green-600);
-  font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase;
+.navbar-brand .brand-dept {
+  font-size: 10px; color: #0d4005;
+  font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase;
 }
 
 /* Nav links */

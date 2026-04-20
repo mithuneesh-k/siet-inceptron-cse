@@ -8,6 +8,11 @@ import CustomSelect from '../components/CustomSelect';
 import FilterModal from '../components/FilterModal';
 import FacultyAdvisorModal from '../components/FacultyAdvisorModal';
 import FacultyActionModal from '../components/FacultyActionModal';
+import { 
+  Shield, BarChart2, Users, Settings, GraduationCap, Hourglass, 
+  Award, TrendingUp, List, RefreshCw, Trash2, Download, Plus, 
+  Edit3, Key, Check, X, ExternalLink, Inbox
+} from 'lucide-react';
 
 const CLASSES = ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D', 'CSE-E'];
 
@@ -127,7 +132,7 @@ export default function Admin() {
       setManagedStudents(prev => prev.filter(st => st.id !== s.id));
       setSelectedIds(prev => { const n = new Set(prev); n.delete(s.id); return n; });
       setDeleteConfirm(null);
-      showToast(`🗑️ ${s.name} deleted.`);
+      showToast(<span><Trash2 size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }} /> {s.name} deleted.</span>);
     } catch {
       showToast('Failed to delete student.', 'error');
     }
@@ -144,13 +149,13 @@ export default function Admin() {
     }
     setManagedStudents(prev => prev.filter(s => !selectedIds.has(s.id)));
     setSelectedIds(new Set());
-    showToast(`🗑️ ${count} students deleted.`);
+    showToast(<span><Trash2 size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }} /> {count} students deleted.</span>);
   };
 
   const handleResetPassword = async (s) => {
     try {
       await client.post(`/admin/students/${s.id}/reset-password`);
-      showToast(`🔑 Password reset for ${s.name}.`);
+      showToast(<span><Key size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }} /> Password reset for {s.name}.</span>);
     } catch {
       showToast('Failed to reset password.', 'error');
     }
@@ -183,11 +188,11 @@ export default function Admin() {
   }, [user, isFullAdmin]);
 
   const tabs = [
-    { id: 'overview', l: '📊 Overview' },
-    { id: 'students', l: '👩‍💻 Students' },
-    { id: 'manage', l: '⚙️ Manage' },
-    ...(isFullAdmin ? [{ id: 'faculty', l: '🎓 Faculty' }] : []),
-    { id: 'pending', l: `⏳ Pending (${achievements.length})` },
+    { id: 'overview', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><BarChart2 size={16} /> Overview</span> },
+    { id: 'students', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Users size={16} /> Students</span> },
+    { id: 'manage', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Settings size={16} /> Manage</span> },
+    ...(isFullAdmin ? [{ id: 'faculty', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><GraduationCap size={16} /> Faculty</span> }] : []),
+    { id: 'pending', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Hourglass size={16} /> Pending ({achievements.length})</span> },
   ];
 
   return (
@@ -195,10 +200,10 @@ export default function Admin() {
       <div className="container">
         <div className="admin-header animate-fadeInUp">
           <div>
-            <h1 className="section-title">🛡️ <span className="text-gradient">Admin Panel</span></h1>
+            <h1 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Shield size={28} className="text-gradient" /> <span className="text-gradient">Admin Panel</span></h1>
             <p className="section-subtitle">Sri Shakthi Institute of Engineering and Technology — CSE Department</p>
           </div>
-          <div className="badge badge-gold" style={{ padding: '8px 16px', fontSize: 13 }}>👨‍🏫 {user.name}</div>
+          <div className="badge badge-gold" style={{ padding: '8px 16px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}><Shield size={14} /> {user.name}</div>
         </div>
 
         <div className="tab-bar animate-fadeInUp delay-1" style={{ marginBottom: 28, flexWrap: 'wrap' }}>
@@ -207,20 +212,34 @@ export default function Admin() {
           ))}
         </div>
 
-        {loading && tab !== 'manage' ? <div className="loading-screen"><div className="spinner" /></div> : (
+        {loading && tab !== 'manage' ? (
+          <div className="card" style={{ padding: '24px' }}>
+            <div className="skeleton skeleton-text-lg" style={{ width: '40%' }}></div>
+            <div className="skeleton skeleton-text" style={{ width: '60%' }}></div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px', marginTop: '24px' }}>
+              <div className="skeleton skeleton-card" style={{ height: '100px' }}></div>
+              <div className="skeleton skeleton-card" style={{ height: '100px' }}></div>
+              <div className="skeleton skeleton-card" style={{ height: '100px' }}></div>
+              <div className="skeleton skeleton-card" style={{ height: '100px' }}></div>
+            </div>
+            <div style={{ marginTop: '32px' }}>
+              {[1,2,3].map(i => <div key={i} className="skeleton skeleton-card" style={{ height: '60px', marginBottom: '12px' }}></div>)}
+            </div>
+          </div>
+        ) : (
           <>
             {/* ── OVERVIEW ── */}
             {tab === 'overview' && (
               <div className="animate-fadeIn">
                 <div className="admin-stats">
                   {[
-                    { n: students.length, l: 'Total Students', i: '👩‍💻', c: 'var(--color-violet)' },
-                    { n: students.reduce((s, u) => s + u.achievement_count, 0), l: 'Total Achievements', i: '🏅', c: 'var(--color-gold)' },
-                    { n: avgScore, l: 'Avg Score', i: '📈', c: 'var(--color-blue)' },
-                    { n: achievements.length, l: 'Pending Reviews', i: '⏳', c: 'var(--color-orange)' },
+                    { n: students.length, l: 'Total Students', i: <Users size={28} />, c: 'var(--color-violet)' },
+                    { n: students.reduce((s, u) => s + u.achievement_count, 0), l: 'Total Achievements', i: <Award size={28} />, c: 'var(--color-gold)' },
+                    { n: avgScore, l: 'Avg Score', i: <TrendingUp size={28} />, c: 'var(--color-blue)' },
+                    { n: achievements.length, l: 'Pending Reviews', i: <Hourglass size={28} />, c: 'var(--color-orange)' },
                   ].map((s, i) => (
                     <div key={i} className="admin-stat card" style={{ borderTop: `3px solid ${s.c}` }}>
-                      <div style={{ fontSize: 28 }}>{s.i}</div>
+                      <div>{s.i}</div>
                       <div style={{ fontSize: 32, fontWeight: 900, fontFamily: "'Space Grotesk', sans-serif", color: s.c }}>{s.n}</div>
                       <div style={{ fontSize: 12, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{s.l}</div>
                     </div>
@@ -228,7 +247,7 @@ export default function Admin() {
                 </div>
 
                 <div className="card" style={{ padding: '20px 24px', marginTop: 20 }}>
-                  <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>📋 Top 5 Students by Score</h3>
+                  <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}><List size={18} /> Top 5 Students by Score</h3>
                   {students.slice(0, 5).map((s, i) => (
                     <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
                       <span style={{ fontWeight: 700, fontSize: 16, minWidth: 24 }}>#{i + 1}</span>
@@ -274,7 +293,7 @@ export default function Admin() {
                 {!isFullAdmin && (
                   <div className="advisor-banner animate-fadeInUp">
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <span style={{ fontSize: 24 }}>🛡️</span>
+                      <Shield size={24} />
                       <div>
                         <div style={{ fontWeight: 700, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Advisor Mode</div>
                         <div style={{ fontSize: 12, opacity: 0.8 }}>Managing students for <b>{user.advising_class}</b> ({user.advising_batch})</div>
@@ -288,7 +307,7 @@ export default function Admin() {
                     <input
                       className="form-input"
                       style={{ maxWidth: 260 }}
-                      placeholder="🔍 Search by name…"
+                      placeholder="Search by name…"
                       value={search}
                       onChange={e => setSearch(e.target.value)}
                     />
@@ -302,26 +321,26 @@ export default function Admin() {
                         {isFullAdmin ? `Filters ${(filterBatch || filterClass) ? '(Active)' : ''}` : `${user.advising_class || 'None'} (${user.advising_batch || 'None'})`}
                       </button>
                     </div>
-                    <button className="btn btn-ghost btn-sm" onClick={loadManagedStudents}>🔄 Refresh</button>
+                    <button className="btn btn-ghost btn-sm" onClick={loadManagedStudents} style={{ display: 'flex', alignItems: 'center', gap: 6 }}><RefreshCw size={14} /> Refresh</button>
                   </div>
                   <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                     {selectedIds.size > 0 && isFullAdmin && (
-                      <button className="btn btn-danger btn-sm" onClick={() => setDeleteConfirm('bulk')}>
-                        🗑️ Delete ({selectedIds.size})
+                      <button className="btn btn-danger btn-sm" onClick={() => setDeleteConfirm('bulk')} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Trash2 size={14} /> Delete ({selectedIds.size})
                       </button>
                     )}
                     {isFullAdmin ? (
                       <>
-                        <button className="btn btn-secondary btn-sm" onClick={() => setShowImportModal(true)}>
-                          📥 Import CSV
+                        <button className="btn btn-secondary btn-sm" onClick={() => setShowImportModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <Download size={14} /> Import CSV
                         </button>
-                        <button className="btn btn-primary btn-sm" onClick={() => setShowAddModal(true)}>
-                          ➕ Add Student
+                        <button className="btn btn-primary btn-sm" onClick={() => setShowAddModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <Plus size={14} /> Add Student
                         </button>
                       </>
                     ) : (
-                      <button className="btn btn-primary btn-sm" onClick={() => setShowAddModal(true)}>
-                        ➕ Add Student
+                      <button className="btn btn-primary btn-sm" onClick={() => setShowAddModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Plus size={14} /> Add Student
                       </button>
                     )}
                   </div>
@@ -355,10 +374,38 @@ export default function Admin() {
 
                 {/* Table */}
                 {manageLoading ? (
-                  <div className="loading-screen" style={{ minHeight: 200 }}><div className="spinner" /></div>
+                  <div className="card" style={{ padding: '20px', marginTop: '16px' }}>
+                    <div className="manage-table-header" style={{ marginBottom: '16px' }}>
+                      <div className="skeleton skeleton-text" style={{ width: '100%', margin: 0 }}></div>
+                    </div>
+                    {[1,2,3,4,5].map(i => (
+                      <div key={i} style={{ display: 'grid', gridTemplateColumns: '36px 2.5fr 120px 90px 120px 110px 130px', gap: '12px', padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
+                        <div className="skeleton skeleton-text" style={{ width: '20px', margin: 0 }}></div>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                          <div className="skeleton skeleton-circle" style={{ width: '34px', height: '34px' }}></div>
+                          <div style={{ flex: 1 }}>
+                            <div className="skeleton skeleton-text" style={{ width: '120px', margin: '0 0 4px' }}></div>
+                            <div className="skeleton skeleton-text" style={{ width: '80px', height: '10px', margin: 0 }}></div>
+                          </div>
+                        </div>
+                        <div className="skeleton skeleton-text" style={{ width: '60px', margin: 0 }}></div>
+                        <div className="skeleton skeleton-text" style={{ width: '40px', margin: 0 }}></div>
+                        <div className="skeleton skeleton-text" style={{ width: '60px', margin: 0 }}></div>
+                        <div className="skeleton skeleton-text" style={{ width: '60px', margin: 0 }}></div>
+                        <div className="skeleton skeleton-text" style={{ width: '80px', margin: 0 }}></div>
+                      </div>
+                    ))}
+                  </div>
                 ) : managedStudents.length === 0 ? (
                   <div className="empty-state">
-                    <div className="empty-icon">👩‍💻</div>
+                    <div className="empty-icon">
+                      <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{color: 'var(--color-green)', opacity: 0.5}}>
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <line x1="19" y1="8" x2="19" y2="14"></line>
+                        <line x1="22" y1="11" x2="16" y2="11"></line>
+                      </svg>
+                    </div>
                     <h3>No students found</h3>
                     <p>Try adjusting your filters or import a CSV.</p>
                   </div>
@@ -411,9 +458,9 @@ export default function Admin() {
                         <span><span className="badge badge-blue">{s.batch}</span></span>
                         <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{s.date_of_birth || '—'}</span>
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'nowrap' }}>
-                          <button className="btn btn-ghost btn-sm" title="Edit student" onClick={() => setEditStudent(s)}>✏️</button>
-                          <button className="btn btn-ghost btn-sm" title="Reset password to default" onClick={() => handleResetPassword(s)}>🔑</button>
-                          <button className="btn btn-danger btn-sm" title="Delete student" onClick={() => setDeleteConfirm(s)}>🗑️</button>
+                          <button className="btn btn-ghost btn-sm" title="Edit student" onClick={() => setEditStudent(s)}><Edit3 size={16} /></button>
+                          <button className="btn btn-ghost btn-sm" title="Reset password to default" onClick={() => handleResetPassword(s)}><Key size={16} /></button>
+                          <button className="btn btn-danger btn-sm" title="Delete student" onClick={() => setDeleteConfirm(s)}><Trash2 size={16} /></button>
                         </div>
                       </div>
                     ))}
@@ -431,16 +478,27 @@ export default function Admin() {
               <div className="animate-fadeIn">
                 <div className="section-header" style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <h3 style={{ fontSize: 18, fontWeight: 700 }}>🎓 CSE Faculty & Advisors</h3>
+                    <h3 style={{ fontSize: 18, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}><GraduationCap size={20} /> CSE Faculty & Advisors</h3>
                     <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Assigned class advisors have admin privileges for their specific class.</p>
                   </div>
-                  <button className="btn btn-primary" onClick={() => setShowAddFacModal(true)}>➕ Add Faculty</button>
+                  <button className="btn btn-primary" onClick={() => setShowAddFacModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Plus size={16} /> Add Faculty</button>
                 </div>
 
                 {facLoading ? (
-                  <div className="loading-screen" style={{ minHeight: 200 }}><div className="spinner" /></div>
+                  <div className="card" style={{ padding: '24px' }}>
+                    {[1,2,3].map(i => <div key={i} className="skeleton skeleton-card" style={{ height: '60px', marginBottom: '12px' }}></div>)}
+                  </div>
                 ) : faculties.length === 0 ? (
-                  <div className="empty-state">No faculty members found.</div>
+                  <div className="empty-state">
+                    <div className="empty-icon">
+                      <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{color: 'var(--color-green)', opacity: 0.5}}>
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                      </svg>
+                    </div>
+                    <h3>No faculty members found</h3>
+                    <p>Add faculty to begin managing advisor roles.</p>
+                  </div>
                 ) : (
                   <div className="card" style={{ overflow: 'hidden' }}>
                     <div className="manage-table-header" style={{ gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr 80px' }}>
@@ -480,7 +538,13 @@ export default function Admin() {
             {tab === 'pending' && (
               <div className="animate-fadeIn">
                 {achievements.length === 0 ? (
-                  <div className="empty-state"><div className="empty-icon">✅</div><h3>All caught up!</h3><p>No pending achievement reviews.</p></div>
+                  <div className="empty-state">
+                    <div className="empty-icon" style={{ marginBottom: '16px' }}>
+                      <Inbox size={48} color="var(--color-green)" strokeWidth={1.5} opacity={0.6} />
+                    </div>
+                    <h3>All caught up!</h3>
+                    <p>No pending achievement reviews.</p>
+                  </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     {achievements.map(a => (
@@ -493,11 +557,11 @@ export default function Admin() {
                             </div>
                             <h4 style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{a.title}</h4>
                             {a.description && <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{a.description}</p>}
-                            {a.proof_url && <a href={a.proof_url} target="_blank" rel="noopener noreferrer" className="badge badge-violet" style={{ marginTop: 8, display: 'inline-flex' }}>🔗 View Proof</a>}
+                            {a.proof_url && <a href={a.proof_url} target="_blank" rel="noopener noreferrer" className="badge badge-violet" style={{ marginTop: 8, display: 'inline-flex', alignItems: 'center', gap: 4 }}><ExternalLink size={12} /> View Proof</a>}
                           </div>
                           <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                            <button className="btn btn-primary btn-sm" onClick={() => verifyAch(a.id, true)}>✅ Verify</button>
-                            <button className="btn btn-danger btn-sm" onClick={() => verifyAch(a.id, false)}>✕ Reject</button>
+                            <button className="btn btn-primary btn-sm" onClick={() => verifyAch(a.id, true)} style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Check size={14} /> Verify</button>
+                            <button className="btn btn-danger btn-sm" onClick={() => verifyAch(a.id, false)} style={{ display: 'flex', alignItems: 'center', gap: 4 }}><X size={14} /> Reject</button>
                           </div>
                         </div>
                       </div>
@@ -515,7 +579,7 @@ export default function Admin() {
         <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setDeleteConfirm(null); }}>
           <div className="modal" style={{ maxWidth: 420 }}>
             <div className="modal-header">
-              <h2 className="modal-title">🗑️ Confirm Delete</h2>
+              <h2 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Trash2 size={20} color="var(--color-red)" /> Confirm Delete</h2>
               <button className="modal-close btn btn-ghost btn-sm" onClick={() => setDeleteConfirm(null)}>✕</button>
             </div>
             <p style={{ fontSize: 15, marginBottom: 20, color: 'var(--color-text-muted)' }}>
@@ -525,8 +589,8 @@ export default function Admin() {
             </p>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button className="btn btn-ghost" onClick={() => setDeleteConfirm(null)}>Cancel</button>
-              <button className="btn btn-danger" onClick={() => deleteConfirm === 'bulk' ? handleBulkDelete() : handleDelete(deleteConfirm)}>
-                🗑️ Yes, Delete
+              <button className="btn btn-danger" onClick={() => deleteConfirm === 'bulk' ? handleBulkDelete() : handleDelete(deleteConfirm)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Trash2 size={16} /> Yes, Delete
               </button>
             </div>
           </div>
@@ -629,10 +693,21 @@ export default function Admin() {
           .manage-table-header span:nth-child(n+6),
           .manage-table-row > *:nth-child(n+6) { display: none; }
         }
-        @media (max-width: 600px) {
-          .manage-table-header, .manage-table-row { grid-template-columns: 28px 1fr 80px; }
-          .manage-table-header span:nth-child(n+4),
-          .manage-table-row > *:nth-child(n+4) { display: none; }
+        @media (max-width: 640px) {
+          .manage-table-header { display: none; }
+          .manage-table-row {
+            display: flex; flex-wrap: wrap;
+            padding: 16px; gap: 8px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            margin-bottom: 12px;
+            position: relative;
+          }
+          .manage-table-row:last-child { border-bottom: 1px solid var(--border); }
+          .manage-table-row > input[type="checkbox"] { position: absolute; top: 16px; right: 16px; }
+          .manage-table-row > *:nth-child(2) { width: calc(100% - 40px); margin-bottom: 8px; } /* Student info */
+          .manage-table-row > span { display: inline-flex; align-items: center; background: var(--bg-hover); padding: 4px 8px; border-radius: var(--radius-sm); font-size: 12px; margin-right: 4px; }
+          .manage-table-row > div:last-child { width: 100%; border-top: 1px dashed var(--border); padding-top: 10px; margin-top: 4px; justify-content: flex-end; }
         }
       `}</style>
     </div>

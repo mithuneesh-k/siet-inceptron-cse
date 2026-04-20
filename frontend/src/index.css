@@ -355,11 +355,11 @@ img { max-width: 100%; display: block; }
 .badge-orange    { background: #FFF7ED; color: #C2410C; border-color: #FED7AA; }
 
 /* Achievement type badges */
-.type-hackathon   { background: var(--gold-50); color: var(--gold-700); border-color: var(--gold-200); }
-.type-internship  { background: var(--green-50); color: var(--color-green-dark); border-color: var(--green-200); }
-.type-course      { background: #EFF6FF; color: #1D4ED8; border-color: #BFDBFE; }
-.type-project     { background: #FFF7ED; color: #C2410C; border-color: #FED7AA; }
-.type-certification { background: var(--gold-50); color: var(--gold-700); border-color: var(--gold-200); }
+.type-hackathon     { background: #F0FDFA; color: #0F766E; border-color: #CCFBF1; } /* Teal */
+.type-internship    { background: #FFFBEB; color: #B45309; border-color: #FEF3C7; } /* Amber */
+.type-course        { background: #EFF6FF; color: #1D4ED8; border-color: #BFDBFE; } /* Blue */
+.type-project       { background: #F0FDF4; color: #15803D; border-color: #BBF7D0; } /* Green */
+.type-certification { background: #FAF5FF; color: #7E22CE; border-color: #E9D5FF; } /* Purple */
 
 /* ─── Section layout ────────────────────────── */
 .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
@@ -379,6 +379,22 @@ img { max-width: 100%; display: block; }
   animation: spin 0.8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── Skeleton Loaders ─── */
+.skeleton {
+  background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.skeleton-text { height: 16px; margin-bottom: 8px; border-radius: 4px; }
+.skeleton-text-lg { height: 24px; margin-bottom: 12px; }
+.skeleton-circle { border-radius: 50%; }
+.skeleton-card { border: 1.5px solid var(--border); padding: 20px; border-radius: var(--radius-md); background: #fff; }
 
 /* ─── Animations — subtle ───────────────────── */
 @keyframes fadeInUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
@@ -504,8 +520,10 @@ img { max-width: 100%; display: block; }
 
 /* ─── Empty State ───────────────────────────── */
 .empty-state { text-align: center; padding: 60px 24px; color: var(--color-text-muted); }
-.empty-state .empty-icon { font-size: 48px; margin-bottom: 14px; opacity: 0.4; }
-.empty-state h3 { font-size: 18px; font-weight: 700; color: var(--color-text); margin-bottom: 6px; }
+.empty-state .empty-icon { font-size: 48px; margin-bottom: 14px; opacity: 0.8; }
+.empty-state .empty-icon svg { width: 140px; height: 140px; margin: 0 auto 16px; }
+.empty-state h3 { font-size: 18px; font-weight: 700; color: var(--color-text); margin-bottom: 8px; }
+.empty-state p { font-size: 14px; margin-bottom: 16px; max-width: 300px; margin-inline: auto; }
 
 /* ─── Divider ───────────────────────────────── */
 .divider { height: 1.5px; background: var(--border); margin: 24px 0; }
