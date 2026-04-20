@@ -40,8 +40,8 @@ export default function Login() {
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
           <div className="form-group">
-            <label className="form-label">Email Address / Roll No</label>
-            <input id="login-email" type="email" className="form-input" placeholder="25cs... @SIET.ac.in" value={form.email}
+            <label className="form-label">Email / Roll No / Register No</label>
+            <input id="login-email" type="text" className="form-input" placeholder="e.g. 24CS001, 714024104001 or email" value={form.email}
               onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
           </div>
           <div className="form-group">

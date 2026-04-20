@@ -73,19 +73,71 @@ router.post('/register', async (req, res) => {
 // ─── POST /api/auth/login ─────────────────────────────────────────────────────
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ error: 'Email and password required.' });
+  if (!email || !password) return res.status(400).json({ error: 'Identifier and password required.' });
 
-  // Find auth record
-  const { data: authUser, error } = await supabase
+  const identifier = email.trim();
+  console.log(`🔍 Attempting login for identifier: ${identifier}`);
+
+  let authUser = null;
+
+  // 1. Try to find by email directly in 'users' table
+  const { data: byEmail } = await supabase
     .from('users')
     .select('id, email, password_hash, role')
-    .ilike('email', email.toLowerCase())
+    .ilike('email', identifier.toLowerCase())
     .maybeSingle();
 
-  if (!authUser) return res.status(404).json({ error: 'No account found with this email.' });
+  if (byEmail) {
+    console.log(`✅ Found user by email: ${byEmail.email}`);
+    authUser = byEmail;
+  } else {
+    // 2. Try to find by roll_no in 'students' table
+    console.log(`Searching for roll_no: ${identifier.toUpperCase()}`);
+    const { data: byRollNo } = await supabase
+      .from('students')
+      .select('user_id')
+      .ilike('roll_no', identifier.toUpperCase())
+      .maybeSingle();
+
+    if (byRollNo) {
+      console.log(`✅ Found user by roll_no, user_id: ${byRollNo.user_id}`);
+      const { data: userById } = await supabase
+        .from('users')
+        .select('id, email, password_hash, role')
+        .eq('id', byRollNo.user_id)
+        .maybeSingle();
+      authUser = userById;
+    } else {
+      // 3. Try to find by reg_no in 'students' table
+      console.log(`Searching for reg_no: ${identifier}`);
+      const { data: byRegNo } = await supabase
+        .from('students')
+        .select('user_id')
+        .eq('reg_no', identifier)
+        .maybeSingle();
+
+      if (byRegNo) {
+        console.log(`✅ Found user by reg_no, user_id: ${byRegNo.user_id}`);
+        const { data: userById } = await supabase
+          .from('users')
+          .select('id, email, password_hash, role')
+          .eq('id', byRegNo.user_id)
+          .maybeSingle();
+        authUser = userById;
+      }
+    }
+  }
+
+  if (!authUser) {
+    console.warn(`❌ No user found for: ${identifier}`);
+    return res.status(404).json({ error: 'No account found with this email, roll number, or register number.' });
+  }
+
   if (!bcrypt.compareSync(password, authUser.password_hash)) {
+    console.warn(`❌ Incorrect password for: ${identifier}`);
     return res.status(401).json({ error: 'Incorrect password.' });
   }
+  console.log(`✨ Login successful for: ${authUser.email}`);
 
   // Fetch profile based on role
   let profile = {};

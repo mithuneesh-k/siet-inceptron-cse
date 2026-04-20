@@ -5,36 +5,39 @@ const { authMiddleware } = require('../middleware/auth');
 
 // ─── GET /api/users — All students with score ─────────────────────────────────
 router.get('/', async (req, res) => {
-  // Fetch all students profiles
-  const { data: profiles, error: pErr } = await supabase
-    .from('students')
-    .select('user_id, name, roll_no, class, batch, year, github, linkedin, avatar_url');
+  // Parallel fetch: profiles and verified achievements
+  const [pRes, aRes] = await Promise.all([
+    supabase
+      .from('students')
+      .select('user_id, name, roll_no, class, batch, year, github, linkedin, avatar_url')
+      .order('name'),
+    supabase
+      .from('achievements')
+      .select('user_id, points')
+      .eq('verified', true)
+  ]);
 
-  if (pErr) return res.status(500).json({ error: 'Failed to fetch students' });
+  if (pRes.error) return res.status(500).json({ error: 'Failed to fetch students' });
+  const profiles = pRes.data || [];
+  const achs = aRes.data || [];
 
-  const userIds = profiles.map(s => s.user_id);
-  if (!userIds.length) return res.json([]);
-
-  // Fetch emails from users table
-  const { data: authRows } = await supabase
-    .from('users')
-    .select('id, email')
-    .in('id', userIds);
-
-  const emailMap = Object.fromEntries((authRows || []).map(u => [u.id, u.email]));
-
-  // Fetch verified achievements
-  const { data: achs } = await supabase
-    .from('achievements')
-    .select('user_id, points')
-    .in('user_id', userIds)
-    .eq('verified', true);
-
+  // Group achievements by user_id for O(1) lookup
   const achMap = {};
-  for (const a of (achs || [])) {
+  for (const a of achs) {
     if (!achMap[a.user_id]) achMap[a.user_id] = { score: 0, count: 0 };
     achMap[a.user_id].score += a.points || 0;
     achMap[a.user_id].count++;
+  }
+
+  // Fetch emails in parallel if profiles exist
+  let emailMap = {};
+  if (profiles.length) {
+    const userIds = profiles.map(s => s.user_id);
+    const { data: authRows } = await supabase
+      .from('users')
+      .select('id, email')
+      .in('id', userIds);
+    emailMap = Object.fromEntries((authRows || []).map(u => [u.id, u.email]));
   }
 
   const result = profiles.map(s => ({
@@ -69,8 +72,11 @@ router.put('/:id', authMiddleware, async (req, res) => {
     return res.status(403).json({ error: "Cannot edit another user's profile" });
   }
 
-  const { name, bio, github, linkedin, avatar_url, phone } = req.body;
-
+  const { 
+    name, bio, github, linkedin, instagram, twitter, portfolio, 
+    avatar_url, phone, phone_public, dob_public 
+  } = req.body;
+  
   // Determine which profile table to update
   const table = req.user.role === 'student' ? 'students' : 'faculty';
   const updates = {};
@@ -78,8 +84,17 @@ router.put('/:id', authMiddleware, async (req, res) => {
   if (bio !== undefined) updates.bio = bio;
   if (github !== undefined) updates.github = github;
   if (linkedin !== undefined) updates.linkedin = linkedin;
+  if (instagram !== undefined) updates.instagram = instagram;
+  if (twitter !== undefined) updates.twitter = twitter;
+  if (portfolio !== undefined) updates.portfolio = portfolio;
   if (avatar_url !== undefined) updates.avatar_url = avatar_url;
-  if (phone !== undefined && req.user.role === 'student') updates.phone = phone;
+  
+  if (req.user.role === 'student') {
+    if (phone !== undefined) updates.phone = phone;
+    if (phone_public !== undefined) updates.phone_public = phone_public;
+    if (dob_public !== undefined) updates.dob_public = dob_public;
+  }
+  
   updates.updated_at = new Date().toISOString();
 
   const { error } = await supabase.from(table).update(updates).eq('user_id', uid);

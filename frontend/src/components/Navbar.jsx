@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { Home, Zap, Trophy, GraduationCap, Users, Shield } from 'lucide-react';
 import './Navbar.css';
 
 export default function Navbar() {
@@ -8,6 +9,15 @@ export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 60);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
@@ -18,15 +28,15 @@ export default function Navbar() {
   };
 
   const navLinks = [
-    { to: '/', label: 'Home', icon: '🏠' },
-    { to: '/updates', label: 'Updates', icon: '⚡' },
-    { to: '/leaderboard', label: 'Leaderboard', icon: '🏆' },
-    { to: '/students', label: 'Students', icon: '👨‍🎓' },
-    { to: '/teams', label: 'Teams', icon: '👥' },
+    { to: '/', label: 'Home', icon: <Home size={18} /> },
+    { to: '/updates', label: 'Updates', icon: <Zap size={18} /> },
+    { to: '/leaderboard', label: 'Leaderboard', icon: <Trophy size={18} /> },
+    { to: '/students', label: 'Students', icon: <GraduationCap size={18} /> },
+    { to: '/teams', label: 'Teams', icon: <Users size={18} /> },
   ];
 
   return (
-    <nav className="navbar">
+    <nav className={`navbar ${scrolled ? 'scrolled' : ''}`}>
       <div className="navbar-inner">
         <Link to="/" className="navbar-brand">
           <div className="brand-logo">
@@ -57,7 +67,7 @@ export default function Navbar() {
 
           {user?.is_admin && (
             <Link to="/admin" className={`nav-link ${isActive('/admin') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
-              <span className="nav-icon">🛡️</span> Admin
+              <span className="nav-icon"><Shield size={18} /></span> Admin
             </Link>
           )}
         </div>

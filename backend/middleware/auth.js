@@ -20,6 +20,25 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
+const optionalAuthMiddleware = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  if (!authHeader) return next();
+
+  const token = authHeader.split(' ')[1];
+  if (!token) return next();
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    if (decoded.is_admin !== undefined && !decoded.role) {
+      req.user.role = decoded.is_admin ? 'faculty' : 'student';
+    }
+    next();
+  } catch (err) {
+    next(); // Just ignore invalid token for optional auth
+  }
+};
+
 const adminMiddleware = (req, res, next) => {
   if (req.user?.role === 'student') {
     return res.status(403).json({ error: 'Admin access required' });
@@ -27,4 +46,4 @@ const adminMiddleware = (req, res, next) => {
   next();
 };
 
-module.exports = { authMiddleware, adminMiddleware };
+module.exports = { authMiddleware, adminMiddleware, optionalAuthMiddleware };
