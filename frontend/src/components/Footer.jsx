@@ -69,8 +69,16 @@ const Footer = () => {
         .footer-brand-logo {
           display: flex;
           align-items: center;
-          gap: 10px;
+          padding: 8px 12px;
+          margin-left: -12px;
           margin-bottom: 14px;
+        }
+        .footer-hero-logo {
+          width: 64px;
+          height: 64px;
+          object-fit: contain;
+          margin-right: 16px;
+          flex-shrink: 0;
         }
         .logo-icon {
           width: 36px;
@@ -255,7 +263,7 @@ const Footer = () => {
           {/* Brand column */}
           <div>
             <div className="footer-brand-logo">
-              <img src="/white_background_,_202604201452-Photoroom.png" alt="Inceptron Logo" style={{ height: '42px', width: 'auto', objectFit: 'contain', flexShrink: 0 }} />
+              <img src="/white_background_,_202604201452-Photoroom.png" alt="Inceptron Logo" className="footer-hero-logo" />
               <div>
                 <span className="brand-name">SIET Inceptron</span>
                 <span className="brand-sub">CSE Department Portal</span>

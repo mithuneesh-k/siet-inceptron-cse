@@ -42,7 +42,7 @@ export default function Navbar() {
           <img
             src="/white_background_,_202604201452-Photoroom.png"
             alt="Inceptron Logo"
-            style={{ height: '32px', width: 'auto', objectFit: 'contain', flexShrink: 0 }}
+            className="hero-logo"
           />
           <div className="brand-text">
             <span className="brand-name">SIET</span>
