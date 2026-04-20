@@ -105,7 +105,7 @@ export default function Landing() {
               <img 
                 src="/white_background_,_202604201452-Photoroom.png" 
                 alt="CSE Inceptron" 
-                style={{ width: '120px', height: '120px', objectFit: 'contain', flexShrink: 0 }} 
+                style={{ width: '125px', height: '125px', objectFit: 'contain', flexShrink: 0 }} 
               />
               <div style={{ textAlign: 'left' }}>
                 <div style={{ fontSize: '42px', fontWeight: 700, margin: 0, lineHeight: 1.1, color: 'var(--color-text)' }}>Welcome to</div>
@@ -137,7 +137,7 @@ export default function Landing() {
               <img 
                 src="/white_background_,_202604201452-Photoroom.png" 
                 alt="CSE Inceptron" 
-                style={{ width: '110px', height: '110px', objectFit: 'contain', flexShrink: 0 }} 
+                style={{ width: '125px', height: '125px', objectFit: 'contain', flexShrink: 0 }} 
               />
               <div>
                 <div style={{ fontSize: '42px', fontWeight: 700, margin: 0, lineHeight: 1.1, color: 'var(--color-text)' }}>Inceptron</div>
