@@ -108,7 +108,7 @@ export default function Landing() {
                 style={{ width: '125px', height: '125px', objectFit: 'contain', flexShrink: 0 }} 
               />
               <div style={{ textAlign: 'left' }}>
-                <div style={{ fontSize: '42px', fontWeight: 700, margin: 0, lineHeight: 1.1, color: 'var(--color-text)' }}>Welcome to</div>
+                <div style={{ fontSize: '42px', fontWeight: 700, margin: 0, lineHeight: 1.1, color: '#0D4005' }}>Welcome to</div>
                 <div style={{ fontSize: '42px', fontWeight: 800, color: 'var(--color-green)', margin: 0, lineHeight: 1.1 }}>Inceptron Hub</div>
               </div>
             </div>
@@ -140,7 +140,7 @@ export default function Landing() {
                 style={{ width: '125px', height: '125px', objectFit: 'contain', flexShrink: 0 }} 
               />
               <div>
-                <div style={{ fontSize: '42px', fontWeight: 700, margin: 0, lineHeight: 1.1, color: 'var(--color-text)' }}>Inceptron</div>
+                <div style={{ fontSize: '42px', fontWeight: 700, margin: 0, lineHeight: 1.1, color: '#0D4005' }}>Inceptron</div>
                 <div style={{ fontSize: '42px', fontWeight: 800, color: 'var(--color-green)', margin: 0, lineHeight: 1.1 }}>Achievement Hub</div>
               </div>
             </div>
@@ -343,6 +343,28 @@ export default function Landing() {
           line-height: 1.1;
           margin-bottom: 18px;
           color: var(--color-text);
+        }
+
+        /* ── Hero Branding Mobile Adjustments ── */
+        @media (max-width: 600px) {
+          .lp-hero-text > div[style*="display: flex"] {
+            flex-direction: column !important;
+            text-align: center !important;
+            gap: 16px !important;
+          }
+          .lp-hero-text img[alt="CSE Inceptron"] {
+            width: 100px !important;
+            height: 100px !important;
+          }
+          .lp-hero-text div[style*="font-size: 42px"] {
+            font-size: 32px !important;
+          }
+          .lp-hero-inner {
+            text-align: center;
+          }
+          .lp-pill {
+            margin: 0 auto 16px;
+          }
         }
         .lp-h1-accent { color: var(--color-green); display: block; }
         .lp-sub {
