@@ -11,7 +11,7 @@ import FacultyActionModal from '../components/FacultyActionModal';
 import { 
   Shield, BarChart2, Users, Settings, GraduationCap, Hourglass, 
   Award, TrendingUp, List, RefreshCw, Trash2, Download, Plus, 
-  Edit3, Key, Check, X, ExternalLink, Inbox
+  Edit3, Key, Check, X, ExternalLink, Inbox, Search
 } from 'lucide-react';
 
 const CLASSES = ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D', 'CSE-E'];
@@ -304,13 +304,17 @@ export default function Admin() {
 
                 <div className="manage-toolbar card animate-fadeInUp" style={{ padding: '16px 20px', borderRadius: 'var(--radius-md) var(--radius-md) 0 0', marginTop: !isFullAdmin ? 12 : 0 }}>
                   <div style={{ display: 'flex', gap: 10, flex: 1, flexWrap: 'wrap' }}>
-                    <input
-                      className="form-input"
-                      style={{ maxWidth: 260 }}
-                      placeholder="Search by name…"
-                      value={search}
-                      onChange={e => setSearch(e.target.value)}
-                    />
+                    <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
+                      <Search size={16} color="var(--color-text-muted)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                      <input 
+                        type="text" 
+                        className="form-input" 
+                        placeholder="Search by name…" 
+                        value={search} 
+                        onChange={(e) => setSearch(e.target.value)} 
+                        style={{ paddingLeft: '36px', width: '100%' }}
+                      />
+                    </div>
                     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                       <button 
                         className={`btn ${filterBatch || filterClass ? 'btn-primary' : 'btn-secondary'}`}

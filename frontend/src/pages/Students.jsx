@@ -59,14 +59,17 @@ export default function Students() {
 
         {/* Filters */}
         <div className="students-filters animate-fadeInUp" style={{ marginBottom: '24px' }}>
-          <input
-            id="student-search"
-            className="form-input"
-            style={{ maxWidth: 320 }}
-            placeholder="Search by name, roll no..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
+          <div style={{ position: 'relative', flex: 1, maxWidth: '320px' }}>
+            <Search size={16} color="var(--color-text-muted)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+            <input
+              id="student-search"
+              className="form-input"
+              style={{ paddingLeft: '36px', width: '100%' }}
+              placeholder="Search by name, roll no..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
           <div style={{ display: 'flex', gap: 12 }}>
             <button 
               className={`btn ${batchFilter || classFilter ? 'btn-primary' : 'btn-secondary'}`}

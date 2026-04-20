@@ -77,14 +77,17 @@ export default function Updates() {
         </div>
 
         <div className="updates-filters animate-fadeInUp delay-2 card" style={{ padding: '16px 20px', marginBottom: '32px', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-          <input 
-            type="text" 
-            className="form-input" 
-            placeholder="Search live feed..." 
-            value={search} 
-            onChange={e => setSearch(e.target.value)}
-            style={{ flex: '1', minWidth: '200px' }}
-          />
+          <div style={{ position: 'relative', flex: '1', minWidth: '200px' }}>
+            <Search size={16} color="var(--color-text-muted)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+            <input 
+              type="text" 
+              className="form-input" 
+              placeholder="Search live feed..." 
+              value={search} 
+              onChange={e => setSearch(e.target.value)}
+              style={{ paddingLeft: '36px', width: '100%' }}
+            />
+          </div>
           <div style={{ flex: '1 1 140px' }}>
             <CustomSelect 
               value={filterType} 
