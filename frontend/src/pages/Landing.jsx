@@ -132,12 +132,12 @@ export default function Landing() {
               <span className="lp-pill-dot" />
               Sri Shakthi Institute of Engineering and Technology, Coimbatore
             </div>
-            <div style={{ display: 'flex', gap: '20px', alignItems: 'center', marginBottom: '18px' }}>
-              <img src="/white_background_,_202604201452-Photoroom.png" alt="Inceptron Logo" style={{ height: '90px', objectFit: 'contain' }} />
-              <h1 className="lp-h1" style={{ marginBottom: 0 }}>
-                Inceptron<br />
-                <span className="lp-h1-accent">Achievement Hub</span>
-              </h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '18px' }}>
+              <img src="/white_background_,_202604201452-Photoroom.png" alt="CSE Inceptron" style={{ width: '72px', height: '72px' }} />
+              <div>
+                <h1 style={{ fontSize: '2.5rem', fontWeight: 700, margin: 0, lineHeight: 1.1 }}>Inceptron</h1>
+                <h1 style={{ fontSize: '2.5rem', fontWeight: 700, color: 'var(--color-green)', margin: 0, lineHeight: 1.1 }}>Achievement Hub</h1>
+              </div>
             </div>
             <p className="lp-sub">
               Track hackathons, internships, projects and courses. Climb the leaderboard.
