@@ -3,7 +3,7 @@ import client from '../api/client';
 import LiveFeedCard from '../components/LiveFeedCard';
 
 import CustomSelect from '../components/CustomSelect';
-import { Zap, Briefcase, Target, Info, Inbox } from 'lucide-react';
+import { Zap, Briefcase, Target, Info, Inbox, Search } from 'lucide-react';
 
 const TABS = [
   { id: 'hackathons', label: <><Zap size={15}/> Hackathons</>, type: 'hackathon' },
