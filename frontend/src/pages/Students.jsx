@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { Users, Search, Star, Link as LinkIcon } from 'lucide-react';
 import client from '../api/client';
 import CustomSelect from '../components/CustomSelect';
 import FilterModal from '../components/FilterModal';
@@ -49,7 +50,9 @@ export default function Students() {
         {/* Header */}
         <div className="section-header animate-fadeInUp" style={{ marginBottom: '28px' }}>
           <div>
-            <h1 className="section-title" style={{ fontSize: '32px' }}>👨‍🎓 Students</h1>
+            <h1 className="section-title" style={{ fontSize: '32px', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <Users size={32} /> Students
+            </h1>
             <p style={{ color: 'var(--color-text-muted)', marginTop: 6 }}>
               {filtered.length} of {students.length} students {batchFilter ? `— ${batchFilter}` : ''} {classFilter ? `— ${classFilter}` : ''}
             </p>
@@ -62,7 +65,7 @@ export default function Students() {
             id="student-search"
             className="form-input"
             style={{ maxWidth: 320 }}
-            placeholder="🔍 Search by name, roll no..."
+            placeholder="Search by name, roll no..."
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
@@ -109,7 +112,7 @@ export default function Students() {
           <div className="loading-screen"><div className="spinner" /></div>
         ) : filtered.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">🔍</div>
+            <div className="empty-icon" style={{ opacity: 0.5, marginBottom: 16 }}><Search size={48} color="var(--color-green)" /></div>
             <h3>No students found</h3>
             <p>Try adjusting your search or class filter.</p>
           </div>
@@ -131,13 +134,13 @@ export default function Students() {
                   </div>
                   {s.score > 0 && (
                     <div className="student-card-score">
-                      <span>⭐ {s.score} pts</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Star size={12} fill="currentColor" /> {s.score} pts</span>
                       <span>· {s.achievement_count} achievements</span>
                     </div>
                   )}
                   {s.github && (
-                    <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 4 }}>
-                      🔗 {s.github}
+                    <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <LinkIcon size={12} /> {s.github}
                     </div>
                   )}
                 </div>

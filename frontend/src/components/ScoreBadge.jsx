@@ -1,11 +1,16 @@
-export default function ScoreBadge({ score, size = 'md' }) {
-  const tier =
-    score >= 300 ? { label: 'Platinum', color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE', icon: '💎' }
-    : score >= 200 ? { label: 'Gold',    color: '#B38200', bg: '#FFFAE8', border: '#FFD93D', icon: '🏆' }
-    : score >= 100 ? { label: 'Silver',  color: '#2A7D14', bg: '#EEF8E8', border: '#A8D98E', icon: '⭐' }
-    : { label: 'Bronze', color: '#92400E', bg: '#FFF7ED', border: '#FED7AA', icon: '🎯' };
+import { Gem, Trophy, Star, Target } from 'lucide-react';
 
+export default function ScoreBadge({ score, size = 'md' }) {
   const isLarge = size === 'lg';
+  const iconSize = isLarge ? 24 : 16;
+  
+  const tier =
+    score >= 300 ? { label: 'Platinum', color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE', icon: <Gem size={iconSize} color="#7C3AED" /> }
+    : score >= 200 ? { label: 'Gold',    color: '#B38200', bg: '#FFFAE8', border: '#FFD93D', icon: <Trophy size={iconSize} color="#B38200" /> }
+    : score >= 100 ? { label: 'Silver',  color: '#2A7D14', bg: '#EEF8E8', border: '#A8D98E', icon: <Star size={iconSize} color="#2A7D14" /> }
+    : { label: 'Bronze', color: '#92400E', bg: '#FFF7ED', border: '#FED7AA', icon: <Target size={iconSize} color="#92400E" /> };
+
+
 
   return (
     <div style={{
@@ -15,7 +20,7 @@ export default function ScoreBadge({ score, size = 'md' }) {
       border: `1.5px solid ${tier.border}`,
       borderRadius: '6px',
     }}>
-      <span style={{ fontSize: isLarge ? '20px' : '14px' }}>{tier.icon}</span>
+      <span style={{ display: 'flex', alignItems: 'center' }}>{tier.icon}</span>
       <div>
         <div style={{
           fontSize: isLarge ? '26px' : '16px',

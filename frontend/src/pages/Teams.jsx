@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import client from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import TeamCard from '../components/TeamCard';
+import { Users, Crown } from 'lucide-react';
 
 const TEAM_TYPES = ['hackathon', 'project', 'research'];
 
@@ -41,7 +42,7 @@ export default function Teams() {
       setSelectedTeam(data);
       setShowCreate(false);
       setCreateForm({ name: '', description: '', type: 'hackathon' });
-      showToast('Team created! 🎉');
+      showToast('Team created!');
     } catch (err) {
       showToast(err.response?.data?.error || 'Failed to create team', 'error');
     }
@@ -54,7 +55,7 @@ export default function Teams() {
       const { data } = await client.post(`/teams/${teamId}/join`);
       setTeams(prev => prev.map(t => t.id === teamId ? { ...t, member_count: t.member_count + 1 } : t));
       setSelectedTeam(data);
-      showToast('Joined the team! 🎉');
+      showToast('Joined the team!');
     } catch (err) {
       showToast(err.response?.data?.error || 'Failed to join', 'error');
     } finally {
@@ -74,7 +75,7 @@ export default function Teams() {
       <div className="container">
         <div className="section-header animate-fadeInUp">
           <div>
-            <h1 className="section-title">👥 <span className="text-gradient">Teams</span></h1>
+            <h1 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 12 }}><Users size={32} /> <span className="text-gradient">Teams</span></h1>
             <p className="section-subtitle">Form teams, collaborate on hackathons and projects</p>
           </div>
           {user && <button id="create-team-btn" className="btn btn-primary" onClick={() => setShowCreate(true)}>+ Create Team</button>}
@@ -95,7 +96,7 @@ export default function Teams() {
             {loading ? (
               <div className="loading-screen" style={{ minHeight: '200px' }}><div className="spinner" /></div>
             ) : teams.length === 0 ? (
-              <div className="empty-state"><div className="empty-icon">👥</div><h3>No teams yet</h3><p>Be the first to create a team!</p></div>
+              <div className="empty-state"><div className="empty-icon" style={{ opacity: 0.5, marginBottom: 16 }}><Users size={48} color="var(--color-green)" /></div><h3>No teams yet</h3><p>Be the first to create a team!</p></div>
             ) : (
               teams.map((team, i) => (
                 <div key={team.id} className={`team-list-item ${selectedTeam?.id === team.id ? 'selected' : ''} animate-fadeInUp`} style={{ animationDelay: `${i * 0.05}s` }} onClick={() => client.get(`/teams/${team.id}`).then(r => setSelectedTeam(r.data))}>
@@ -130,7 +131,7 @@ export default function Teams() {
                       <div style={{ fontSize: 14, fontWeight: 600 }}>{m.name}</div>
                       <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{m.class} · {m.score} pts</div>
                     </div>
-                    {m.role === 'leader' && <span className="badge badge-gold">👑 Leader</span>}
+                    {m.role === 'leader' && <span className="badge badge-gold" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Crown size={12} /> Leader</span>}
                   </div>
                 ))}
               </div>
@@ -155,7 +156,7 @@ export default function Teams() {
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowCreate(false)}>
           <div className="modal">
             <div className="modal-header">
-              <h2 className="modal-title">👥 Create a Team</h2>
+              <h2 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Users size={20} /> Create a Team</h2>
               <button className="modal-close btn" onClick={() => setShowCreate(false)}>✕</button>
             </div>
             <form onSubmit={createTeam} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -175,7 +176,7 @@ export default function Teams() {
               </div>
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setShowCreate(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Create Team 🚀</button>
+                <button type="submit" className="btn btn-primary">Create Team</button>
               </div>
             </form>
           </div>

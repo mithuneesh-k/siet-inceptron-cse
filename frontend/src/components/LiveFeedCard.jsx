@@ -1,5 +1,5 @@
 import TruncatedText from './TruncatedText';
-import { Flame, Banknote, MapPin, Calendar, Clock } from 'lucide-react';
+import { Flame, Banknote, MapPin, Calendar, Clock, Zap, Briefcase, Monitor } from 'lucide-react';
 
 export default function LiveFeedCard({ item, type }) {
   const config = {
@@ -13,12 +13,21 @@ export default function LiveFeedCard({ item, type }) {
   const mode = item.mode || item.location || item.type;
   const deadline = item.deadline;
 
+  const getLogoIcon = () => {
+    if (type === 'hackathon') return <Zap size={28} color={config.accent} />;
+    if (type === 'internship') return <Briefcase size={28} color={config.accent} />;
+    if (type === 'job') return <Monitor size={28} color={config.accent} />;
+    return <Briefcase size={28} color={config.accent} />;
+  };
+
   const isExpiring = deadline && (new Date(deadline) - new Date()) < 7 * 24 * 60 * 60 * 1000;
 
   return (
     <div className="live-card card card-hover" style={{ borderLeft: `3px solid ${config.accent}` }}>
       <div className="live-top">
-        <span className="live-emoji">{item.logo}</span>
+        <span className="live-emoji" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {getLogoIcon()}
+        </span>
         <div className="live-badges">
           {item.difficulty && <span className={`badge ${config.badgeCls}`}>{item.difficulty}</span>}
           {isExpiring && <span className="badge badge-red" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Flame size={12} /> Closing Soon</span>}
