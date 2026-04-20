@@ -382,6 +382,18 @@ export default function Profile() {
         .p-stat-divider { width: 1px; background: var(--border); height: 32px; }
         .breakdown-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-bottom: 8px; }
         .breakdown-card { text-align: center; }
+
+        @media (max-width: 640px) {
+          .profile-main { flex-direction: column; align-items: center; text-align: center; padding: 24px 16px 16px; gap: 16px; }
+          .profile-info { padding-top: 0; display: flex; flex-direction: column; align-items: center; }
+          .profile-info > div:first-child { justify-content: center; margin-bottom: 8px; }
+          .profile-meta { justify-content: center; }
+          .profile-links { justify-content: center; }
+          .profile-actions { margin: 16px auto 0; width: 100%; display: flex; flex-direction: row; justify-content: center; gap: 12px; }
+          .profile-stats { flex-wrap: wrap; gap: 16px 0; padding: 20px 16px; }
+          .p-stat { flex: 0 0 50%; }
+          .p-stat-divider { display: none; }
+        }
       `}</style>
     </div>
   );
