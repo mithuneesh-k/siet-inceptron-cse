@@ -102,10 +102,14 @@ export default function Landing() {
         <section className="lp-hero" style={{ padding: '40px 0', minHeight: 'calc(100vh - 84px)', display: 'flex', alignItems: 'center' }}>
           <div className="container" style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '24px', marginBottom: '32px' }}>
-              <img src="/white_background_,_202604201452-Photoroom.png" alt="CSE Inceptron" style={{ width: '80px', height: '80px' }} />
+              <img 
+                src="/white_background_,_202604201452-Photoroom.png" 
+                alt="CSE Inceptron" 
+                style={{ width: '90px', height: '90px', objectFit: 'contain', flexShrink: 0 }} 
+              />
               <div style={{ textAlign: 'left' }}>
-                <h1 style={{ fontSize: '2.8rem', fontWeight: 700, margin: 0, lineHeight: 1.1 }}>Welcome to</h1>
-                <h1 style={{ fontSize: '3rem', fontWeight: 800, color: 'var(--color-green)', margin: 0, lineHeight: 1.1 }}>Inceptron Hub</h1>
+                <div style={{ fontSize: '42px', fontWeight: 700, margin: 0, lineHeight: 1.1, color: 'var(--color-text)' }}>Welcome to</div>
+                <div style={{ fontSize: '42px', fontWeight: 800, color: 'var(--color-green)', margin: 0, lineHeight: 1.1 }}>Inceptron Hub</div>
               </div>
             </div>
             <p className="lp-sub" style={{ margin: '0 auto 40px', fontSize: '18px' }}>
@@ -129,11 +133,15 @@ export default function Landing() {
               <span className="lp-pill-dot" />
               Sri Shakthi Institute of Engineering and Technology, Coimbatore
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '18px' }}>
-              <img src="/white_background_,_202604201452-Photoroom.png" alt="CSE Inceptron" style={{ width: '72px', height: '72px' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '18px' }}>
+              <img 
+                src="/white_background_,_202604201452-Photoroom.png" 
+                alt="CSE Inceptron" 
+                style={{ width: '90px', height: '90px', objectFit: 'contain', flexShrink: 0 }} 
+              />
               <div>
-                <h1 style={{ fontSize: '2.5rem', fontWeight: 700, margin: 0, lineHeight: 1.1 }}>Inceptron</h1>
-                <h1 style={{ fontSize: '2.5rem', fontWeight: 700, color: 'var(--color-green)', margin: 0, lineHeight: 1.1 }}>Achievement Hub</h1>
+                <div style={{ fontSize: '42px', fontWeight: 700, margin: 0, lineHeight: 1.1, color: 'var(--color-text)' }}>Inceptron</div>
+                <div style={{ fontSize: '42px', fontWeight: 800, color: 'var(--color-green)', margin: 0, lineHeight: 1.1 }}>Achievement Hub</div>
               </div>
             </div>
             <p className="lp-sub">
