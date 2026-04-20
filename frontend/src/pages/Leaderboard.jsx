@@ -216,6 +216,13 @@ export default function Leaderboard() {
         .podium-sname { font-size: 14px; font-weight: 700; margin-bottom: 2px; color: var(--color-text); }
         .podium-sclass { font-size: 12px; color: var(--color-text-muted); margin-bottom: 10px; }
         .podium-block { width: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-radius: 0 0 var(--radius-sm) var(--radius-sm); }
+        
+        @media (max-width: 640px) {
+          .podium { gap: 8px; }
+          .podium-col { transform: scale(0.85); transform-origin: bottom center; }
+          .podium-student { min-width: 100px; padding: 12px 6px; }
+          .podium-block { width: 110px; }
+        }
 
         /* Table */
         .lb-table { overflow: hidden; margin-top: 8px; }

@@ -690,8 +690,10 @@ export default function Admin() {
         @media (max-width: 900px) {
           .admin-stats { grid-template-columns: repeat(2, 1fr); }
           .manage-table-header, .manage-table-row { grid-template-columns: 28px 1fr 80px 80px; }
-          .manage-table-header span:nth-child(n+6),
-          .manage-table-row > *:nth-child(n+6) { display: none; }
+          .manage-table-header span:nth-child(6),
+          .manage-table-row > span:nth-child(6),
+          .manage-table-header span:nth-child(7),
+          .manage-table-row > div:nth-child(7) { display: none; }
         }
         @media (max-width: 640px) {
           .manage-table-header { display: none; }
@@ -707,7 +709,7 @@ export default function Admin() {
           .manage-table-row > input[type="checkbox"] { position: absolute; top: 16px; right: 16px; }
           .manage-table-row > *:nth-child(2) { width: calc(100% - 40px); margin-bottom: 8px; } /* Student info */
           .manage-table-row > span { display: inline-flex; align-items: center; background: var(--bg-hover); padding: 4px 8px; border-radius: var(--radius-sm); font-size: 12px; margin-right: 4px; }
-          .manage-table-row > div:last-child { width: 100%; border-top: 1px dashed var(--border); padding-top: 10px; margin-top: 4px; justify-content: flex-end; }
+          .manage-table-row > div:last-child { display: flex !important; width: 100%; border-top: 1px dashed var(--border); padding-top: 10px; margin-top: 4px; justify-content: flex-end; }
         }
       `}</style>
     </div>
