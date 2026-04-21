@@ -59,7 +59,7 @@ export default function Login() {
           <p style={{ fontSize: 12, color: 'var(--color-text-muted)', textAlign: 'center', margin: '20px 0 8px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>Test Credentials</p>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
             <button className="demo-btn" onClick={() => setForm({ email: 'admin@siet.ac.in', password: 'password123' })}>👨‍🏫 Admin</button>
-            <button className="demo-btn" onClick={() => setForm({ email: '25cs144@siet.ac.in', password: 'password123' })}>💻 Mithuneesh</button>
+            <button className="demo-btn" onClick={() => setForm({ email: 'mithuneeshk25cs@srishakthi.ac.in', password: 'mithunINCEPTRON9+' })}>💻 Mithuneesh</button>
           </div>
         </div>
 
