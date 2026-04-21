@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { Users, UsersRound, Plus, Rocket, X, CheckCircle2, XCircle, Medal } from 'lucide-react';
 import client from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import TeamCard from '../components/TeamCard';
@@ -41,7 +42,7 @@ export default function Teams() {
       setSelectedTeam(data);
       setShowCreate(false);
       setCreateForm({ name: '', description: '', type: 'hackathon' });
-      showToast('Team created! 🎉');
+      showToast('Team created! <Rocket size={14} style={{display:"inline", verticalAlign:"middle"}} />');
     } catch (err) {
       showToast(err.response?.data?.error || 'Failed to create team', 'error');
     }
@@ -54,7 +55,7 @@ export default function Teams() {
       const { data } = await client.post(`/teams/${teamId}/join`);
       setTeams(prev => prev.map(t => t.id === teamId ? { ...t, member_count: t.member_count + 1 } : t));
       setSelectedTeam(data);
-      showToast('Joined the team! 🎉');
+      showToast('Joined the team! <CheckCircle2 size={14} style={{display:"inline", verticalAlign:"middle"}} />');
     } catch (err) {
       showToast(err.response?.data?.error || 'Failed to join', 'error');
     } finally {
@@ -74,10 +75,10 @@ export default function Teams() {
       <div className="container">
         <div className="section-header animate-fadeInUp">
           <div>
-            <h1 className="section-title">👥 <span className="text-gradient">Teams</span></h1>
+            <h1 className="section-title"><Users size={32} className="text-gradient" style={{display:"inline", verticalAlign:"sub", marginRight: "8px"}} /> <span className="text-gradient">Teams</span></h1>
             <p className="section-subtitle">Form teams, collaborate on hackathons and projects</p>
           </div>
-          {user && <button id="create-team-btn" className="btn btn-primary" onClick={() => setShowCreate(true)}>+ Create Team</button>}
+          {user && <button id="create-team-btn" className="btn btn-primary" onClick={() => setShowCreate(true)}><Plus size={18} /> Create Team</button>}
         </div>
 
         {/* Filters */}
@@ -95,7 +96,7 @@ export default function Teams() {
             {loading ? (
               <div className="loading-screen" style={{ minHeight: '200px' }}><div className="spinner" /></div>
             ) : teams.length === 0 ? (
-              <div className="empty-state"><div className="empty-icon">👥</div><h3>No teams yet</h3><p>Be the first to create a team!</p></div>
+              <div className="empty-state"><div className="empty-icon"><UsersRound size={48} opacity={0.6} /></div><h3>No teams yet</h3><p>Be the first to create a team!</p></div>
             ) : (
               teams.map((team, i) => (
                 <div key={team.id} className={`team-list-item ${selectedTeam?.id === team.id ? 'selected' : ''} animate-fadeInUp`} style={{ animationDelay: `${i * 0.05}s` }} onClick={() => client.get(`/teams/${team.id}`).then(r => setSelectedTeam(r.data))}>
@@ -113,10 +114,12 @@ export default function Teams() {
                   <h2 style={{ fontSize: 20, fontWeight: 700 }}>{selectedTeam.name}</h2>
                   <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
                     <span className="badge badge-violet">{selectedTeam.type}</span>
-                    <span className={`badge ${selectedTeam.is_open ? 'badge-green' : 'badge-red'}`}>{selectedTeam.is_open ? '✓ Open' : '✗ Closed'}</span>
+                    <span className={`badge ${selectedTeam.is_open ? 'badge-green' : 'badge-red'}`}>
+                      {selectedTeam.is_open ? <><CheckCircle2 size={12} /> Open</> : <><XCircle size={12} /> Closed</>}
+                    </span>
                   </div>
                 </div>
-                <button className="btn btn-ghost btn-sm" onClick={() => setSelectedTeam(null)}>✕</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => setSelectedTeam(null)}><X size={18} /></button>
               </div>
 
               {selectedTeam.description && <p style={{ color: 'var(--color-text-muted)', fontSize: 14, marginBottom: 20 }}>{selectedTeam.description}</p>}
@@ -130,7 +133,7 @@ export default function Teams() {
                       <div style={{ fontSize: 14, fontWeight: 600 }}>{m.name}</div>
                       <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{m.class} · {m.score} pts</div>
                     </div>
-                    {m.role === 'leader' && <span className="badge badge-gold">👑 Leader</span>}
+                    {m.role === 'leader' && <span className="badge badge-gold"><Medal size={12} /> Leader</span>}
                   </div>
                 ))}
               </div>
@@ -138,7 +141,7 @@ export default function Teams() {
               <div style={{ marginTop: 20, display: 'flex', gap: 10 }}>
                 {user && selectedTeam.is_open && !selectedTeam.is_member && (
                   <button className="btn btn-primary" onClick={() => joinTeam(selectedTeam.id)} disabled={joiningId === selectedTeam.id}>
-                    {joiningId === selectedTeam.id ? 'Joining...' : '+ Join Team'}
+                    {joiningId === selectedTeam.id ? 'Joining...' : <><Plus size={14} /> Join Team</>}
                   </button>
                 )}
                 {user && selectedTeam.is_member && selectedTeam.creator_id !== user.id && (
@@ -155,8 +158,8 @@ export default function Teams() {
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowCreate(false)}>
           <div className="modal">
             <div className="modal-header">
-              <h2 className="modal-title">👥 Create a Team</h2>
-              <button className="modal-close btn" onClick={() => setShowCreate(false)}>✕</button>
+              <h2 className="modal-title"><UsersRound size={24} /> Create a Team</h2>
+              <button className="modal-close btn" onClick={() => setShowCreate(false)}><X size={20} /></button>
             </div>
             <form onSubmit={createTeam} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div className="form-group">
@@ -175,7 +178,7 @@ export default function Teams() {
               </div>
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setShowCreate(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Create Team 🚀</button>
+                <button type="submit" className="btn btn-primary">Create Team <Rocket size={18} /></button>
               </div>
             </form>
           </div>

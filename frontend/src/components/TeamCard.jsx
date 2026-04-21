@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
+import { Zap, Rocket, Beaker, CheckCircle2, XCircle, Users, Plus } from 'lucide-react';
 
 const TYPE_CONFIG = {
-  hackathon: { icon: '⚡', gradient: 'linear-gradient(135deg, #7C3AED, #3B82F6)' },
-  project: { icon: '🚀', gradient: 'linear-gradient(135deg, #F97316, #EF4444)' },
-  research: { icon: '🔬', gradient: 'linear-gradient(135deg, #10B981, #3B82F6)' },
+  hackathon: { icon: <Zap size={20} />, gradient: 'linear-gradient(135deg, #7C3AED, #3B82F6)' },
+  project: { icon: <Rocket size={20} />, gradient: 'linear-gradient(135deg, #F97316, #EF4444)' },
+  research: { icon: <Beaker size={20} />, gradient: 'linear-gradient(135deg, #10B981, #3B82F6)' },
 };
 
 export default function TeamCard({ team, onJoin, isJoining }) {
@@ -15,7 +16,7 @@ export default function TeamCard({ team, onJoin, isJoining }) {
         <div className="team-icon" style={{ background: cfg.gradient }}>{cfg.icon}</div>
         <div className="team-status">
           <span className={`badge ${team.is_open ? 'badge-green' : 'badge-red'}`}>
-            {team.is_open ? '✓ Open' : '✗ Closed'}
+            {team.is_open ? <><CheckCircle2 size={12} /> Open</> : <><XCircle size={12} /> Closed</>}
           </span>
           <span className="badge badge-violet">{team.type}</span>
         </div>
@@ -25,7 +26,7 @@ export default function TeamCard({ team, onJoin, isJoining }) {
       {team.description && <p className="team-desc">{team.description}</p>}
 
       <div className="team-meta">
-        <span>👤 {team.member_count || 0} member{(team.member_count || 0) !== 1 ? 's' : ''}</span>
+        <span><Users size={14} style={{display:"inline", verticalAlign:"middle", marginRight:"4px"}} /> {team.member_count || 0} member{(team.member_count || 0) !== 1 ? 's' : ''}</span>
         <span>• {team.creator_name}</span>
       </div>
 
@@ -33,7 +34,7 @@ export default function TeamCard({ team, onJoin, isJoining }) {
         <Link to={`/teams?selected=${team.id}`} className="btn btn-ghost btn-sm">View Team</Link>
         {team.is_open && onJoin && (
           <button className="btn btn-primary btn-sm" onClick={() => onJoin(team.id)} disabled={isJoining}>
-            {isJoining ? 'Joining...' : '+ Join'}
+            {isJoining ? 'Joining...' : <><Plus size={14} /> Join</>}
           </button>
         )}
       </div>

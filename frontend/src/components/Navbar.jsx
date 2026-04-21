@@ -40,7 +40,7 @@ export default function Navbar() {
       <div className="navbar-inner">
         <Link to="/" className="navbar-brand">
           <img
-            src="/white_background_,_202604201452-Photoroom.png"
+            src="/inceptron-navbar-logo.png"
             alt="Inceptron Logo"
             style={{ height: '32px', width: 'auto', objectFit: 'contain', flexShrink: 0 }}
           />

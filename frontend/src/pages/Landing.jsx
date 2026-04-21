@@ -103,13 +103,13 @@ export default function Landing() {
           <div className="container" style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px', marginBottom: '32px' }}>
               <img 
-                src="/white_background_,_202604201452-Photoroom.png" 
+                src="/inceptron-navbar-logo.png" 
                 alt="CSE Inceptron" 
                 style={{ width: '125px', height: '125px', objectFit: 'contain', flexShrink: 0 }} 
               />
               <div style={{ textAlign: 'left' }}>
-                <div style={{ fontSize: '42px', fontWeight: 700, margin: 0, lineHeight: 1.1, color: '#0D4005' }}>Welcome to</div>
-                <div style={{ fontSize: '42px', fontWeight: 800, color: 'var(--color-green)', margin: 0, lineHeight: 1.1 }}>Inceptron Hub</div>
+                <div style={{ fontSize: 'clamp(36px, 5.5vw, 58px)', fontWeight: 700, margin: 0, lineHeight: 1.1, color: '#0D4005' }}>Welcome to</div>
+                <div style={{ fontSize: 'clamp(36px, 5.5vw, 58px)', fontWeight: 800, color: 'var(--color-green)', margin: 0, lineHeight: 1.1 }}>Inceptron Hub</div>
               </div>
             </div>
             <p className="lp-sub" style={{ margin: '0 auto 40px', fontSize: '18px' }}>
@@ -133,16 +133,9 @@ export default function Landing() {
               <span className="lp-pill-dot" />
               Sri Shakthi Institute of Engineering and Technology, Coimbatore
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '18px' }}>
-              <img 
-                src="/white_background_,_202604201452-Photoroom.png" 
-                alt="CSE Inceptron" 
-                style={{ width: '125px', height: '125px', objectFit: 'contain', flexShrink: 0 }} 
-              />
-              <div>
-                <div style={{ fontSize: '42px', fontWeight: 700, margin: 0, lineHeight: 1.1, color: '#0D4005' }}>Inceptron</div>
-                <div style={{ fontSize: '42px', fontWeight: 800, color: 'var(--color-green)', margin: 0, lineHeight: 1.1 }}>Achievement Hub</div>
-              </div>
+            <div style={{ marginBottom: '18px' }}>
+              <div style={{ fontSize: 'clamp(36px, 5.5vw, 58px)', fontWeight: 700, margin: 0, lineHeight: 1.1, color: '#0D4005' }}>Inceptron</div>
+              <div style={{ fontSize: 'clamp(36px, 5.5vw, 58px)', fontWeight: 800, color: 'var(--color-green)', margin: 0, lineHeight: 1.1 }}>Achievement Hub</div>
             </div>
             <p className="lp-sub">
               Track hackathons, internships, projects and courses. Climb the leaderboard.
@@ -356,9 +349,6 @@ export default function Landing() {
             width: 100px !important;
             height: 100px !important;
           }
-          .lp-hero-text div[style*="font-size: 42px"] {
-            font-size: 32px !important;
-          }
           .lp-hero-inner {
             text-align: center;
           }
@@ -368,7 +358,7 @@ export default function Landing() {
         }
         .lp-h1-accent { color: var(--color-green); display: block; }
         .lp-sub {
-          font-size: 17px; color: var(--color-text-muted);
+          font-size: 20px; color: var(--color-text-muted);
           max-width: 520px; line-height: 1.7; margin-bottom: 36px;
         }
         .lp-sub strong { color: var(--color-text); }

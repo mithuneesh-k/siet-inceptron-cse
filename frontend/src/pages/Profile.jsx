@@ -8,7 +8,8 @@ import CustomSelect from '../components/CustomSelect';
 import TruncatedText from '../components/TruncatedText';
 import { 
   Shield, Book, GraduationCap, Terminal, Briefcase, AtSign, 
-  Camera, Globe, Phone, Plus, Cake, Edit3, Award, Lightbulb, Hourglass 
+  Camera, Globe, Phone, Plus, Cake, Edit3, Award, Lightbulb, Hourglass,
+  CheckCircle2, X, XCircle, Rocket, Heart
 } from 'lucide-react';
 
 const ACH_TYPES = ['hackathon', 'internship', 'course', 'project', 'certification'];
@@ -70,7 +71,7 @@ export default function Profile() {
     await client.delete(`/achievements/${achId}`);
     setAchievements(prev => prev.filter(a => a.id !== achId));
     setUser(u => ({ ...u, score: u.score - ach.points, achievement_count: u.achievement_count - 1 }));
-    showToast('Achievement removed');
+    showToast(<span>Achievement removed <XCircle size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /></span>, 'info');
     if (isOwn) refreshUser();
   };
 
@@ -259,14 +260,11 @@ export default function Profile() {
             {achievements.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-icon">
-                  <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{color: 'var(--color-green)', opacity: 0.5}}>
-                    <circle cx="12" cy="8" r="7"></circle>
-                    <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
-                  </svg>
+                  <Users size={120} strokeWidth={1} style={{color: 'var(--color-green)', opacity: 0.5}} />
                 </div>
                 <h3>No achievements yet</h3>
                 <p>{isOwn ? 'Add your first achievement to start earning points!' : 'This student hasn\'t added any achievements yet.'}</p>
-                {isOwn && <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={() => setShowAddModal(true)}>Log your first achievement →</button>}
+                {isOwn && <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={() => setShowAddModal(true)}>Log your first achievement <Rocket size={16} /></button>}
               </div>
             ) : (
               <div className="grid-auto">
@@ -285,7 +283,7 @@ export default function Profile() {
           <div className="modal">
             <div className="modal-header">
               <h2 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Plus size={20} /> Add Achievement</h2>
-              <button className="modal-close btn" onClick={() => setShowAddModal(false)}>✕</button>
+              <button className="modal-close btn" onClick={() => setShowAddModal(false)}><X size={20} /></button>
             </div>
 
             <form onSubmit={addAchievement} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
