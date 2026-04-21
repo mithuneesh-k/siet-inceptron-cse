@@ -14,7 +14,11 @@ async function buildLeaderboard(batchFilter, classFilter, limit) {
   if (classFilter && classFilter !== 'all') query = query.eq('class', classFilter);
 
   const { data, error } = await query.range(0, (limit || 100) - 1);
-  if (error || !data) return [];
+  if (error) {
+    console.error('Leaderboard query error:', error);
+    return [];
+  }
+  if (!data) return [];
 
   return data.map((u, i) => ({
     id: u.user_id,

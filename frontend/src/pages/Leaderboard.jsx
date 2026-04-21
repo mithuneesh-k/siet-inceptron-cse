@@ -127,70 +127,77 @@ export default function Leaderboard() {
         ) : (
           <>
             {/* Top 3 Podium */}
-            {!batchFilter && !classFilter && top3.length === 3 && (
-              <div className="podium animate-fadeInUp delay-2">
-                {[top3[1], top3[0], top3[2]].map((s, i) => {
-                  const actualRank = s.rank;
-                  const colors = ['#FFD700', '#C0C0C0', '#CD7F32']; // Gold, Silver, Bronze
-                  const realH = [140, 180, 120][i]; // 2nd, 1st, 3rd Heights
-                  const realC = colors[actualRank - 1];
-                  return (
-                    <div key={s.id} className="podium-col">
-                      <Link to={`/profile/${s.id}`} className="podium-student" style={{ borderColor: realC + '40' }}>
-                        <div className="podium-ava" style={{ boxShadow: `0 0 20px ${realC}50` }}>{s.name[0]}</div>
-                        <div className="podium-sname">{s.name.split(' ')[0]}</div>
-                        <div className="podium-sclass">{s.class}</div>
-                        <ScoreBadge score={s.score} />
+            {(() => {
+              const showPodium = !batchFilter && !classFilter && top3.length === 3;
+              return (
+                <>
+                {showPodium && (
+                  <div className="podium animate-fadeInUp delay-2">
+                    {[top3[1], top3[0], top3[2]].map((s, i) => {
+                      const actualRank = s.rank;
+                      const colors = ['#FFD700', '#C0C0C0', '#CD7F32']; // Gold, Silver, Bronze
+                      const realH = [140, 180, 120][i]; // 2nd, 1st, 3rd Heights
+                      const realC = colors[actualRank - 1];
+                      return (
+                        <div key={s.id} className="podium-col">
+                          <Link to={`/profile/${s.id}`} className="podium-student" style={{ borderColor: realC + '40' }}>
+                            <div className="podium-ava" style={{ boxShadow: `0 0 20px ${realC}50` }}>{s.name[0]}</div>
+                            <div className="podium-sname">{s.name.split(' ')[0]}</div>
+                            <div className="podium-sclass">{s.class}</div>
+                            <ScoreBadge score={s.score} />
+                          </Link>
+                          <div className="podium-block" style={{ height: realH, background: `linear-gradient(to top, ${realC}20, ${realC}08)`, borderTop: `3px solid ${realC}`, borderLeft: '1px solid rgba(255,255,255,0.06)', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
+                            <span style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}><Medal size={28} color={realC} strokeWidth={2.5} /></span>
+                            <span style={{ fontSize: 16, fontWeight: 800, color: realC }}>{actualRank}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Ranking Table */}
+                <div className="lb-table card animate-fadeInUp delay-3">
+                  <div className="lb-table-header">
+                    <span>Rank</span>
+                    <span>Student</span>
+                    <span>Section</span>
+                    <span>Wins</span>
+                    <span>Achievements</span>
+                    <span>Score</span>
+                  </div>
+                  {(showPodium ? rest : students).map((s, idx) => {
+                    const displayRank = s.rank || idx + 1;
+                    // Mock delta logic
+                    const deltaId = String(s.id).charCodeAt(0) || idx;
+                    const mockDelta = deltaId % 3 === 0 ? <span style={{ color: '#16a34a', display: 'flex', alignItems: 'center' }}><ArrowUp size={12} /> {(deltaId%2)+1}</span> 
+                                    : deltaId % 5 === 0 ? <span style={{ color: '#dc2626', display: 'flex', alignItems: 'center' }}><ArrowDown size={12} /> 1</span> 
+                                    : <span style={{ color: 'var(--color-text-faint)', display: 'flex', alignItems: 'center' }}><Minus size={12} /></span>;
+
+                    return (
+                      <Link to={`/profile/${s.id}`} key={s.id} className="lb-row" style={{ animationDelay: `${idx * 0.03}s` }}>
+                        <div className="lb-rank-container">
+                          <span className={`lb-rank ${displayRank <= 3 ? `rank-${displayRank}` : ''}`}>#{displayRank}</span>
+                          <div style={{ marginTop: '2px', fontWeight: 'bold' }}>{mockDelta}</div>
+                        </div>
+                        <div className="lb-student">
+                          <div className="lb-ava">{s.name[0]}</div>
+                          <div>
+                            <div className="lb-name">{s.name}</div>
+                            <div className="lb-year">{s.batch || '—'}</div>
+                          </div>
+                        </div>
+                        <span className="lb-cell"><span className="badge badge-violet">{s.class}</span></span>
+                        <span className="lb-cell" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>{s.gold_wins || 0} <Medal size={14} color="#eab308" /></span>
+                        <span className="lb-cell">{s.achievement_count}</span>
+                        <span className="lb-score text-gradient">{s.score}</span>
                       </Link>
-                      <div className="podium-block" style={{ height: realH, background: `linear-gradient(to top, ${realC}20, ${realC}08)`, borderTop: `3px solid ${realC}`, borderLeft: '1px solid rgba(255,255,255,0.06)', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
-                        <span style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}><Medal size={28} color={realC} strokeWidth={2.5} /></span>
-                        <span style={{ fontSize: 16, fontWeight: 800, color: realC }}>{actualRank}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Ranking Table */}
-            <div className="lb-table card animate-fadeInUp delay-3">
-              <div className="lb-table-header">
-                <span>Rank</span>
-                <span>Student</span>
-                <span>Section</span>
-                <span>Wins</span>
-                <span>Achievements</span>
-                <span>Score</span>
-              </div>
-              {(!batchFilter && !classFilter ? rest : students).map((s, idx) => {
-                const displayRank = !batchFilter && !classFilter ? s.rank : idx + 1;
-                // Mock delta logic
-                const deltaId = String(s.id).charCodeAt(0) || idx;
-                const mockDelta = deltaId % 3 === 0 ? <span style={{ color: '#16a34a', display: 'flex', alignItems: 'center' }}><ArrowUp size={12} /> {(deltaId%2)+1}</span> 
-                                : deltaId % 5 === 0 ? <span style={{ color: '#dc2626', display: 'flex', alignItems: 'center' }}><ArrowDown size={12} /> 1</span> 
-                                : <span style={{ color: 'var(--color-text-faint)', display: 'flex', alignItems: 'center' }}><Minus size={12} /></span>;
-
-                return (
-                  <Link to={`/profile/${s.id}`} key={s.id} className="lb-row" style={{ animationDelay: `${idx * 0.03}s` }}>
-                    <div className="lb-rank-container">
-                      <span className={`lb-rank ${displayRank <= 3 ? `rank-${displayRank}` : ''}`}>#{displayRank}</span>
-                      <div style={{ marginTop: '2px', fontWeight: 'bold' }}>{mockDelta}</div>
-                    </div>
-                    <div className="lb-student">
-                      <div className="lb-ava">{s.name[0]}</div>
-                      <div>
-                        <div className="lb-name">{s.name}</div>
-                        <div className="lb-year">{s.batch || '—'}</div>
-                      </div>
-                    </div>
-                    <span className="lb-cell"><span className="badge badge-violet">{s.class}</span></span>
-                    <span className="lb-cell" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>{s.gold_wins || 0} <Medal size={14} color="#eab308" /></span>
-                    <span className="lb-cell">{s.achievement_count}</span>
-                    <span className="lb-score text-gradient">{s.score}</span>
-                  </Link>
-                );
-              })}
-            </div>
+                    );
+                  })}
+                </div>
+                </>
+              );
+            })()}
           </>
         )}
       </div>
