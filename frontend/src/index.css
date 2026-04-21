@@ -111,6 +111,10 @@ img { max-width: 100%; display: block; }
 }
 .text-gold { color: var(--color-gold-dark); }
 
+.font-cindie {
+  font-family: 'Cindie Mono', monospace;
+}
+
 /* ─── Flat Cards ────────────────────────────── */
 .card {
   background: var(--bg-card);

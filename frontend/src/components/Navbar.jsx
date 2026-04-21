@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Home, Zap, Trophy, GraduationCap, Users, Shield } from 'lucide-react';
+import { Home, Zap, Trophy, GraduationCap, Users, Shield, LayoutDashboard } from 'lucide-react';
 import './Navbar.css';
 
 export default function Navbar() {
@@ -29,6 +29,7 @@ export default function Navbar() {
 
   const navLinks = [
     { to: '/', label: 'Home', icon: <Home size={18} /> },
+    { to: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
     { to: '/updates', label: 'Updates', icon: <Zap size={18} /> },
     { to: '/leaderboard', label: 'Leaderboard', icon: <Trophy size={18} /> },
     { to: '/students', label: 'Students', icon: <GraduationCap size={18} /> },
@@ -50,8 +51,8 @@ export default function Navbar() {
 
         <div className={`navbar-links ${menuOpen ? 'open' : ''}`}>
           {navLinks.map(link => {
-            // Hide everything except Home if not logged in
-            if (!user && link.to !== '/') return null;
+            // Hide everything except Home and Dashboard if not logged in
+            if (!user && link.to !== '/' && link.to !== '/dashboard') return null;
             return (
               <Link
                 key={link.to}
