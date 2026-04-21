@@ -101,9 +101,6 @@ export default function Landing() {
       <div className="lp">
         <section className="lp-hero" style={{ padding: '40px 0', minHeight: 'calc(100vh - 84px)', display: 'flex', alignItems: 'center' }}>
           <div className="container" style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
-              <img src="/inceptron-logo.png" alt="Inceptron Logo" style={{ height: '110px', objectFit: 'contain' }} />
-            </div>
             <div className="lp-pill" style={{ margin: '0 auto 24px' }}>
               <span className="lp-pill-dot" />
               Sri Shakthi Institute of Engineering and Technology, Coimbatore
@@ -126,42 +123,29 @@ export default function Landing() {
 
       {/* ── Hero ─────────────────────────────── */}
       <section className="lp-hero">
-        <div className="container lp-hero-inner">
-          <div className="lp-hero-text animate-fadeInUp">
-            <div className="lp-pill">
-              <span className="lp-pill-dot" />
-              Sri Shakthi Institute of Engineering and Technology, Coimbatore
+        <div className="container">
+          <div className="lp-hero-inner animate-fadeInUp">
+            <div className="lp-hero-logo-col">
+              <img src="/inceptron-navbar-logo.png" alt="Inceptron Logo" className="lp-hero-logo-img" />
             </div>
-            <div style={{ display: 'flex', gap: '20px', alignItems: 'center', marginBottom: '18px' }}>
-              <img src="/inceptron-logo.png" alt="Inceptron Logo" style={{ height: '80px', objectFit: 'contain' }} />
-              <h1 className="lp-h1" style={{ marginBottom: 0 }}>
+            <div className="lp-hero-text">
+              <div className="lp-pill">
+                <span className="lp-pill-dot" />
+                Sri Shakthi Institute of Engineering and Technology, Coimbatore
+              </div>
+              <h1 className="lp-h1">
                 Inceptron<br />
                 <span className="lp-h1-accent">Achievement Hub</span>
               </h1>
+              <p className="lp-sub">
+                Track hackathons, internships, projects and courses. Climb the leaderboard.
+                Form your team. Build your career at <strong>SIET</strong>.
+              </p>
+              <div className="lp-ctas">
+                <a href="http://110.172.151.102/" className="btn btn-primary btn-lg"><Rocket size={18} /> Sign In to Portal</a>
+                <Link to="/leaderboard" className="btn btn-secondary btn-lg"><Trophy size={18} /> Leaderboard</Link>
+              </div>
             </div>
-            <p className="lp-sub">
-              Track hackathons, internships, projects and courses. Climb the leaderboard.
-              Form your team. Build your career at <strong>SIET</strong>.
-            </p>
-            <div className="lp-ctas">
-              <a href="http://110.172.151.102/" className="btn btn-primary btn-lg"><Rocket size={18} /> Sign In to Portal</a>
-              <Link to="/leaderboard" className="btn btn-secondary btn-lg"><Trophy size={18} /> Leaderboard</Link>
-            </div>
-          </div>
-
-          <div className="lp-hero-card animate-fadeInUp delay-2">
-            <div className="lp-hero-card-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Star size={14} /> Top 5 Achievers</div>
-            {topStudents.map((s, i) => (
-              <Link to={`/profile/${s.id}`} key={s.id} className="lp-rank-row">
-                <span className="lp-rank-num" style={{ display: 'flex', justifyContent: 'center' }}>{RANK_ICONS[i]}</span>
-                <div className="lp-rank-ava">{s.name[0]}</div>
-                <div className="lp-rank-info">
-                  <div className="lp-rank-name">{s.name}</div>
-                  <div className="lp-rank-meta">{s.class}</div>
-                </div>
-                <div className="lp-rank-score">{s.score} <span>pts</span></div>
-              </Link>
-            ))}
           </div>
         </div>
       </section>
@@ -305,15 +289,36 @@ export default function Landing() {
         .lp-hero {
           background: #FFFFFF;
           border-bottom: 2px solid var(--border);
-          padding: calc(var(--navbar-height) + 48px) 0 56px;
+          padding: calc(var(--navbar-height) + 56px) 0 64px;
         }
         .lp-hero-inner {
-          display: grid;
-          grid-template-columns: 1fr 380px;
-          gap: 48px;
+          display: flex;
           align-items: center;
+          gap: 48px;
+          max-width: 860px;
+          margin: 0 auto;
         }
-        @media (max-width: 900px) { .lp-hero-inner { grid-template-columns: 1fr; } }
+        .lp-hero-logo-col {
+          flex: 0 0 280px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .lp-hero-logo-img {
+          width: 100%;
+          height: auto;
+          display: block;
+          filter: drop-shadow(0 16px 36px rgba(0,0,0,0.15));
+        }
+        .lp-hero-text {
+          flex: 1;
+        }
+        @media (max-width: 768px) {
+          .lp-hero-inner { flex-direction: column; text-align: center; gap: 32px; }
+          .lp-hero-logo-col { flex: 0 0 180px; }
+          .lp-ctas { justify-content: center; }
+        }
+
 
         .lp-pill {
           display: inline-flex; align-items: center; gap: 8px;
