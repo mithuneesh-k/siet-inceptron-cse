@@ -282,4 +282,27 @@ router.delete('/:id', authMiddleware, async (req, res) => {
   res.json({ message: 'Team deleted successfully' });
 });
 
+// PATCH /api/teams/members/:id
+router.patch('/members/:id', authMiddleware, async (req, res) => {
+  const mid = req.params.id;
+  const { role } = req.body;
+  if (!role) return res.status(400).json({ error: 'Role is required' });
+
+  const { data: mem } = await supabase
+    .from('team_members')
+    .select('*, teams(creator_id)')
+    .eq('id', mid)
+    .single();
+
+  if (!mem) return res.status(404).json({ error: 'Membership not found' });
+  if (mem.teams.creator_id !== req.user.id) {
+    return res.status(403).json({ error: 'Only team creator can edit roles' });
+  }
+
+  const { error } = await supabase.from('team_members').update({ role }).eq('id', mid);
+  if (error) return res.status(500).json({ error: 'Failed to update member role' });
+
+  res.json({ message: 'Member updated successfully' });
+});
+
 module.exports = router;

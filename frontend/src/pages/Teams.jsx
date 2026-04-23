@@ -19,6 +19,7 @@ export default function Teams() {
   const [inviteRollNo, setInviteRollNo] = useState('');
   const [isInviting, setIsInviting] = useState(false);
   const [toast, setToast] = useState(null);
+  const [activeDropdown, setActiveDropdown] = useState(null);
 
   const showToast = (msg, type = 'success') => { setToast({ msg, type }); setTimeout(() => setToast(null), 3000); };
 
@@ -124,6 +125,33 @@ export default function Teams() {
     }
   };
 
+  const handleRemoveMember = async (mid) => {
+    if (!confirm('Are you sure you want to remove this member?')) return;
+    try {
+      await client.delete(`/teams/invites/${mid}`);
+      showToast('Member removed');
+      setActiveDropdown(null);
+      openTeamDetail(selectedTeam.id);
+      fetchTeams();
+    } catch (err) {
+      showToast('Failed to remove member', 'error');
+    }
+  };
+
+  const handleEditRole = async (mid, currentRole) => {
+    const newRole = window.prompt("Enter new role for member:", currentRole);
+    if (!newRole || newRole === currentRole) return;
+    try {
+      await client.patch(`/teams/members/${mid}`, { role: newRole });
+      showToast('Role updated! 🎉');
+      setActiveDropdown(null);
+      openTeamDetail(selectedTeam.id);
+      fetchTeams();
+    } catch (err) {
+      showToast('Failed to update role', 'error');
+    }
+  };
+
   return (
     <div className="page-content">
       <div className="container">
@@ -188,9 +216,26 @@ export default function Teams() {
                         <div className="member-avatar-box">{m.name[0]}</div>
                         <div className="member-info">
                           <div className="m-name">{m.name} {m.id === user?.id && <span className="me-tag">(You)</span>}</div>
-                          <div className="m-sub">{m.class} · {m.score} pts</div>
+                          <div className="m-sub">
+                            {m.class} · {m.score} pts
+                            {m.role !== 'member' && m.role !== 'leader' && ` · ${m.role}`}
+                          </div>
                         </div>
-                        {m.role === 'leader' && <span className="leader-pill">Leader</span>}
+                        {m.role === 'leader' ? (
+                          <span className="leader-pill">Leader</span>
+                        ) : selectedTeam.is_leader && (
+                          <div className="member-actions" style={{ position: 'relative' }}>
+                            <button className="btn-icon" style={{ background: 'transparent', color: 'var(--color-text)' }} onClick={(e) => { e.stopPropagation(); setActiveDropdown(activeDropdown === m.id ? null : m.id); }}>
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                            </button>
+                            {activeDropdown === m.id && (
+                              <div className="dropdown-menu popup-menu">
+                                <button onClick={(e) => { e.stopPropagation(); handleEditRole(m.membership_id, m.role); }} className="dropdown-item">Edit Role</button>
+                                <button onClick={(e) => { e.stopPropagation(); handleRemoveMember(m.membership_id); }} className="dropdown-item text-red">Remove Member</button>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -318,6 +363,12 @@ export default function Teams() {
         .btn-icon { width: 30px; height: 30px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; transition: all 0.2s; }
         .btn-icon.accept { background: var(--color-green); color: white; }
         .btn-icon.decline { background: #EF4444; color: white; }
+        
+        .popup-menu { position: absolute; right: 0; top: 100%; background: #1a1f24; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 10; min-width: 140px; }
+        .dropdown-item { width: 100%; text-align: left; padding: 8px 12px; background: transparent; border: none; font-size: 13px; font-weight: 500; cursor: pointer; border-radius: 4px; color: var(--color-text); transition: background 0.2s; }
+        .dropdown-item:hover { background: rgba(255,255,255,0.05); }
+        .dropdown-item.text-red { color: #EF4444; }
+        .dropdown-item.text-red:hover { background: rgba(239, 68, 68, 0.1); }
         
         .invite-form { display: flex; gap: 8px; margin-top: 10px; }
         .invite-form input { flex: 1; background: rgba(0,0,0,0.2); height: 40px; }
