@@ -5,6 +5,7 @@ import ScoreBadge from '../components/ScoreBadge';
 import { useAuth } from '../contexts/AuthContext';
 import { Users, Award, Trophy, Briefcase, UsersRound, Star, Zap, BookOpen, Rocket, Medal, Target } from 'lucide-react';
 import CompanyLogo from '../components/CompanyLogo';
+import ScrollAnimation from '../components/ScrollAnimation';
 
 const RANK_ICONS = [
   <Medal size={18} color="#B45309" strokeWidth={2.5} style={{ display: 'inline' }} />,
@@ -97,25 +98,7 @@ export default function Landing() {
   }, [user]);
 
   if (!user) {
-    return (
-      <div className="lp">
-        <section className="lp-hero" style={{ padding: '40px 0', minHeight: 'calc(100vh - 84px)', display: 'flex', alignItems: 'center' }}>
-          <div className="container" style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto' }}>
-            <div className="lp-pill" style={{ margin: '0 auto 24px' }}>
-              <span className="lp-pill-dot" />
-              Sri Shakthi Institute of Engineering and Technology, Coimbatore
-            </div>
-            <h1 className="lp-h1" style={{ marginBottom: '16px', fontSize: 'clamp(36px, 5vw, 56px)' }}>
-              Welcome to <br/><span className="lp-h1-accent">Inceptron Hub</span>
-            </h1>
-            <p className="lp-sub" style={{ margin: '0 auto 40px', fontSize: '18px' }}>
-              The exclusive achievement hub for SIET CSE Department. Track your progress, discover opportunities, and climb the leaderboard.
-            </p>
-            <a href="http://110.172.151.102/" className="btn btn-primary btn-lg" style={{ padding: '16px 32px', fontSize: '16px' }}>Sign In to Portal →</a>
-          </div>
-        </section>
-      </div>
-    );
+    return <ScrollAnimation />;
   }
 
   return (
