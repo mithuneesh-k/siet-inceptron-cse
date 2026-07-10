@@ -5,6 +5,7 @@ import ScoreBadge from '../components/ScoreBadge';
 import { useAuth } from '../contexts/AuthContext';
 import { Users, Award, Trophy, Briefcase, UsersRound, Star, Zap, BookOpen, Rocket, Medal, Target } from 'lucide-react';
 import CompanyLogo from '../components/CompanyLogo';
+import ScrollAnimation from '../components/ScrollAnimation';
 
 const RANK_ICONS = [
   <Medal size={18} color="#B45309" strokeWidth={2.5} style={{ display: 'inline' }} />,
@@ -111,7 +112,7 @@ export default function Landing() {
             <p className="lp-sub" style={{ margin: '0 auto 40px', fontSize: '18px' }}>
               The exclusive achievement hub for SIET CSE Department. Track your progress, discover opportunities, and climb the leaderboard.
             </p>
-            <a href="http://110.172.151.102/" className="btn btn-primary btn-lg" style={{ padding: '16px 32px', fontSize: '16px' }}>Sign In to Portal →</a>
+            <Link to="/login" className="btn btn-primary btn-lg" style={{ padding: '16px 32px', fontSize: '16px' }}>Sign In to Portal →</Link>
           </div>
         </section>
       </div>

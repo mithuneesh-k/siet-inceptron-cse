@@ -19,24 +19,32 @@ function ProtectedRoute({ children, adminOnly = false }) {
   return children;
 }
 
+function AppContent() {
+  return (
+    <>
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/updates" element={<ProtectedRoute><Updates /></ProtectedRoute>} />
+        <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
+        <Route path="/teams" element={<ProtectedRoute><Teams /></ProtectedRoute>} />
+        <Route path="/students" element={<ProtectedRoute><Students /></ProtectedRoute>} />
+        <Route path="/profile/:id" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+      <Footer />
+    </>
+  );
+}
+
 export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Navbar />
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/updates" element={<ProtectedRoute><Updates /></ProtectedRoute>} />
-          <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
-          <Route path="/teams" element={<ProtectedRoute><Teams /></ProtectedRoute>} />
-          <Route path="/students" element={<ProtectedRoute><Students /></ProtectedRoute>} />
-          <Route path="/profile/:id" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-          <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
-          <Route path="/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-        <Footer />
+        <AppContent />
       </BrowserRouter>
     </AuthProvider>
   );
