@@ -20,11 +20,9 @@ function ProtectedRoute({ children, adminOnly = false }) {
 }
 
 function AppContent() {
-  const { user } = useAuth();
-
   return (
     <>
-      {user && <Navbar />}
+      <Navbar />
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
@@ -37,7 +35,7 @@ function AppContent() {
         <Route path="/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      {user && <Footer />}
+      <Footer />
     </>
   );
 }

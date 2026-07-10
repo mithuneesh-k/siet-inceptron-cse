@@ -98,7 +98,25 @@ export default function Landing() {
   }, [user]);
 
   if (!user) {
-    return <ScrollAnimation />;
+    return (
+      <div className="lp">
+        <section className="lp-hero" style={{ padding: '40px 0', minHeight: 'calc(100vh - 84px)', display: 'flex', alignItems: 'center' }}>
+          <div className="container" style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto' }}>
+            <div className="lp-pill" style={{ margin: '0 auto 24px' }}>
+              <span className="lp-pill-dot" />
+              Sri Shakthi Institute of Engineering and Technology, Coimbatore
+            </div>
+            <h1 className="lp-h1" style={{ marginBottom: '16px', fontSize: 'clamp(36px, 5vw, 56px)' }}>
+              Welcome to <br/><span className="lp-h1-accent">Inceptron Hub</span>
+            </h1>
+            <p className="lp-sub" style={{ margin: '0 auto 40px', fontSize: '18px' }}>
+              The exclusive achievement hub for SIET CSE Department. Track your progress, discover opportunities, and climb the leaderboard.
+            </p>
+            <Link to="/login" className="btn btn-primary btn-lg" style={{ padding: '16px 32px', fontSize: '16px' }}>Sign In to Portal →</Link>
+          </div>
+        </section>
+      </div>
+    );
   }
 
   return (

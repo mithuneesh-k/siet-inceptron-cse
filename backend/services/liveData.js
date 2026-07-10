@@ -26,7 +26,7 @@ async function fetchUnstopHackathons() {
       source: 'unstop',
       registrationCount: h.registerCount || 0,
       mode: h.region || 'Online',
-      difficulty: h.organisation?.name || 'Open',
+      difficulty: h.difficulty || 'Beginner',
     }));
   } catch (e) {
     console.error('Unstop fetch failed:', e.message);

@@ -2,9 +2,13 @@ const express = require('express');
 const router = express.Router();
 const { supabase, getUserWithScore } = require('../db/supabase');
 const { authMiddleware } = require('../middleware/auth');
+const cache = require('../services/cache');
 
 // ─── GET /api/users — All students with score ─────────────────────────────────
 router.get('/', async (req, res) => {
+  const cached = await cache.get('users');
+  if (cached) return res.json(cached);
+
   // Parallel fetch: profiles and verified achievements
   const [pRes, aRes] = await Promise.all([
     supabase
@@ -55,6 +59,7 @@ router.get('/', async (req, res) => {
     achievement_count: achMap[s.user_id]?.count || 0,
   })).sort((a, b) => b.score - a.score);
 
+  await cache.set('users', result, 300);
   res.json(result);
 });
 
