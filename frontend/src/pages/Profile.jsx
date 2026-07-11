@@ -36,9 +36,9 @@ export default function Profile() {
   const fetchData = async () => {
     try {
       const [userRes, achRes, teamRes] = await Promise.all([
-        client.get(`/users/${id}`),
-        client.get(`/achievements/user/${id}`),
-        client.get(`/teams/user/${id}`)
+        client.get(`/users/${id}`).catch(err => { console.error(err); return { data: null }; }),
+        client.get(`/achievements/user/${id}`).catch(err => { console.error(err); return { data: [] }; }),
+        client.get(`/teams/user/${id}`).catch(err => { console.error(err); return { data: [] }; })
       ]);
       setUser(userRes.data);
       setAchievements(achRes.data);

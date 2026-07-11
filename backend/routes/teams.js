@@ -132,7 +132,7 @@ router.get('/user/:userId', async (req, res) => {
     .eq('user_id', req.params.userId)
     .eq('status', 'accepted');
 
-  if (error) return res.status(500).json({ error: 'Failed' });
+  if (error) return res.status(500).json({ error: error.message || error });
   res.json(data.map(d => ({ ...d.teams, role: d.role })));
 });
 
