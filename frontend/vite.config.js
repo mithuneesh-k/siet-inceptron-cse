@@ -5,11 +5,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-      }
-    }
+    // ✅ Fixed: Remove proxy to allow Vite to serve frontend properly
+    // The backend will still serve API endpoints via /api paths
+    cors: true
   }
 })

@@ -5,7 +5,6 @@ import ScoreBadge from '../components/ScoreBadge';
 import { useAuth } from '../contexts/AuthContext';
 import { Users, Award, Trophy, Briefcase, UsersRound, Star, Zap, BookOpen, Rocket, Medal, Target } from 'lucide-react';
 import CompanyLogo from '../components/CompanyLogo';
-import ScrollAnimation from '../components/ScrollAnimation';
 
 const RANK_ICONS = [
   <Medal size={18} color="#B45309" strokeWidth={2.5} style={{ display: 'inline' }} />,

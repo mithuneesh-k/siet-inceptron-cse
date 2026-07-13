@@ -34,6 +34,46 @@ async function fetchUnstopHackathons() {
   }
 }
 
+// ─── Unstop Internships ──────────────────────────────────────────────────────
+async function fetchUnstopInternships() {
+  try {
+    const res = await fetch(
+      'https://unstop.com/api/public/opportunity/search-result?opportunity=internships&page=1&per_page=18&oppstatus=open&sortBy=&orderBy=&filter_condition=&undefined=true'
+    );
+    const data = await res.json();
+    return (data.data?.data || []).map((item) => ({
+      id: `unstop-intern-${item.id}`,
+      title: item.title,
+      company: item.organisation?.name,
+      companyId: item.organisation?.id,
+      type: item.type,
+      subtype: item.subtype,
+      status: item.status,
+      region: item.region,
+      isPaid: item.isPaid,
+      updatedAt: item.updated_at,
+      description: item.details,
+      link: item.seo_url || item.short_url || item.public_url,
+      logo: item.organisation?.logoUrl2 || '',
+      workFunctions: item.workfunction?.map((wf) => wf.name) || [],
+      eligibility: item.filters?.map((f) => f.name) || [],
+      tags: item.tags?.map((t) => t.name ?? t) || [],
+      address: item.address_with_country_logo,
+      registrationOpen: item.regn_open === 1,
+      source: 'unstop',
+      // Map to frontend expected fields
+      stipend: item.isPaid ? (item.stipend || 'Stipend not specified') : 'Unpaid',
+      deadline: item.end_date || '',
+      location: item.region || 'Online',
+      mode: item.region || 'Online',
+      difficulty: item.difficulty || 'Beginner',
+    }));
+  } catch (e) {
+    console.error('Unstop internships fetch failed:', e.message);
+    return [];
+  }
+}
+
 // ─── Devpost ───────────────────────────────────────────────────────────────
 async function fetchDevpostHackathons() {
   try {
@@ -63,17 +103,6 @@ async function fetchDevpostHackathons() {
 }
 
 // ─── Mock fallbacks ────────────────────────────────────────────────────────
-const mockInternships = [
-  { id: 'i1', title: 'Software Development Intern', company: 'Zoho Corporation', location: 'Chennai / Hybrid', duration: '6 months', stipend: '₹15,000/month', tags: ['Java', 'Python', 'Full Stack'], link: 'https://careers.zoho.com', logo: '🟠', deadline: '2025-05-31', description: 'Build features for Zoho CRM, Books, or Cliq. Open to 3rd and 4th year students. PPO possible.' },
-  { id: 'i2', title: 'Data Science Intern', company: 'TCS iON', location: 'Remote', duration: '3 months', stipend: '₹10,000/month', tags: ['Python', 'Machine Learning', 'SQL'], link: 'https://ibegin.tcs.com', logo: '🔵', deadline: '2025-04-30', description: 'Work on assessment platform analytics. Certificate + letter of recommendation provided.' },
-  { id: 'i3', title: 'DevOps Engineering Intern', company: 'Freshworks', location: 'Chennai, TN', duration: '2 months', stipend: '₹25,000/month', tags: ['Docker', 'Kubernetes', 'CI/CD'], link: 'https://www.freshworks.com/careers/', logo: '🌿', deadline: '2025-05-15', description: 'Assist in maintaining Freshdesk infrastructure. Strong stipend. Open to 3rd year students.' },
-  { id: 'i4', title: 'AI/ML Research Intern', company: 'IIT Madras — RBCDSAI', location: 'Chennai (On-site)', duration: '2–3 months', stipend: 'Stipend negotiable', tags: ['Python', 'Deep Learning', 'NLP'], link: 'https://rbcdsai.iitm.ac.in', logo: '🎓', deadline: '2025-04-25', description: "Research internship at IIT Madras's AI center. Work on NLP, computer vision, or time-series problems." },
-  { id: 'i5', title: 'Mobile App Developer Intern', company: 'Chargebee', location: 'Chennai / Remote', duration: '3 months', stipend: '₹20,000/month', tags: ['React Native', 'Flutter', 'Firebase'], link: 'https://www.chargebee.com/careers/', logo: '⚡', deadline: '2025-05-20', description: "Build and improve Chargebee's mobile billing experience. Collaborative team, good mentorship." },
-  { id: 'i6', title: 'Cybersecurity Intern', company: 'Wipro — CyberDefense', location: 'Bangalore / Hybrid', duration: '2 months', stipend: '₹12,000/month', tags: ['Network Security', 'SIEM', 'Penetration Testing'], link: 'https://careers.wipro.com', logo: '🟣', deadline: '2025-05-10', description: 'Hands-on internship in SOC environment. Exposure to Splunk, CrowdStrike, and incident response.' },
-  { id: 'i7', title: 'Cloud Infrastructure Intern', company: 'Infosys — Cloud & Edge Practice', location: 'Coimbatore / Remote', duration: '3 months', stipend: '₹10,000/month', tags: ['AWS', 'Terraform', 'Linux'], link: 'https://infosys.com/careers', logo: '💙', deadline: '2025-06-01', description: 'Manage cloud migrations and infrastructure-as-code pipelines. AWS or Azure experience preferred.' },
-  { id: 'i8', title: 'UI/UX Design Intern', company: 'Kissflow', location: 'Chennai (On-site)', duration: '2 months', stipend: '₹15,000/month', tags: ['Figma', 'User Research', 'Prototyping'], link: 'https://kissflow.com/careers', logo: '🎨', deadline: '2025-04-28', description: "Design intuitive workflows for Kissflow's no-code platform. Figma portfolio required." },
-];
-
 const mockJobs = [
   { id: 'j1', title: 'Associate Software Engineer', company: 'Zoho Corporation', location: 'Chennai, TN', type: 'Full Time', package: '₹6.5–10 LPA', tags: ['Java', 'JavaScript', 'Python'], link: 'https://careers.zoho.com', logo: '🟠', deadline: '2025-05-31', description: 'Off-campus drive for 2025 batch. Build products used by millions. ZEAL test required.' },
   { id: 'j2', title: 'System Engineer', company: 'TCS', location: 'Pan India', type: 'Full Time', package: '₹3.36 LPA', tags: ['Java', 'SQL', 'Problem Solving'], link: 'https://ibegin.tcs.com', logo: '🔵', deadline: '2025-05-15', description: '2025 batch off-campus. TCS NQT exam. Multiple locations. Good learning environment.' },
@@ -87,12 +116,13 @@ const mockJobs = [
 async function getLiveData() {
   const now = Date.now();
   if (!cache.lastFetch || (now - cache.lastFetch) > CACHE_TTL) {
-    const [unstop, devpost] = await Promise.all([
+    const [unstop, devpost, internships] = await Promise.all([
       fetchUnstopHackathons(),
       fetchDevpostHackathons(),
+      fetchUnstopInternships(),
     ]);
     cache.hackathons = [...unstop, ...devpost];
-    cache.internships = mockInternships;
+    cache.internships = internships;
     cache.jobs = mockJobs;
     cache.lastFetch = now;
   }

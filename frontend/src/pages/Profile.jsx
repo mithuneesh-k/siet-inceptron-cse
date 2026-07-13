@@ -166,10 +166,10 @@ export default function Profile() {
 
         {/* Profile Header */}
         <div className="profile-header card animate-fadeInUp">
-          <div className="profile-main">
-            <div className="profile-avatar-wrap">
-              <div className="profile-avatar">{user.name[0]}</div>
-            </div>
+           <div className="profile-main">
+             <div className="profile-avatar-wrap">
+               <div className="profile-avatar">{user.name?.[0] || '?'}</div>
+             </div>
             <div className="profile-info">
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                 <h1 className="profile-name">{user.name}</h1>
