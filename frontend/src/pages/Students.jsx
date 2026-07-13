@@ -3,46 +3,44 @@ import { Link } from 'react-router-dom';
 import client from '../api/client';
 import CustomSelect from '../components/CustomSelect';
 import FilterModal from '../components/FilterModal';
-import { Search, Star, Link as LinkIcon, GraduationCap } from 'lucide-react';
+import { Search, Star, Link as LinkIcon, GraduationCap, ChevronLeft, ChevronRight } from 'lucide-react';
 
-
+const PAGE_SIZE = 100;
 
 export default function Students() {
   const [students, setStudents] = useState([]);
-  const [filtered, setFiltered] = useState([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState('');
   const [batchFilter, setBatchFilter] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
-  // Dynamically generated options based on loaded students
   const availableClasses = [...new Set(students.map(s => s.class).filter(Boolean))].sort();
   const availableBatches = [...new Set(students.map(s => s.batch).filter(Boolean))].sort();
 
   useEffect(() => {
-    client.get('/users').then(res => {
-      const nonAdmins = res.data.filter(u => !u.is_admin);
-      const sorted = nonAdmins.sort((a, b) => a.name.localeCompare(b.name));
-      setStudents(sorted);
-      setFiltered(sorted);
+    setLoading(true);
+    client.get(`/users?page=${page}&limit=${PAGE_SIZE}`).then(res => {
+      setStudents(res.data.students);
+      setTotal(res.data.total);
     }).finally(() => setLoading(false));
-  }, []);
+  }, [page]);
 
-  useEffect(() => {
-    let result = students;
-    if (batchFilter) result = result.filter(s => s.batch === batchFilter);
-    if (classFilter) result = result.filter(s => s.class === classFilter);
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      result = result.filter(s =>
-        s.name.toLowerCase().includes(q) ||
-        s.roll_no.toLowerCase().includes(q) ||
-        s.email?.toLowerCase().includes(q)
-      );
-    }
-    setFiltered(result);
-  }, [search, classFilter, batchFilter, students]);
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+
+  let filtered = students;
+  if (batchFilter) filtered = filtered.filter(s => s.batch === batchFilter);
+  if (classFilter) filtered = filtered.filter(s => s.class === classFilter);
+  if (search.trim()) {
+    const q = search.toLowerCase();
+    filtered = filtered.filter(s =>
+      s.name.toLowerCase().includes(q) ||
+      s.roll_no.toLowerCase().includes(q) ||
+      s.email?.toLowerCase().includes(q)
+    );
+  }
 
   return (
     <div className="page-content">
@@ -51,9 +49,9 @@ export default function Students() {
         <div className="section-header animate-fadeInUp" style={{ marginBottom: '28px' }}>
           <div>
             <h1 className="section-title" style={{ fontSize: '32px', display: 'flex', alignItems: 'center', gap: '8px' }}><GraduationCap size={32} className="text-gradient" /> Students</h1>
-            <p style={{ color: 'var(--color-text-muted)', marginTop: 6 }}>
-              {filtered.length} of {students.length} students {batchFilter ? `— ${batchFilter}` : ''} {classFilter ? `— ${classFilter}` : ''}
-            </p>
+              <p style={{ color: 'var(--color-text-muted)', marginTop: 6 }}>
+                {filtered.length} of {total} students (page {page} of {totalPages}) {batchFilter ? `— ${batchFilter}` : ''} {classFilter ? `— ${classFilter}` : ''}
+              </p>
           </div>
         </div>
 
@@ -118,6 +116,7 @@ export default function Students() {
             <p>Try adjusting your search or class filter.</p>
           </div>
         ) : (
+          <>
           <div className="students-grid animate-fadeInUp">
             {filtered.map(s => (
               <Link
@@ -149,6 +148,18 @@ export default function Students() {
               </Link>
             ))}
           </div>
+          {totalPages > 1 && (
+            <div className="pagination">
+              <button className="btn btn-secondary btn-sm" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>
+                <ChevronLeft size={16} /> Previous
+              </button>
+              <span className="pagination-info">Page {page} of {totalPages}</span>
+              <button className="btn btn-secondary btn-sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+                Next <ChevronRight size={16} />
+              </button>
+            </div>
+          )}
+          </>
         )}
       </div>
 
@@ -163,6 +174,9 @@ export default function Students() {
         .student-card-meta { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
         .student-card-score { font-size: 12px; color: var(--color-violet-light); margin-top: 4px; font-weight: 500; }
         .student-card-arrow { font-size: 22px; color: var(--color-text-muted); flex-shrink: 0; }
+        .pagination { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 32px; padding: 16px 0; }
+        .pagination-info { font-size: 14px; color: var(--color-text-muted); font-weight: 500; }
+        .pagination .btn:disabled { opacity: 0.4; cursor: not-allowed; }
       `}</style>
     </div>
   );

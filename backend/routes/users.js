@@ -9,12 +9,22 @@ router.get('/', async (req, res) => {
   const cached = await cache.get('users');
   if (cached) return res.json(cached);
 
+  const page = parseInt(req.query.page || '1', 10);
+  const limit = Math.min(parseInt(req.query.limit || '100', 10), 200);
+  const offset = (page - 1) * limit;
+
+  // Check if requesting all (no pagination) for full cache
+  const requestingAll = !req.query.page && !req.query.limit;
+
   // Parallel fetch: profiles and verified achievements
+  let profilesQuery = supabase
+    .from('students')
+    .select('user_id, name, roll_no, class, batch, year, github, linkedin, avatar_url')
+    .order('name');
+  if (!requestingAll) profilesQuery = profilesQuery.range(offset, offset + limit - 1);
+
   const [pRes, aRes] = await Promise.all([
-    supabase
-      .from('students')
-      .select('user_id, name, roll_no, class, batch, year, github, linkedin, avatar_url')
-      .order('name'),
+    profilesQuery,
     supabase
       .from('achievements')
       .select('user_id, points')
@@ -59,8 +69,15 @@ router.get('/', async (req, res) => {
     achievement_count: achMap[s.user_id]?.count || 0,
   })).sort((a, b) => b.score - a.score);
 
-  await cache.set('users', result, 300);
-  res.json(result);
+  // Cache full result only when requesting all
+  if (requestingAll) await cache.set('users', result, 300);
+
+  // Get total count for pagination
+  const { count } = await supabase
+    .from('students')
+    .select('*', { count: 'exact', head: true });
+
+  res.json({ students: result, total: count, page, limit });
 });
 
 // ─── GET /api/users/:id ───────────────────────────────────────────────────────
