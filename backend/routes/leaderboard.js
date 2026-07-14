@@ -4,27 +4,87 @@ const { supabase } = require('../db/supabase');
 
 async function buildLeaderboard(batchFilter, classFilter, limit) {
   let query = supabase
-    .from('student_leaderboard')
-    .select('*')
-    .gt('score', 0)
-    .order('score', { ascending: false })
-    .order('gold_wins', { ascending: false });
+    .from('students')
+    .select('user_id, name, roll_no, reg_no, class, batch, year, github, linkedin, avatar_url');
 
   if (batchFilter && batchFilter !== 'all') query = query.eq('batch', batchFilter);
   if (classFilter && classFilter !== 'all') query = query.eq('class', classFilter);
 
-  const { data, error } = await query.range(0, (limit || 100) - 1);
+  const { data: students, error } = await query;
   if (error) {
     console.error('Leaderboard query error:', error);
     return [];
   }
-  if (!data) return [];
 
-  return data.map((u, i) => ({
-    id: u.user_id,
-    ...u,
-    rank: i + 1
-  }));
+  if (!students?.length) return [];
+
+  const userIds = students.map((u) => u.user_id);
+  const { data: achievements } = await supabase
+    .from('achievements')
+    .select('user_id, points, type, title, position, verified')
+    .in('user_id', userIds)
+    .eq('verified', true);
+
+  const achMap = new Map();
+  for (const achievement of achievements || []) {
+    const current = achMap.get(achievement.user_id) || {
+      score: 0,
+      count: 0,
+      gold: 0,
+      silver: 0,
+      bronze: 0,
+      topTitle: null,
+      topScore: 0,
+    };
+
+    current.score += achievement.points || 0;
+    current.count += 1;
+
+    if (achievement.type === 'hackathon') {
+      if (achievement.position === '1st') current.gold += 1;
+      else if (achievement.position === '2nd') current.silver += 1;
+      else if (achievement.position === '3rd') current.bronze += 1;
+    }
+
+    const points = achievement.points || 0;
+    if (points > current.topScore || (!current.topTitle && achievement.title)) {
+      current.topTitle = achievement.title || null;
+      current.topScore = points;
+    }
+
+    achMap.set(achievement.user_id, current);
+  }
+
+  return students
+    .map((u) => {
+      const stats = achMap.get(u.user_id) || { score: 0, count: 0, gold: 0, silver: 0, bronze: 0, topTitle: null };
+      return {
+        id: u.user_id,
+        name: u.name,
+        roll_no: u.roll_no,
+        reg_no: u.reg_no,
+        class: u.class,
+        batch: u.batch,
+        year: u.year,
+        github: u.github,
+        linkedin: u.linkedin,
+        avatar_url: u.avatar_url,
+        score: stats.score || 0,
+        achievement_count: stats.count || 0,
+        gold_wins: stats.gold || 0,
+        silver_wins: stats.silver || 0,
+        bronze_wins: stats.bronze || 0,
+        top_achievement: stats.topTitle || null,
+      };
+    })
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      if ((b.achievement_count || 0) !== (a.achievement_count || 0)) return (b.achievement_count || 0) - (a.achievement_count || 0);
+      if ((b.gold_wins || 0) !== (a.gold_wins || 0)) return (b.gold_wins || 0) - (a.gold_wins || 0);
+      return (a.name || '').localeCompare(b.name || '');
+    })
+    .slice(0, limit || 100)
+    .map((u, i) => ({ ...u, rank: i + 1 }));
 }
 
 // ─── GET /api/leaderboard/stats ───────────────────────────────────────────────
@@ -55,27 +115,7 @@ router.get('/stats', async (req, res) => {
 // ─── GET /api/leaderboard/top ─────────────────────────────────────────────────
 router.get('/top', async (req, res) => {
   const top = await buildLeaderboard(null, null, 5);
-  if (!top.length) return res.json([]);
-
-  // Fetch top achievement titles for these users in ONE batch query
-  const userIds = top.map(u => u.id);
-  const { data: topAchs } = await supabase
-    .from('achievements')
-    .select('user_id, title, points')
-    .in('user_id', userIds)
-    .eq('verified', true)
-    .order('points', { ascending: false });
-
-  // Map back to users (take the first achievement for each since they are ordered by points)
-  const achMap = {};
-  if (topAchs) {
-    topAchs.forEach(a => {
-      if (!achMap[a.user_id]) achMap[a.user_id] = a.title;
-    });
-  }
-
-  const enriched = top.map(u => ({ ...u, top_achievement: achMap[u.id] || null }));
-  res.json(enriched);
+  res.json(top);
 });
 
 // ─── GET /api/leaderboard?batch=&class=&limit= ────────────────────────────────
