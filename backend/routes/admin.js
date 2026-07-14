@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const { supabase, getAdminScope } = require('../db/supabase');
 const { authMiddleware, adminMiddleware } = require('../middleware/auth');
+const cache = require('../services/cache');
 
 router.use(authMiddleware, adminMiddleware);
 
@@ -12,6 +13,10 @@ const DEFAULT_PASSWORD = 'password123';
 router.get('/students', async (req, res) => {
   const { search, class: cls, batch } = req.query;
   const scope = await getAdminScope(req.user.id, req.user.role);
+  const cacheKey = `admin:students:${scope.user_id}:${cls || ''}:${batch || ''}:${search || ''}`;
+
+  let cached = await cache.get(cacheKey);
+  if (cached) return res.json(cached);
 
   let query = supabase
     .from('students')
@@ -38,7 +43,10 @@ router.get('/students', async (req, res) => {
   const profiles = pRes.data || [];
   const achs = aRes.data || [];
 
-  if (!profiles.length) return res.json([]);
+  if (!profiles.length) {
+    await cache.set(cacheKey, [], 1800);
+    return res.json([]);
+  }
 
   const userIds = profiles.map(s => s.user_id);
 
@@ -48,7 +56,7 @@ router.get('/students', async (req, res) => {
   ]);
 
   const emailMap = Object.fromEntries((uRes.data || []).map(u => [u.id, u.email]));
-  
+
   const achMap = {};
   for (const a of achs) {
     if (!achMap[a.user_id]) achMap[a.user_id] = { score: 0, count: 0 };
@@ -64,9 +72,11 @@ router.get('/students', async (req, res) => {
     achievement_count: achMap[s.user_id]?.count || 0,
   }));
 
+  await cache.set(cacheKey, result, 1800);
   res.json(result);
 });
 
+// ─── POST /api/admin/students ─────────────────────────────────────────────────
 router.post('/students', async (req, res) => {
   const scope = await getAdminScope(req.user.id, req.user.role);
   const { name, roll_no, reg_no, email, class: cls, batch, date_of_birth } = req.body;
@@ -103,14 +113,14 @@ router.post('/students', async (req, res) => {
   // Insert into students
   const { data: profile, error: pErr } = await supabase
     .from('students')
-    .insert({ 
-      user_id: newUser.id, 
-      name: name.trim().toUpperCase(), 
-      roll_no: roll_no.trim().toUpperCase(), 
-      reg_no, 
-      class: studentClass, 
-      batch: studentBatch, 
-      date_of_birth: date_of_birth || null 
+    .insert({
+      user_id: newUser.id,
+      name: name.trim().toUpperCase(),
+      roll_no: roll_no.trim().toUpperCase(),
+      reg_no,
+      class: studentClass,
+      batch: studentBatch,
+      date_of_birth: date_of_birth || null,
     })
     .select()
     .single();
@@ -121,6 +131,13 @@ router.post('/students', async (req, res) => {
     return res.status(500).json({ error: 'Failed to create student profile.', details: pErr.message });
   }
 
+  // Clear cache for admin students
+  const cacheKeys = await cache.keys();
+  const adminKeys = cacheKeys.filter(key => key.startsWith('admin:students:'));
+  for (const key of adminKeys) {
+    await cache.del(key);
+  }
+
   res.status(201).json({ id: newUser.id, email, ...profile });
 });
 
@@ -128,7 +145,6 @@ router.post('/students', async (req, res) => {
 router.patch('/students/:id', async (req, res) => {
   const { id } = req.params;
   const scope = await getAdminScope(req.user.id, req.user.role);
-  const { name, roll_no, reg_no, email, class: cls, batch, date_of_birth } = req.body;
 
   // 1. Verify access if limited scope
   if (!scope.hasFullAccess) {
@@ -139,16 +155,16 @@ router.patch('/students/:id', async (req, res) => {
   }
 
   const profileUpdates = {};
-  if (name !== undefined) profileUpdates.name = name.trim().toUpperCase();
-  if (roll_no !== undefined) profileUpdates.roll_no = roll_no.trim().toUpperCase();
-  if (reg_no !== undefined) profileUpdates.reg_no = reg_no;
+  if (req.body.name !== undefined) profileUpdates.name = req.body.name.trim().toUpperCase();
+  if (req.body.roll_no !== undefined) profileUpdates.roll_no = req.body.roll_no.trim().toUpperCase();
+  if (req.body.reg_no !== undefined) profileUpdates.reg_no = req.body.reg_no;
   
   if (scope.hasFullAccess) {
-    if (cls !== undefined) profileUpdates.class = cls;
-    if (batch !== undefined) profileUpdates.batch = batch;
+    if (req.body.class !== undefined) profileUpdates.class = req.body.class;
+    if (req.body.batch !== undefined) profileUpdates.batch = req.body.batch;
   }
-  
-  if (date_of_birth !== undefined) profileUpdates.date_of_birth = date_of_birth;
+
+  if (req.body.date_of_birth !== undefined) profileUpdates.date_of_birth = req.body.date_of_birth;
   profileUpdates.updated_at = new Date().toISOString();
 
   const { data: profile, error: pErr } = await supabase
@@ -162,15 +178,15 @@ router.patch('/students/:id', async (req, res) => {
     if (pErr.code === '23505') return res.status(409).json({ error: 'Roll No already in use.' });
     return res.status(500).json({ error: 'Failed to update student.', details: pErr.message });
   }
-  if (!profile) return res.status(404).json({ error: 'Student not found.' });
 
-  // Update email in users if provided
-  if (email) {
-    await supabase.from('users').update({ email: email.trim().toLowerCase() }).eq('id', id);
+  // Clear cache for admin students
+  const cacheKeys = await cache.keys();
+  const adminKeys = cacheKeys.filter(key => key.startsWith('admin:students:'));
+  for (const key of adminKeys) {
+    await cache.del(key);
   }
 
-  const { data: authRow } = await supabase.from('users').select('email').eq('id', id).single();
-  res.json({ id, email: authRow?.email, ...profile });
+  res.json({ id, ...profile });
 });
 
 // ─── DELETE /api/admin/students/:id ──────────────────────────────────────────
@@ -184,93 +200,27 @@ router.delete('/students/:id', async (req, res) => {
       return res.status(403).json({ error: 'You can only delete students within your assigned class.' });
     }
   }
+
   // Deleting from users cascades to students (via FK ON DELETE CASCADE)
   const { error } = await supabase.from('users').delete().eq('id', id);
   if (error) return res.status(500).json({ error: 'Failed to delete student.', details: error.message });
+
+  // Clear cache for admin students
+  const cacheKeys = await cache.keys();
+  const adminKeys = cacheKeys.filter(key => key.startsWith('admin:students:'));
+  for (const key of adminKeys) {
+    await cache.del(key);
+  }
+
   res.json({ message: 'Student deleted successfully.' });
-});
-
-// ─── POST /api/admin/students/import ─────────────────────────────────────────
-router.post('/students/import', async (req, res) => {
-  const scope = await getAdminScope(req.user.id, req.user.role);
-  if (!scope.hasFullAccess) return res.status(403).json({ error: 'Only HOD or Admin can import CSV data.' });
-
-  const { students } = req.body;
-  if (!Array.isArray(students) || !students.length) {
-    return res.status(400).json({ error: 'No student data provided.' });
-  }
-
-  const password_hash = await bcrypt.hash(DEFAULT_PASSWORD, 10);
-  const results = { success: 0, skipped: 0, errors: [] };
-
-  for (const s of students) {
-    const name    = (s.name || '').trim().toUpperCase();
-    const reg_no  = (s.regno || '').trim();
-    const email   = (s.email || '').trim().toLowerCase();
-    const cls     = (s.class || '').trim();
-    const batch   = (s.batch || '').trim();
-    const date_of_birth = s.dateOfBirth || null;
-    const roll_no = reg_no;
-
-    if (!name || !email) {
-      results.errors.push({ name, reason: 'Missing name or email.' });
-      continue;
-    }
-
-    // Upsert user auth record
-    const { data: userRow, error: uErr } = await supabase
-      .from('users')
-      .upsert({ email, password_hash, role: 'student' }, { onConflict: 'email' })
-      .select('id')
-      .single();
-
-    if (uErr || !userRow) {
-      results.skipped++;
-      results.errors.push({ name, email, reason: uErr?.message || 'Failed to upsert user.' });
-      continue;
-    }
-
-    // Upsert student profile
-    const { error: pErr } = await supabase
-      .from('students')
-      .upsert({ user_id: userRow.id, name, reg_no, roll_no, class: cls, batch, date_of_birth }, { onConflict: 'user_id' });
-
-    if (pErr) {
-      results.skipped++;
-      results.errors.push({ name, email, reason: pErr.message });
-    } else {
-      results.success++;
-    }
-  }
-
-  res.json({
-    message: `Import complete. ${results.success} added/updated, ${results.skipped} skipped.`,
-    ...results,
-  });
-});
-
-// ─── POST /api/admin/students/:id/reset-password ─────────────────────────────
-router.post('/students/:id/reset-password', async (req, res) => {
-  const { id } = req.params;
-  const scope = await getAdminScope(req.user.id, req.user.role);
-
-  if (!scope.hasFullAccess) {
-    const { data: currentStudent } = await supabase.from('students').select('class, batch').eq('user_id', id).single();
-    if (!currentStudent || currentStudent.class !== scope.advisingClass || currentStudent.batch !== scope.advisingBatch) {
-      return res.status(403).json({ error: 'You can only reset passwords for students within your assigned class.' });
-    }
-  }
-
-  const password_hash = await bcrypt.hash(DEFAULT_PASSWORD, 10);
-
-  const { error } = await supabase.from('users').update({ password_hash }).eq('id', id);
-  if (error) return res.status(500).json({ error: 'Failed to reset password.' });
-
-  res.json({ message: `Password reset to "${DEFAULT_PASSWORD}" successfully.` });
 });
 
 // ─── GET /api/admin/faculty ───────────────────────────────────────────────────
 router.get('/faculty', async (req, res) => {
+  const cacheKey = 'admin:faculty';
+  let cached = await cache.get(cacheKey);
+  if (cached) return res.json(cached);
+
   const { data: profiles, error } = await supabase
     .from('faculty')
     .select('user_id, name, designation, department, avatar_url, advising_class, advising_batch')
@@ -283,6 +233,8 @@ router.get('/faculty', async (req, res) => {
   const authMap = Object.fromEntries((authRows || []).map(u => [u.id, u]));
 
   const result = profiles.map(f => ({ id: f.user_id, ...f, email: authMap[f.user_id]?.email || '' }));
+
+  await cache.set(cacheKey, result, 1800);
   res.json(result);
 });
 
@@ -311,11 +263,11 @@ router.post('/faculty', async (req, res) => {
   // 2. Create profile
   const { data: profile, error: pErr } = await supabase
     .from('faculty')
-    .insert({ 
-      user_id: newUser.id, 
-      name: name.trim().toUpperCase(), 
-      designation: designation?.trim() || 'Faculty', 
-      department: department?.trim() || 'CSE' 
+    .insert({
+      user_id: newUser.id,
+      name: name.trim().toUpperCase(),
+      designation: designation?.trim() || 'Faculty',
+      department: department?.trim() || 'CSE'
     })
     .select()
     .single();
@@ -324,6 +276,9 @@ router.post('/faculty', async (req, res) => {
     await supabase.from('users').delete().eq('id', newUser.id);
     return res.status(500).json({ error: 'Failed to create faculty profile.', details: pErr.message });
   }
+
+  // Clear cache for admin faculty
+  await cache.del('admin:faculty');
 
   res.status(201).json({ id: newUser.id, email, ...profile });
 });
@@ -344,7 +299,23 @@ router.patch('/faculty/:id', async (req, res) => {
     const { error } = await supabase.from('faculty').update(updates).eq('user_id', id);
     if (error) return res.status(500).json({ error: 'Failed to update faculty advisor mapping', details: error.message });
   }
+
+  // Clear cache
+  await cache.del('admin:faculty');
+
   res.json({ success: true });
+});
+
+// ─── POST /api/admin/clear-cache ───────────────────────────────────────────────
+router.post('/clear-cache', async (req, res) => {
+  // Allow only admins to clear cache
+  const scope = await getAdminScope(req.user.id, req.user.role);
+  if (!scope.hasFullAccess) return res.status(403).json({ error: 'Only full admins can clear cache' });
+
+  // Flush cache
+  await cache.flush();
+
+  res.json({ message: 'Cache cleared successfully' });
 });
 
 module.exports = router;

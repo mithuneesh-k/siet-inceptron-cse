@@ -74,13 +74,13 @@ export default function Navbar() {
 
         <div className="navbar-actions">
           {user ? (
-            <div className="user-menu">
-              <Link to={`/profile/${user.id}`} className="user-chip">
-                <div className="user-avatar-sm">{user.name[0]}</div>
-                <span className="user-name">{user.name.split(' ')[0]}</span>
-              </Link>
-              <button className="btn btn-ghost btn-sm" onClick={handleLogout}>Logout</button>
-            </div>
+      <div className="user-menu">
+        <Link to={`/profile/${user.id}`} className="user-chip">
+          <div className="user-avatar-sm">{user.name?.[0] || '?'}</div>
+          <span className="user-name">{user.name?.split(' ')[0] || 'User'}</span>
+        </Link>
+        <button className="btn btn-ghost btn-sm" onClick={handleLogout}>Logout</button>
+      </div>
           ) : (
             <div style={{ display: 'flex', gap: '8px' }}>
               <Link to="/login" className="btn btn-primary btn-sm">Login</Link>
