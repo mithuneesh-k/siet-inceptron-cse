@@ -46,4 +46,30 @@ const adminMiddleware = (req, res, next) => {
   next();
 };
 
-module.exports = { authMiddleware, adminMiddleware, optionalAuthMiddleware };
+const hodMiddleware = (req, res, next) => {
+  // Only admin role or faculty with HOD designation
+  if (!['admin', 'faculty'].includes(req.user?.role)) {
+    return res.status(403).json({ error: 'HOD access required' });
+  }
+  // For faculty, verify HOD designation
+  if (req.user.role === 'faculty' && !req.user.is_hod) {
+    return res.status(403).json({ error: 'HOD access required' });
+  }
+  next();
+};
+
+const facultyAdvisorMiddleware = (req, res, next) => {
+  // Allow admin, HOD, and faculty advisors
+  if (!['admin', 'faculty'].includes(req.user?.role)) {
+    return res.status(403).json({ error: 'Faculty advisor access required' });
+  }
+  // Faculty must have advising assignments
+  if (req.user.role === 'faculty') {
+    if (!req.user.advising_class || !req.user.advising_batch) {
+      return res.status(403).json({ error: 'Not assigned as class advisor' });
+    }
+  }
+  next();
+};
+
+module.exports = { authMiddleware, optionalAuthMiddleware, adminMiddleware, hodMiddleware, facultyAdvisorMiddleware };

@@ -121,14 +121,18 @@ SELECT
   s.linkedin,
   COALESCE(agg.score, 0)             AS score,
   COALESCE(agg.achievement_count, 0) AS achievement_count,
-  COALESCE(agg.gold_wins, 0)         AS gold_wins
+  COALESCE(agg.gold_wins, 0)         AS gold_wins,
+  COALESCE(agg.silver_wins, 0)       AS silver_wins,
+  COALESCE(agg.bronze_wins, 0)       AS bronze_wins
 FROM public.students s
 LEFT JOIN (
   SELECT
     a.user_id,
     SUM(a.points)                                                           AS score,
     COUNT(*)                                                                AS achievement_count,
-    COUNT(*) FILTER (WHERE a.type = 'hackathon' AND a.position = '1st')     AS gold_wins
+    COUNT(*) FILTER (WHERE a.type = 'hackathon' AND a.position = '1st')     AS gold_wins,
+    COUNT(*) FILTER (WHERE a.type = 'hackathon' AND a.position = '2nd')     AS silver_wins,
+    COUNT(*) FILTER (WHERE a.type = 'hackathon' AND a.position = '3rd')     AS bronze_wins
   FROM public.achievements a
   WHERE a.verified = true
   GROUP BY a.user_id

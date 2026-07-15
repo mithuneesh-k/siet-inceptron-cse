@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { supabase } = require('../db/supabase');
 const { authMiddleware, optionalAuthMiddleware } = require('../middleware/auth');
+const { withHttpCache } = require('../services/httpCache');
 
 async function getTeamFull(teamId, userId) {
   // 1. Fetch team
@@ -77,7 +78,7 @@ async function getTeamFull(teamId, userId) {
 }
 
 // GET /api/teams
-router.get('/', async (req, res) => {
+router.get('/', withHttpCache('teams:list', 120), async (req, res) => {
   const { type } = req.query;
   const tQuery = supabase.from('teams').select('*').order('created_at', { ascending: false });
   if (type && type !== 'all') tQuery.eq('type', type);
@@ -125,7 +126,7 @@ router.get('/my-invites', authMiddleware, async (req, res) => {
 });
 
 // GET /api/teams/user/:userId
-router.get('/user/:userId', async (req, res) => {
+router.get('/user/:userId', withHttpCache('teams:user', 120), async (req, res) => {
   const { data, error } = await supabase
     .from('team_members')
     .select('*, teams(*)')
@@ -137,7 +138,7 @@ router.get('/user/:userId', async (req, res) => {
 });
 
 // GET /api/teams/:id
-router.get('/:id', optionalAuthMiddleware, async (req, res) => {
+router.get('/:id', optionalAuthMiddleware, withHttpCache('teams:detail', 120), async (req, res) => {
   const team = await getTeamFull(req.params.id, req.user?.id);
   if (!team) return res.status(404).json({ error: 'Team not found' });
   res.json(team);

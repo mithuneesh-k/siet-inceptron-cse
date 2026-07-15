@@ -3,9 +3,10 @@ const router = express.Router();
 const { supabase, getUserWithScore } = require('../db/supabase');
 const { authMiddleware } = require('../middleware/auth');
 const cache = require('../services/cache');
+const { withHttpCache } = require('../services/httpCache');
 
 // ─── GET /api/users — All students with score ─────────────────────────────────
-router.get('/', async (req, res) => {
+router.get('/', withHttpCache('users:list', 300), async (req, res) => {
   const cached = await cache.get('users');
   if (cached) return res.json(cached);
 
@@ -81,7 +82,7 @@ router.get('/', async (req, res) => {
 });
 
 // ─── GET /api/users/:id ───────────────────────────────────────────────────────
-router.get('/:id', async (req, res) => {
+router.get('/:id', withHttpCache('users:profile', 300), async (req, res) => {
   const user = await getUserWithScore(req.params.id);
   if (!user) return res.status(404).json({ error: 'User not found' });
   res.json(user);
@@ -127,7 +128,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
 });
 
 // ─── GET /api/users/:id/teams ─────────────────────────────────────────────────
-router.get('/:id/teams', async (req, res) => {
+router.get('/:id/teams', withHttpCache('users:teams', 300), async (req, res) => {
   const uid = req.params.id;
 
   const { data: memberships, error } = await supabase

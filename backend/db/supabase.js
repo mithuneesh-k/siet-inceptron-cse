@@ -59,14 +59,31 @@ async function getUserWithScore(id) {
     profile = data || {};
   }
 
-  // 3. Score from achievements
-  const { data: achs } = await supabase
-    .from('achievements')
-    .select('points')
-    .eq('user_id', id)
-    .eq('verified', true);
+  // 3. Canonical score from the leaderboard view (with fallback)
+  let score = 0;
+  let achievementCount = 0;
 
-  const score = (achs || []).reduce((s, a) => s + (a.points || 0), 0);
+  const { data: leaderboardRow, error: lbErr } = await supabase
+    .from('student_leaderboard')
+    .select('score, achievement_count, gold_wins')
+    .eq('user_id', id)
+    .maybeSingle();
+
+  if (!lbErr && leaderboardRow) {
+    score = leaderboardRow.score || 0;
+    achievementCount = leaderboardRow.achievement_count || 0;
+  } else {
+    // Fallback: compute directly from achievements table
+    const { data: achs } = await supabase
+      .from('achievements')
+      .select('points')
+      .eq('user_id', id)
+      .eq('verified', true);
+    if (achs && achs.length) {
+      score = achs.reduce((sum, a) => sum + (a.points || 0), 0);
+      achievementCount = achs.length;
+    }
+  }
 
   return {
     id: authUser.id,
@@ -76,7 +93,7 @@ async function getUserWithScore(id) {
     created_at: authUser.created_at,
     ...profile,
     score,
-    achievement_count: achs?.length || 0,
+    achievement_count: achievementCount,
   };
 }
 

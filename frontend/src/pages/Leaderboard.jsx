@@ -39,7 +39,7 @@ export default function Leaderboard() {
       <div className="container">
         <div className="lb-header animate-fadeInUp">
           <h1 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Trophy size={28} className="text-gradient" /> <span className="text-gradient">Leaderboard</span></h1>
-          <p className="section-subtitle">Ranked by total achievement score across SIET CSE Department</p>
+          <p className="section-subtitle">Ranked by total points across SIET CSE Department</p>
         </div>
 
         {/* Dept Stats */}
@@ -168,22 +168,18 @@ export default function Leaderboard() {
                   </div>
                   {(showPodium ? rest : students).map((s, idx) => {
                     const displayRank = s.rank || idx + 1;
-                    // Mock delta logic
-                    const deltaId = String(s.id).charCodeAt(0) || idx;
-                    const mockDelta = deltaId % 3 === 0 ? <span style={{ color: '#16a34a', display: 'flex', alignItems: 'center' }}><ArrowUp size={12} /> {(deltaId%2)+1}</span> 
-                                    : deltaId % 5 === 0 ? <span style={{ color: '#dc2626', display: 'flex', alignItems: 'center' }}><ArrowDown size={12} /> 1</span> 
-                                    : <span style={{ color: 'var(--color-text-faint)', display: 'flex', alignItems: 'center' }}><Minus size={12} /></span>;
+                    const displayName = s.name || 'Student';
+                    const initials = (displayName || 'Student').split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase() || 'S';
 
                     return (
                       <Link to={`/profile/${s.id}`} key={s.id} className="lb-row" style={{ animationDelay: `${idx * 0.03}s` }}>
                         <div className="lb-rank-container">
                           <span className={`lb-rank ${displayRank <= 3 ? `rank-${displayRank}` : ''}`}>#{displayRank}</span>
-                          <div style={{ marginTop: '2px', fontWeight: 'bold' }}>{mockDelta}</div>
                         </div>
                         <div className="lb-student">
-                          <div className="lb-ava">{s.name[0]}</div>
+                          <div className="lb-ava">{initials}</div>
                           <div>
-                            <div className="lb-name">{s.name}</div>
+                            <div className="lb-name">{displayName}</div>
                             <div className="lb-year">{s.batch || '—'}</div>
                           </div>
                         </div>
