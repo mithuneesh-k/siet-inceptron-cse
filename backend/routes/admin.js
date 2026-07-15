@@ -137,6 +137,8 @@ router.post('/students', async (req, res) => {
   for (const key of adminKeys) {
     await cache.del(key);
   }
+  await cache.delPrefix('leaderboard:');
+  await cache.delPrefix('users:');
 
   res.status(201).json({ id: newUser.id, email, ...profile });
 });
@@ -185,6 +187,8 @@ router.patch('/students/:id', async (req, res) => {
   for (const key of adminKeys) {
     await cache.del(key);
   }
+  await cache.delPrefix('leaderboard:');
+  await cache.delPrefix('users:');
 
   res.json({ id, ...profile });
 });
@@ -211,6 +215,8 @@ router.delete('/students/:id', async (req, res) => {
   for (const key of adminKeys) {
     await cache.del(key);
   }
+  await cache.delPrefix('leaderboard:');
+  await cache.delPrefix('users:');
 
   res.json({ message: 'Student deleted successfully.' });
 });
@@ -447,6 +453,8 @@ router.patch('/advisor/achievements/:id', facultyAdvisorMiddleware, async (req, 
     const cacheKeys = await cache.keys();
     const adminKeys = cacheKeys.filter(k => k.startsWith('admin:students:'));
     for (const key of adminKeys) await cache.del(key);
+    await cache.delPrefix('leaderboard:');
+    await cache.delPrefix('users:');
 
     return res.json({ message: 'Achievement verified successfully' });
   }

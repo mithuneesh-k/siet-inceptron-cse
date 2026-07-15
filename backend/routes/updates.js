@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { getLiveData } = require('../services/liveData');
+const { withHttpCache } = require('../services/httpCache');
 
-router.get('/', async (req, res) => {
+router.get('/', withHttpCache('updates:all', 300), async (req, res) => {
   const data = await getLiveData();
   res.json({
     hackathons: data.hackathons,
@@ -12,17 +13,17 @@ router.get('/', async (req, res) => {
   });
 });
 
-router.get('/hackathons', async (req, res) => {
+router.get('/hackathons', withHttpCache('updates:hackathons', 300), async (req, res) => {
   const data = await getLiveData();
   res.json(data.hackathons);
 });
 
-router.get('/internships', async (req, res) => {
+router.get('/internships', withHttpCache('updates:internships', 300), async (req, res) => {
   const data = await getLiveData();
   res.json(data.internships);
 });
 
-router.get('/jobs', async (req, res) => {
+router.get('/jobs', withHttpCache('updates:jobs', 300), async (req, res) => {
   const data = await getLiveData();
   res.json(data.jobs);
 });

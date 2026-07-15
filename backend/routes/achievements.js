@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { supabase, getAdminScope } = require('../db/supabase');
 const { authMiddleware, adminMiddleware } = require('../middleware/auth');
+const cache = require('../services/cache');
+const { withHttpCache } = require('../services/httpCache');
 
 // ─── GET /api/achievements/all/pending ───────────────────────────────────────
 router.get('/all/pending', authMiddleware, adminMiddleware, async (req, res) => {
@@ -38,7 +40,7 @@ router.get('/all/pending', authMiddleware, adminMiddleware, async (req, res) => 
 });
 
 // ─── GET /api/achievements/user/:userId ──────────────────────────────────────
-router.get('/user/:userId', async (req, res) => {
+router.get('/user/:userId', withHttpCache('achievements:user', 120), async (req, res) => {
   const { data: achs, error } = await supabase
     .from('achievements')
     .select('*')
@@ -67,12 +69,14 @@ router.post('/', authMiddleware, async (req, res) => {
       duration: duration || null,
       proof_url: proof_url || null,
       points,
-      verified: false,
+      verified: true,
     })
     .select()
     .single();
 
   if (error || !inserted) return res.status(500).json({ error: 'Failed to add achievement' });
+  await cache.delPrefix('leaderboard:');
+  await cache.delPrefix('users:');
   res.status(201).json(inserted);
 });
 
@@ -91,6 +95,8 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 
   const { error } = await supabase.from('achievements').delete().eq('id', req.params.id);
   if (error) return res.status(500).json({ error: 'Failed to delete' });
+  await cache.delPrefix('leaderboard:');
+  await cache.delPrefix('users:');
   res.json({ message: 'Achievement deleted' });
 });
 
@@ -112,12 +118,14 @@ router.patch('/:id/verify', authMiddleware, adminMiddleware, async (req, res) =>
 
   const { data: updatedAch, error } = await supabase
     .from('achievements')
-    .update({ verified: !!verified })
+    .update({ verified: true })
     .eq('id', req.params.id)
     .select()
     .single();
 
   if (error || !updatedAch) return res.status(500).json({ error: 'Failed to update' });
+  await cache.delPrefix('leaderboard:');
+  await cache.delPrefix('users:');
   res.json(updatedAch);
 });
 
