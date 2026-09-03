@@ -58,8 +58,8 @@ export default function Register() {
 
       <div className="auth-card card animate-fadeInUp" style={{ maxWidth: '520px' }}>
         <div className="auth-logo">
-          <div style={{ width: 110, height: 110, margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <img src="/recreate_logo_without_changes_2K_202609031432.jpeg" alt="Inceptron Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', mixBlendMode: 'multiply' }} />
+          <div style={{ width: 100, height: 100, margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <img src="/inceptron-logo.png" alt="Inceptron Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <h1 className="auth-title">Join SIET CSE Portal</h1>
           <p className="auth-subtitle">Create your achievement profile</p>
