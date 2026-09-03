@@ -43,8 +43,8 @@ export default function Navbar() {
             <img src="/inceptron-logo.png" alt="Inceptron Logo" className="brand-logo-img" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <div className="brand-text">
-            <span className="brand-name">SIET</span>
-            <span className="brand-dept">Inceptron</span>
+            <span className="brand-name">SIET Inceptron</span>
+            <span className="brand-dept">CSE Department Portal</span>
           </div>
         </Link>
 
