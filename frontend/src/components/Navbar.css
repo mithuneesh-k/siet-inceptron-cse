@@ -1,19 +1,19 @@
-/* ─── Navbar — Flat 2D Light ─────────────────── */
+/* ─── Navbar — Green Background with White Text ─────────────────── */
 .navbar {
   position: fixed;
   top: 0; left: 0; right: 0;
   height: var(--navbar-height);
-  background: var(--green-50);
-  border-bottom: 1.5px solid var(--border);
+  background: #004d00;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(10px);
   z-index: 1000;
   transition: all var(--transition);
 }
 
 .navbar.scrolled {
-  background: rgba(255, 255, 255, 0.95);
-  border-bottom: 1px solid var(--border);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  background: #004d00;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 .navbar-inner {
@@ -36,22 +36,24 @@
 }
 .brand-logo {
   width: 36px; height: 36px;
-  background: #FFFFFF;
-  border-radius: var(--radius-sm);
+  background: #ffffff;
   display: flex; align-items: center; justify-content: center;
   font-size: 18px;
   flex-shrink: 0;
+  border-radius: 8px;
+  overflow: hidden;
   padding: 2px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 .brand-text { display: flex; flex-direction: column; line-height: 1.2; }
 .navbar-brand .brand-name {
   font-size: 15px; font-weight: 900;
   font-family: 'Space Grotesk', sans-serif;
-  color: #0d4005;
+  color: #ffffff;
   letter-spacing: -0.01em;
 }
 .navbar-brand .brand-dept {
-  font-size: 10px; color: #0d4005;
+  font-size: 10px; color: rgba(255, 255, 255, 0.85);
   font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase;
 }
 
@@ -59,7 +61,7 @@
 .navbar-links {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 6px;
   flex: 1;
 }
 .nav-link {
@@ -69,47 +71,59 @@
   padding: 8px 16px;
   border-radius: var(--radius-sm);
   font-size: 14px; font-weight: 600;
-  color: var(--green-700);
+  color: rgba(255, 255, 255, 0.9);
   transition: all var(--transition);
   text-decoration: none;
 }
 .nav-link:hover {
-  color: var(--green-900);
-  background: var(--green-100);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.15);
 }
 .nav-link.active {
-  color: var(--green-900);
-  background: #FFFFFF;
-  box-shadow: var(--shadow-sm);
-  border: 1.5px solid var(--green-400);
+  color: #004d00;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border: none;
+  font-weight: 700;
 }
-.nav-icon { font-size: 14px; }
+.nav-icon { font-size: 14px; display: flex; align-items: center; }
 
 /* Actions */
 .navbar-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 
-.user-menu { display: flex; align-items: center; gap: 8px; }
+.user-menu { display: flex; align-items: center; gap: 10px; }
 .user-chip {
   display: flex; align-items: center; gap: 10px;
   padding: 4px 14px 4px 4px;
-  background: #FFFFFF;
-  border: 1.5px solid var(--green-200);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: var(--radius-md);
   text-decoration: none;
   transition: all var(--transition);
+  color: #ffffff;
 }
 .user-chip:hover { 
-  border-color: var(--green-400);
-  background: var(--green-50);
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.22);
 }
 .user-avatar-sm {
   width: 28px; height: 28px;
-  background: var(--green-600);
+  background: #ffffff;
   border-radius: var(--radius-xs);
   display: flex; align-items: center; justify-content: center;
-  font-size: 13px; font-weight: 800; color: #FFFFFF;
+  font-size: 13px; font-weight: 800; color: #004d00;
 }
-.user-name { font-size: 13px; font-weight: 700; color: var(--green-800); }
+.user-name { font-size: 13px; font-weight: 700; color: #ffffff; }
+
+.navbar-actions .btn-ghost {
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+}
+.navbar-actions .btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
 
 /* Mobile */
 .menu-toggle {
@@ -119,7 +133,7 @@
 }
 .menu-toggle span {
   display: block; width: 20px; height: 2px;
-  background: var(--color-text-muted); border-radius: 2px;
+  background: #ffffff; border-radius: 2px;
   transition: all var(--transition);
 }
 
@@ -128,8 +142,8 @@
   .navbar-links {
     position: fixed;
     top: var(--navbar-height); left: 0; right: 0;
-    background: #fff;
-    border-bottom: 1.5px solid var(--border);
+    background: #004d00;
+    border-bottom: 1.5px solid rgba(255, 255, 255, 0.15);
     flex-direction: column;
     padding: 12px;
     gap: 4px;

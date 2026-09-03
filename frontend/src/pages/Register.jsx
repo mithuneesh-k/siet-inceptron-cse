@@ -58,8 +58,8 @@ export default function Register() {
 
       <div className="auth-card card animate-fadeInUp" style={{ maxWidth: '520px' }}>
         <div className="auth-logo">
-          <div style={{ width: 80, height: 80, margin: '0 auto 16px' }}>
-            <img src="/inceptron-navbar-logo.png" alt="Inceptron Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          <div style={{ width: 110, height: 110, margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <img src="/recreate_logo_without_changes_2K_202609031432.jpeg" alt="Inceptron Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', mixBlendMode: 'multiply' }} />
           </div>
           <h1 className="auth-title">Join SIET CSE Portal</h1>
           <p className="auth-subtitle">Create your achievement profile</p>
@@ -150,11 +150,8 @@ export default function Register() {
 
       <style>{`
         .auth-page { min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 80px 24px 40px; position: relative; }
-        .auth-bg { position: fixed; inset: 0; background: var(--gradient-hero); z-index: -1; }
-        .auth-orb { position: absolute; border-radius: 50%; filter: blur(80px); }
-        .auth-orb-1 { width: 400px; height: 400px; background: rgba(124,58,237,0.15); top: -100px; left: -100px; }
-        .auth-orb-2 { width: 350px; height: 350px; background: rgba(59,130,246,0.12); bottom: 0; right: -80px; }
-        .auth-card { width: 100%; padding: 40px 36px; }
+        .auth-bg { position: fixed; inset: 0; background: linear-gradient(to right, #004d00 50%, #fde02f 50%); z-index: -1; }
+        .auth-card { width: 100%; padding: 40px 36px; background: #ffffff; border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.18); }
         .auth-logo { text-align: center; margin-bottom: 28px; }
         .auth-title { font-size: 26px; font-weight: 800; font-family: 'Space Grotesk', sans-serif; margin-bottom: 6px; }
         .auth-subtitle { font-size: 14px; color: var(--color-text-muted); }

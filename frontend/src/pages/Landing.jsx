@@ -126,7 +126,7 @@ export default function Landing() {
         <div className="container">
           <div className="lp-hero-inner animate-fadeInUp">
             <div className="lp-hero-logo-col">
-              <img src="/inceptron-navbar-logo.png" alt="Inceptron Logo" className="lp-hero-logo-img" />
+              <img src="/recreate_logo_without_changes_2K_202609031432.jpeg" alt="Inceptron Logo" className="lp-hero-logo-img" style={{ mixBlendMode: 'multiply' }} />
             </div>
             <div className="lp-hero-text">
               <div className="lp-pill">

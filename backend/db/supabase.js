@@ -1,14 +1,17 @@
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
-const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || '';
+const rawUrl = process.env.SUPABASE_URL;
+const rawKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseKey) {
-  console.warn('⚠️ Supabase URL or Key is missing in .env');
+const supabaseUrl = (rawUrl && rawUrl.startsWith('http')) ? rawUrl : 'https://placeholder.supabase.co';
+const supabaseKey = (rawKey && !rawKey.startsWith('your_')) ? rawKey : 'placeholder_key';
+
+if (!rawUrl || rawUrl.includes('your_supabase')) {
+  console.warn('⚠️ Supabase URL or Key is missing or using placeholder in .env');
 }
 
-const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder_key');
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // ─── Points calculator ────────────────────────────────────────────────────────
 function calcPoints(type, position, duration) {

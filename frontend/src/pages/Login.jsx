@@ -29,8 +29,8 @@ export default function Login() {
 
       <div className="auth-card card animate-fadeInUp">
         <div className="auth-logo">
-          <div style={{ width: 80, height: 80, margin: '0 auto 16px' }}>
-            <img src="/inceptron-navbar-logo.png" alt="Inceptron Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          <div style={{ width: 100, height: 100, margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px', overflow: 'hidden' }}>
+            <img src="/recreate_logo_without_changes_2K_202609031432.jpeg" alt="Inceptron Logo" style={{ width: '100%', height: '100%', objectFit: 'cover', mixBlendMode: 'multiply' }} />
           </div>
           <h1 className="auth-title">Welcome Back</h1>
           <p className="auth-subtitle">Sign in to your SIET Inceptron account</p>
@@ -63,25 +63,24 @@ export default function Login() {
           </div>
         </div>
 
-
       </div>
 
       <style>{`
         .auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 80px 24px 24px; position: relative; }
-        .auth-bg { position: fixed; inset: 0; background: var(--bg-primary); z-index: -1; }
+        .auth-bg { position: fixed; inset: 0; background: linear-gradient(to right, #004d00 50%, #fde02f 50%); z-index: -1; }
         
-        .auth-card { width: 100%; max-width: 420px; padding: 40px 36px; border: 1.5px solid var(--border); box-shadow: none; background: #fff; }
+        .auth-card { width: 100%; max-width: 420px; padding: 40px 36px; border: 1px solid rgba(132, 196, 98, 0.4); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18); background: #e4f6dc; border-radius: 16px; }
         
         .auth-logo { text-align: center; margin-bottom: 28px; }
-        .auth-title { font-size: 26px; font-weight: 800; font-family: 'Space Grotesk', sans-serif; margin-bottom: 6px; color: var(--color-green); }
-        .auth-subtitle { font-size: 14px; color: var(--color-text-muted); }
+        .auth-title { font-size: 26px; font-weight: 800; font-family: 'Space Grotesk', sans-serif; margin-bottom: 6px; color: #1e5e1e; }
+        .auth-subtitle { font-size: 14px; color: #557755; }
         
         .auth-link { text-align: center; font-size: 14px; color: var(--color-text-muted); margin-top: 20px; }
-        .auth-link a { color: var(--color-green); font-weight: 700; text-decoration: none; }
+        .auth-link a { color: #1e5e1e; font-weight: 700; text-decoration: none; }
         .auth-link a:hover { text-decoration: underline; }
         
-        .demo-btn { padding: 6px 14px; background: #fff; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; color: var(--color-text-muted); cursor: pointer; transition: all var(--transition); font-weight: 600; }
-        .demo-btn:hover { background: var(--green-50); color: var(--color-green); border-color: var(--color-green); }
+        .demo-btn { padding: 6px 14px; background: #fff; border: 1.5px solid #84c462; border-radius: var(--radius-sm); font-size: 13px; color: #2e7d32; cursor: pointer; transition: all var(--transition); font-weight: 600; }
+        .demo-btn:hover { background: #2e7d32; color: #ffffff; border-color: #2e7d32; }
       `}</style>
     </div>
   );
