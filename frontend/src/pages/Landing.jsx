@@ -299,16 +299,21 @@ export default function Landing() {
           margin: 0 auto;
         }
         .lp-hero-logo-col {
-          flex: 0 0 280px;
+          flex: 0 0 360px;
           display: flex;
           align-items: center;
           justify-content: center;
         }
         .lp-hero-logo-img {
           width: 100%;
+          max-width: 340px;
           height: auto;
           display: block;
-          filter: drop-shadow(0 16px 36px rgba(0,0,0,0.15));
+          filter: drop-shadow(0 20px 40px rgba(0,0,0,0.18));
+          transition: transform 0.3s ease;
+        }
+        .lp-hero-logo-img:hover {
+          transform: scale(1.04);
         }
         .lp-hero-text {
           flex: 1;

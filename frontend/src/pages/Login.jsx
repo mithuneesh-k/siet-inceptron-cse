@@ -29,7 +29,7 @@ export default function Login() {
 
       <div className="auth-card card animate-fadeInUp">
         <div className="auth-logo">
-          <div style={{ width: 100, height: 100, margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: 140, height: 140, margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <img src="/inceptron-logo.png" alt="Inceptron Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <h1 className="auth-title">Welcome Back</h1>
