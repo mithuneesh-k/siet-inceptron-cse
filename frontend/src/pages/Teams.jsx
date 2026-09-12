@@ -59,14 +59,18 @@ export default function Teams() {
 
   const createTeam = async (e) => {
     e.preventDefault();
+    const formPayload = { ...createForm };
+    setShowCreate(false);
+    setCreateForm({ name: '', description: '', type: 'hackathon' });
+    showToast('Creating team... 🚀');
     try {
-      const { data } = await client.post('/teams', createForm);
+      const { data } = await client.post('/teams', formPayload);
       setTeams(prev => [data, ...prev]);
-      setShowCreate(false);
       openTeamDetail(data.id);
       showToast('Team created! 🎉');
     } catch (err) {
-      showToast(err.response?.data?.error || 'Failed', 'error');
+      showToast(err.response?.data?.error || 'Failed to create team', 'error');
+      fetchTeams();
     }
   };
 
@@ -124,6 +128,24 @@ export default function Teams() {
     }
   };
 
+  const handleDeleteTeam = async (teamId, e) => {
+    if (e) e.stopPropagation();
+    if (!window.confirm('Are you sure you want to delete this team? This action cannot be undone.')) return;
+    
+    // Instantly remove from UI
+    setTeams(prev => prev.filter(t => t.id !== teamId));
+    if (selectedTeam?.id === teamId) closeTeamDetail();
+    showToast('Team deleted successfully! 🗑️');
+
+    try {
+      await client.delete(`/teams/${teamId}`);
+      fetchTeams();
+    } catch (err) {
+      showToast(err.response?.data?.error || 'Failed to delete team', 'error');
+      fetchTeams();
+    }
+  };
+
   return (
     <div className="page-content">
       <div className="container">
@@ -132,7 +154,7 @@ export default function Teams() {
             <h1 className="section-title">👥 <span className="text-gradient">Explore Teams</span></h1>
             <p className="section-subtitle">Collaborate, build and grow together.</p>
           </div>
-          {user && <button className="btn btn-primary btn-glow" onClick={() => setShowCreate(true)}>Create Team</button>}
+          {user && !user?.is_admin && <button className="btn btn-primary btn-glow" onClick={() => setShowCreate(true)}>Create Team</button>}
         </div>
 
         <div className="tab-bar animate-fadeInUp delay-1">
@@ -151,7 +173,13 @@ export default function Teams() {
           <div className="teams-grid anim-stagg">
             {teams.map(team => (
               <div key={team.id} onClick={() => openTeamDetail(team.id)}>
-                <TeamCard team={team} onJoin={handleJoinRequest} isJoining={joiningId === team.id} />
+                <TeamCard 
+                  team={team} 
+                  onJoin={user?.is_admin ? null : handleJoinRequest} 
+                  isJoining={joiningId === team.id} 
+                  currentUser={user}
+                  onDelete={handleDeleteTeam}
+                />
               </div>
             ))}
           </div>
@@ -232,25 +260,47 @@ export default function Teams() {
                            {isInviting ? '...' : 'Invite'}
                          </button>
                        </form>
+
+                       <button 
+                         className="btn btn-danger btn-sm" 
+                         style={{ marginTop: 24, width: '100%' }}
+                         onClick={(e) => handleDeleteTeam(selectedTeam.id, e)}
+                       >
+                         🗑️ Delete Team
+                       </button>
                     </div>
-                  ) : (
-                    <div className="visitor-panel">
-                       <h3 className="section-label">Team Status</h3>
-                       {selectedTeam.is_member ? (
-                         <div className="status-box">You are a member! 🎉</div>
-                       ) : selectedTeam.is_pending ? (
-                         <div className="status-box pending">Request pending approval... ⏳</div>
-                       ) : (
-                         <button 
-                           className="btn btn-primary btn-block" 
-                           onClick={() => handleJoinRequest(selectedTeam.id)}
-                           disabled={joiningId === selectedTeam.id || !selectedTeam.is_open}
-                         >
-                           {joiningId === selectedTeam.id ? 'Sending...' : 'Request to Join'}
-                         </button>
-                       )}
-                    </div>
-                  )}
+                   ) : user?.is_admin || user?.role === 'admin' || user?.role === 'faculty' ? (
+                     <div className="visitor-panel">
+                        <h3 className="section-label">Administrator Oversight</h3>
+                        <div className="status-box" style={{ background: 'rgba(34, 197, 94, 0.08)', color: 'var(--color-green)', border: '1px solid rgba(34, 197, 94, 0.2)', textAlign: 'left', lineHeight: 1.5 }}>
+                          🛡️ Inspecting team composition & details as Department Administrator.
+                        </div>
+                        <button 
+                          className="btn btn-danger btn-sm" 
+                          style={{ marginTop: 16, width: '100%' }}
+                          onClick={(e) => handleDeleteTeam(selectedTeam.id, e)}
+                        >
+                          🗑️ Delete Team (Admin)
+                        </button>
+                     </div>
+                   ) : (
+                     <div className="visitor-panel">
+                        <h3 className="section-label">Team Status</h3>
+                        {selectedTeam.is_member ? (
+                          <div className="status-box">You are a member! 🎉</div>
+                        ) : selectedTeam.is_pending ? (
+                          <div className="status-box pending">Request pending approval... ⏳</div>
+                        ) : (
+                          <button 
+                            className="btn btn-primary btn-block" 
+                            onClick={() => handleJoinRequest(selectedTeam.id)}
+                            disabled={joiningId === selectedTeam.id || !selectedTeam.is_open}
+                          >
+                            {joiningId === selectedTeam.id ? 'Sending...' : 'Request to Join'}
+                          </button>
+                        )}
+                     </div>
+                   )}
                 </div>
               </div>
             </div>
@@ -258,8 +308,8 @@ export default function Teams() {
         </div>
       )}
 
-      {/* Create Team Modal... (Keeping existing create logic for now, but in new style) */}
-      {showCreate && <div className="modal-overlay" onClick={() => setShowCreate(false)}>
+      {/* Create Team Modal */}
+      {showCreate && <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowCreate(false)}>
         <div className="modal animate-scaleIn">
           <div className="modal-header">
             <h2 className="modal-title">Create Team</h2>
@@ -268,17 +318,17 @@ export default function Teams() {
           <form onSubmit={createTeam} className="create-team-form">
             <div className="form-group">
               <label className="form-label">Name</label>
-              <input className="form-input" value={createForm.name} onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))} required />
+              <input className="form-input" placeholder="e.g. Hackathon Heroes" value={createForm.name} onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))} required />
             </div>
             <div className="form-group">
               <label className="form-label">Type</label>
               <select className="form-select" value={createForm.type} onChange={e => setCreateForm(f => ({ ...f, type: e.target.value }))}>
-                {TEAM_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                {TEAM_TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
               </select>
             </div>
             <div className="form-group">
               <label className="form-label">Description</label>
-              <textarea className="form-input" value={createForm.description} onChange={e => setCreateForm(f => ({ ...f, description: e.target.value }))} rows={3} />
+              <textarea className="form-input" placeholder="Describe your team's focus..." value={createForm.description} onChange={e => setCreateForm(f => ({ ...f, description: e.target.value }))} rows={3} />
             </div>
             <button type="submit" className="btn btn-primary btn-block">Launch Team</button>
           </form>

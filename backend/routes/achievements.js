@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { supabase, getAdminScope } = require('../db/supabase');
-const { authMiddleware, adminMiddleware } = require('../middleware/auth');
+const { authMiddleware, adminMiddleware, optionalAuthMiddleware } = require('../middleware/auth');
 const cache = require('../services/cache');
 const { withHttpCache } = require('../services/httpCache');
 
@@ -9,16 +9,16 @@ const { withHttpCache } = require('../services/httpCache');
 router.get('/all/pending', authMiddleware, adminMiddleware, async (req, res) => {
   const scope = await getAdminScope(req.user.id, req.user.role);
   
-  let query = supabase.from('achievements').select('*').eq('verified', false);
+  let query = supabase.from('achievements').select('*').eq('verified', false).order('created_at', { ascending: false });
 
   const { data: pending, error } = await query;
   if (error) return res.status(500).json({ error: 'Failed to fetch pending achievements' });
 
-  // Enrich with student name and roll_no
+  // Enrich with student name, roll_no, class, batch, avatar_url
   const userIds = [...new Set(pending.map(a => a.user_id))];
   const { data: studentProfiles } = await supabase
     .from('students')
-    .select('user_id, name, roll_no, class, batch')
+    .select('user_id, name, roll_no, class, batch, avatar_url')
     .in('user_id', userIds);
 
   const profileMap = Object.fromEntries((studentProfiles || []).map(s => [s.user_id, s]));
@@ -29,6 +29,7 @@ router.get('/all/pending', authMiddleware, adminMiddleware, async (req, res) => 
     roll_no: profileMap[a.user_id]?.roll_no || '—',
     class: profileMap[a.user_id]?.class,
     batch: profileMap[a.user_id]?.batch,
+    avatar_url: profileMap[a.user_id]?.avatar_url || null,
   }));
 
   // Filter if faculty advisor
@@ -40,13 +41,20 @@ router.get('/all/pending', authMiddleware, adminMiddleware, async (req, res) => 
 });
 
 // ─── GET /api/achievements/user/:userId ──────────────────────────────────────
-router.get('/user/:userId', withHttpCache('achievements:user', 120), async (req, res) => {
-  const { data: achs, error } = await supabase
+router.get('/user/:userId', optionalAuthMiddleware, async (req, res) => {
+  let query = supabase
     .from('achievements')
     .select('*')
     .eq('user_id', req.params.userId)
     .order('created_at', { ascending: false });
 
+  // If not the owner and not an admin/faculty, only return verified achievements
+  const isOwnerOrAdmin = req.user && (req.user.id === req.params.userId || req.user.role !== 'student');
+  if (!isOwnerOrAdmin) {
+    query = query.eq('verified', true);
+  }
+
+  const { data: achs, error } = await query;
   if (error) return res.status(500).json({ error: 'Failed to fetch achievements' });
   res.json(achs);
 });
@@ -59,6 +67,10 @@ router.post('/', authMiddleware, async (req, res) => {
   const { calcPoints } = require('../db/supabase');
   const points = calcPoints(type, position, duration);
 
+  // Student achievements must be reviewed and approved by an Admin / Faculty Advisor
+  const isPrivileged = req.user.role === 'admin' || req.user.role === 'faculty';
+  const verified = isPrivileged;
+
   const { data: inserted, error } = await supabase
     .from('achievements')
     .insert({
@@ -69,7 +81,7 @@ router.post('/', authMiddleware, async (req, res) => {
       duration: duration || null,
       proof_url: proof_url || null,
       points,
-      verified: true,
+      verified,
     })
     .select()
     .single();

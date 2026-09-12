@@ -12,16 +12,17 @@ function lazyWithPreload(factory) {
 
 const Landing = lazyWithPreload(() => import('./pages/Landing'));
 const Login = lazyWithPreload(() => import('./pages/Login'));
-const Updates = lazyWithPreload(() => import('./pages/Updates'));
 const Profile = lazyWithPreload(() => import('./pages/Profile'));
 const Leaderboard = lazyWithPreload(() => import('./pages/Leaderboard'));
 const Teams = lazyWithPreload(() => import('./pages/Teams'));
 const Admin = lazyWithPreload(() => import('./pages/Admin'));
+const Approvals = lazyWithPreload(() => import('./pages/Approvals'));
 const Students = lazyWithPreload(() => import('./pages/Students'));
 const EditProfile = lazyWithPreload(() => import('./pages/EditProfile'));
+const Updates = lazyWithPreload(() => import('./pages/Updates'));
 
 const priorityPreloads = [Leaderboard, Students, Updates];
-const backgroundPreloads = [Landing, Login, Profile, Teams, Admin, EditProfile];
+const backgroundPreloads = [Landing, Login, Profile, Teams, Admin, Approvals, EditProfile];
 
 function preloadRoutes(routes) {
   routes.forEach((route) => {
@@ -43,6 +44,13 @@ function ProtectedRoute({ children, adminOnly = false }) {
   return children;
 }
 
+function StudentOnlyRoute({ children }) {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.is_admin || (user.role && user.role !== 'student')) return <Navigate to="/" replace />;
+  return children;
+}
+
 function AppContent() {
   return (
     <>
@@ -51,13 +59,14 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/updates" element={<ProtectedRoute><Updates /></ProtectedRoute>} />
+          <Route path="/updates" element={<StudentOnlyRoute><Updates /></StudentOnlyRoute>} />
           <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
           <Route path="/teams" element={<ProtectedRoute><Teams /></ProtectedRoute>} />
           <Route path="/students" element={<ProtectedRoute><Students /></ProtectedRoute>} />
           <Route path="/profile/:id" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
+          <Route path="/approvals" element={<ProtectedRoute adminOnly><Approvals /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
