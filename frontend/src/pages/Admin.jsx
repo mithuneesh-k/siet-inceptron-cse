@@ -11,7 +11,7 @@ import FacultyActionModal from '../components/FacultyActionModal';
 import { 
   Shield, BarChart2, Users, Settings, GraduationCap, Hourglass, 
   Award, TrendingUp, List, RefreshCw, Trash2, Download, Plus, 
-  Edit3, Key, Check, X, ExternalLink, Inbox, Search
+  Edit3, Key, Check, X, ExternalLink, Inbox, Search, CheckCircle
 } from 'lucide-react';
 
 const CLASSES = ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D', 'CSE-E'];
@@ -541,6 +541,14 @@ export default function Admin() {
             {/* ── PENDING ACHIEVEMENTS ── */}
             {tab === 'pending' && (
               <div className="animate-fadeIn">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+                  <p style={{ color: 'var(--color-text-muted)', fontSize: 14 }}>
+                    Review pending student submissions or switch to the dedicated inspection portal.
+                  </p>
+                  <Link to="/approvals" className="btn btn-primary btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <CheckCircle size={15} /> Open Full Approvals Portal →
+                  </Link>
+                </div>
                 {achievements.length === 0 ? (
                   <div className="empty-state">
                     <div className="empty-icon" style={{ marginBottom: '16px' }}>

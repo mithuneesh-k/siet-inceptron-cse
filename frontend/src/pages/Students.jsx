@@ -5,7 +5,9 @@ import CustomSelect from '../components/CustomSelect';
 import FilterModal from '../components/FilterModal';
 import { Search, Star, Link as LinkIcon, GraduationCap, ChevronLeft, ChevronRight } from 'lucide-react';
 
-const PAGE_SIZE = 100;
+const ALL_SECTIONS = ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D', 'CSE-E'];
+const ALL_BATCHES = ['2024-2028', '2025-2029'];
+const PAGE_SIZE = 50;
 
 export default function Students() {
   const [students, setStudents] = useState([]);
@@ -17,30 +19,53 @@ export default function Students() {
   const [batchFilter, setBatchFilter] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
-  const availableClasses = [...new Set(students.map(s => s.class).filter(Boolean))].sort();
-  const availableBatches = [...new Set(students.map(s => s.batch).filter(Boolean))].sort();
+  const fetchStudents = async () => {
+    setLoading(true);
+    try {
+      const params = { page, limit: PAGE_SIZE };
+      if (classFilter) params.class = classFilter;
+      if (batchFilter) params.batch = batchFilter;
+      if (search.trim()) params.search = search.trim();
+
+      const res = await client.get('/users', { params });
+      setStudents(res.data.students || []);
+      setTotal(res.data.total || 0);
+    } catch (err) {
+      console.error('Error fetching students:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    setLoading(true);
-    client.get(`/users?page=${page}&limit=${PAGE_SIZE}`).then(res => {
-      setStudents(res.data.students);
-      setTotal(res.data.total);
-    }).finally(() => setLoading(false));
-  }, [page]);
+    fetchStudents();
+  }, [page, classFilter, batchFilter]);
 
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(1);
+      fetchStudents();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
-  let filtered = students;
-  if (batchFilter) filtered = filtered.filter(s => s.batch === batchFilter);
-  if (classFilter) filtered = filtered.filter(s => s.class === classFilter);
-  if (search.trim()) {
-    const q = search.toLowerCase();
-    filtered = filtered.filter(s =>
-      s.name.toLowerCase().includes(q) ||
-      s.roll_no.toLowerCase().includes(q) ||
-      s.email?.toLowerCase().includes(q)
-    );
-  }
+  const handleClassChange = (val) => {
+    setClassFilter(val);
+    setPage(1);
+  };
+
+  const handleBatchChange = (val) => {
+    setBatchFilter(val);
+    setPage(1);
+  };
+
+  const handleClear = () => {
+    setBatchFilter('');
+    setClassFilter('');
+    setPage(1);
+  };
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <div className="page-content">
@@ -50,7 +75,7 @@ export default function Students() {
           <div>
             <h1 className="section-title" style={{ fontSize: '32px', display: 'flex', alignItems: 'center', gap: '8px' }}><GraduationCap size={32} className="text-gradient" /> Students</h1>
               <p style={{ color: 'var(--color-text-muted)', marginTop: 6 }}>
-                {filtered.length} of {total} students (page {page} of {totalPages}) {batchFilter ? `— ${batchFilter}` : ''} {classFilter ? `— ${classFilter}` : ''}
+                {students.length} of {total} students (page {page} of {totalPages}) {batchFilter ? `— ${batchFilter}` : ''} {classFilter ? `— ${classFilter}` : ''}
               </p>
           </div>
         </div>
@@ -82,14 +107,14 @@ export default function Students() {
         <FilterModal 
           isOpen={showFilters} 
           onClose={() => setShowFilters(false)}
-          onClear={() => { setBatchFilter(''); setClassFilter(''); }}
+          onClear={handleClear}
         >
           <div className="form-group">
             <label className="form-label">Batch</label>
             <CustomSelect
               value={batchFilter}
-              onChange={setBatchFilter}
-              options={[{ value: '', label: 'All Batches' }, ...availableBatches.map(b => ({ value: b, label: b }))]}
+              onChange={handleBatchChange}
+              options={[{ value: '', label: 'All Batches' }, ...ALL_BATCHES.map(b => ({ value: b, label: b }))]}
               placeholder="All Batches"
             />
           </div>
@@ -97,8 +122,8 @@ export default function Students() {
             <label className="form-label">Section</label>
             <CustomSelect
               value={classFilter}
-              onChange={setClassFilter}
-              options={[{ value: '', label: 'All Sections' }, ...availableClasses.map(c => ({ value: c, label: c }))]}
+              onChange={handleClassChange}
+              options={[{ value: '', label: 'All Sections' }, ...ALL_SECTIONS.map(c => ({ value: c, label: c }))]}
               placeholder="All Sections"
             />
           </div>
@@ -109,7 +134,7 @@ export default function Students() {
         {/* Grid */}
         {loading ? (
           <div className="loading-screen"><div className="spinner" /></div>
-        ) : filtered.length === 0 ? (
+        ) : students.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon" style={{ marginBottom: '16px' }}><Search size={48} color="var(--color-green)" strokeWidth={1.5} opacity={0.6} /></div>
             <h3>No students found</h3>
@@ -118,7 +143,7 @@ export default function Students() {
         ) : (
           <>
           <div className="students-grid animate-fadeInUp">
-            {filtered.map(s => (
+            {students.map(s => (
               <Link
                 key={s.id}
                 to={`/profile/${s.id}`}
@@ -166,14 +191,16 @@ export default function Students() {
       <style>{`
         .students-filters { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
         .students-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
-        .student-card { display: flex; align-items: center; gap: 14px; padding: 16px 18px; text-decoration: none; color: inherit; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
-        .student-card:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(124,58,237,0.18); border-color: rgba(124,58,237,0.3); }
+        .student-card { display: flex; align-items: center; gap: 14px; padding: 16px 18px; text-decoration: none; color: inherit; transition: all 0.2s ease; cursor: pointer; }
+        .student-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(239,68,68,0.2); border-color: #EF4444; background: rgba(239,68,68,0.03); }
+        .student-card:hover .student-card-name { color: #EF4444; }
+        .student-card:hover .student-card-arrow { color: #EF4444; }
         .student-card-avatar { width: 46px; height: 46px; border-radius: 50%; background: var(--gradient-primary); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; color: #fff; flex-shrink: 0; }
         .student-card-info { flex: 1; min-width: 0; }
-        .student-card-name { font-weight: 700; font-size: 14px; color: var(--color-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .student-card-name { font-weight: 700; font-size: 14px; color: var(--color-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 0.2s ease; }
         .student-card-meta { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
         .student-card-score { font-size: 12px; color: var(--color-violet-light); margin-top: 4px; font-weight: 500; }
-        .student-card-arrow { font-size: 22px; color: var(--color-text-muted); flex-shrink: 0; }
+        .student-card-arrow { font-size: 22px; color: var(--color-text-muted); flex-shrink: 0; transition: color 0.2s ease; }
         .pagination { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 32px; padding: 16px 0; }
         .pagination-info { font-size: 14px; color: var(--color-text-muted); font-weight: 500; }
         .pagination .btn:disabled { opacity: 0.4; cursor: not-allowed; }

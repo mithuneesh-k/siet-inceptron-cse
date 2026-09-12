@@ -164,3 +164,15 @@
   .navbar-actions .btn { padding: 6px 8px; font-size: 12px; }
   .menu-toggle { display: flex; margin-left: 6px; }
 }
+
+.nav-pending-badge {
+  background: #DC2626;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 999px;
+  margin-left: 6px;
+  line-height: 1.4;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.4);
+}

@@ -6,3 +6,4 @@ build/
 MOVE/
 backend/db/db_users.csv
 .env
+scratch/

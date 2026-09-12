@@ -75,7 +75,7 @@ export default function Profile() {
       // For now, just show a message.
       setShowAddModal(false);
       setForm({ type: 'hackathon', title: '', description: '', position: '', duration: '', proof_url: '' });
-      showToast(<span>Achievement submitted for approval! <Hourglass size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /></span>);
+      showToast(<span>Achievement submitted for Admin Approval! <Hourglass size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /></span>);
       if (isOwn) refreshUser();
     } catch (err) {
       showToast(err.response?.data?.error || 'Failed to add achievement', 'error');
@@ -313,25 +313,28 @@ export default function Profile() {
               {isOwn && <button id="add-achievement-btn" className="btn btn-primary btn-sm" onClick={() => setShowAddModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Plus size={16} /> Add</button>}
             </div>
 
-            {achievements.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon">
-                  <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{color: 'var(--color-green)', opacity: 0.5}}>
-                    <circle cx="12" cy="8" r="7"></circle>
-                    <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
-                  </svg>
+            {(() => {
+              const visibleList = achievements.filter(a => a.verified || isOwn || authUser?.is_admin);
+              return visibleList.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-icon">
+                    <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{color: 'var(--color-green)', opacity: 0.5}}>
+                      <circle cx="12" cy="8" r="7"></circle>
+                      <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
+                    </svg>
+                  </div>
+                  <h3>No achievements yet</h3>
+                  <p>{isOwn ? 'Add your first achievement to start earning points!' : 'This student hasn\'t added any achievements yet.'}</p>
+                  {isOwn && <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={() => setShowAddModal(true)}>Log your first achievement →</button>}
                 </div>
-                <h3>No achievements yet</h3>
-                <p>{isOwn ? 'Add your first achievement to start earning points!' : 'This student hasn\'t added any achievements yet.'}</p>
-                {isOwn && <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={() => setShowAddModal(true)}>Log your first achievement →</button>}
-              </div>
-            ) : (
-              <div className="grid-auto">
-                {achievements.map(a => (
-                  <AchievementCard key={a.id} achievement={a} showDelete={isOwn || authUser?.is_admin} onDelete={deleteAchievement} />
-                ))}
-              </div>
-            )}
+              ) : (
+                <div className="grid-auto">
+                  {visibleList.map(a => (
+                    <AchievementCard key={a.id} achievement={a} showDelete={isOwn || authUser?.is_admin} onDelete={deleteAchievement} />
+                  ))}
+                </div>
+              );
+            })()}
           </div>
         )}
       </div>
@@ -346,6 +349,11 @@ export default function Profile() {
             </div>
 
             <form onSubmit={addAchievement} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="alert alert-info" style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, background: 'rgba(34, 197, 94, 0.08)', borderColor: 'rgba(34, 197, 94, 0.25)', color: 'var(--color-text)' }}>
+                <Shield size={18} style={{ flexShrink: 0, marginTop: 1, color: 'var(--color-green)' }} />
+                <span><strong>Admin Approval Required:</strong> Your submission will go to the Department Administrator / Class Advisor for inspection. Attach your proof document/link below so it can be verified and added to your achievements.</span>
+              </div>
+
               <div className="form-group">
                 <label className="form-label">Type *</label>
                 <CustomSelect 
@@ -357,12 +365,12 @@ export default function Profile() {
 
               <div className="form-group">
                 <label className="form-label">Title *</label>
-                <input className="form-input" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Smart India Hackathon 2025" required />
+                <input className="form-input" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Smart India Hackathon 2025 Winner" required />
               </div>
 
               <div className="form-group">
                 <label className="form-label">Description (max 300 chars)</label>
-                <textarea className="form-input" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} placeholder="Brief description..." maxLength={300} style={{ resize: 'vertical' }} />
+                <textarea className="form-input" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} placeholder="Briefly describe your role, problem statement, or project details..." maxLength={300} style={{ resize: 'vertical' }} />
               </div>
 
               {form.type === 'hackathon' && (
@@ -394,8 +402,11 @@ export default function Profile() {
               )}
 
               <div className="form-group">
-                <label className="form-label">Proof URL (certificate / LinkedIn post)</label>
-                <input className="form-input" type="url" value={form.proof_url} onChange={e => setForm(f => ({ ...f, proof_url: e.target.value }))} placeholder="https://..." />
+                <label className="form-label">Verification Document / Certificate URL</label>
+                <input className="form-input" type="url" value={form.proof_url} onChange={e => setForm(f => ({ ...f, proof_url: e.target.value }))} placeholder="https://drive.google.com/... or certificate link" />
+                <span style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4, display: 'block' }}>
+                  Provide a Google Drive, certificate link, or verification URL for the admin to inspect before approving.
+                </span>
               </div>
 
               <div className="alert alert-info" style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
@@ -404,7 +415,7 @@ export default function Profile() {
                   form.type === 'hackathon' ? (form.position === '1st' ? 100 : form.position === '2nd' ? 60 : form.position === '3rd' ? 40 : 10)
                   : form.type === 'internship' ? (form.duration === 'long' ? 70 : form.duration === 'medium' ? 40 : 20)
                   : form.type === 'course' ? 15 : form.type === 'project' ? 25 : 10
-                } pts will be added to your score.</span>
+                } pts will be added to your profile once approved by admin.</span>
               </div>
 
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Home, Zap, Trophy, GraduationCap, Users, Shield } from 'lucide-react';
+import client from '../api/client';
+import { Home, Trophy, GraduationCap, Users, Shield, CheckCircle, Zap } from 'lucide-react';
 import './Navbar.css';
 
 export default function Navbar() {
@@ -10,6 +11,7 @@ export default function Navbar() {
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -18,6 +20,14 @@ export default function Navbar() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    if (user?.is_admin) {
+      client.get('/achievements/all/pending')
+        .then(res => setPendingCount(res.data?.length || 0))
+        .catch(() => {});
+    }
+  }, [user, location.pathname]);
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
@@ -29,7 +39,7 @@ export default function Navbar() {
 
   const navLinks = [
     { to: '/', label: 'Home', icon: <Home size={18} /> },
-    { to: '/updates', label: 'Updates', icon: <Zap size={18} /> },
+    { to: '/updates', label: 'Updates', icon: <Zap size={18} />, studentOnly: true },
     { to: '/leaderboard', label: 'Leaderboard', icon: <Trophy size={18} /> },
     { to: '/students', label: 'Students', icon: <GraduationCap size={18} /> },
     { to: '/teams', label: 'Teams', icon: <Users size={18} /> },
@@ -52,6 +62,8 @@ export default function Navbar() {
           {navLinks.map(link => {
             // Hide everything except Home if not logged in
             if (!user && link.to !== '/') return null;
+            // Hide student-only links from non-student accounts (Faculty / Admin)
+            if (link.studentOnly && (user?.is_admin || (user?.role && user?.role !== 'student'))) return null;
             return (
               <Link
                 key={link.to}
@@ -66,9 +78,15 @@ export default function Navbar() {
           })}
 
           {user?.is_admin && (
-            <Link to="/admin" className={`nav-link ${isActive('/admin') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
-              <span className="nav-icon"><Shield size={18} /></span> Admin
-            </Link>
+            <>
+              <Link to="/admin" className={`nav-link ${isActive('/admin') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
+                <span className="nav-icon"><Shield size={18} /></span> Admin
+              </Link>
+              <Link to="/approvals" className={`nav-link ${isActive('/approvals') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
+                <span className="nav-icon"><CheckCircle size={18} /></span> Approvals
+                {pendingCount > 0 && <span className="nav-pending-badge">{pendingCount}</span>}
+              </Link>
+            </>
           )}
         </div>
 

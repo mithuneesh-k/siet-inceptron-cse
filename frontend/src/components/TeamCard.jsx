@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Trash2 } from 'lucide-react';
 
 const TYPE_CONFIG = {
   hackathon: { icon: '⚡', gradient: 'linear-gradient(135deg, #7C3AED, #3B82F6)' },
@@ -6,8 +7,12 @@ const TYPE_CONFIG = {
   research: { icon: '🔬', gradient: 'linear-gradient(135deg, #10B981, #3B82F6)' },
 };
 
-export default function TeamCard({ team, onJoin, isJoining }) {
+export default function TeamCard({ team, onJoin, isJoining, currentUser, onDelete }) {
   const cfg = TYPE_CONFIG[team.type] || TYPE_CONFIG.hackathon;
+
+  const isCreator = currentUser?.id && currentUser.id === team.creator_id;
+  const isMember = isCreator || (team.member_ids && team.member_ids.includes(currentUser?.id));
+  const canDelete = isCreator || currentUser?.is_admin || currentUser?.role === 'admin' || currentUser?.role === 'faculty';
 
   return (
     <div className="team-card animate-fadeInUp">
@@ -40,16 +45,35 @@ export default function TeamCard({ team, onJoin, isJoining }) {
         </div>
 
         <div className="team-card-footer">
-          <span className="creator-tag">By {team.creator_name}</span>
+          <span className="creator-tag">By {team.creator_name} {isCreator ? '(You)' : ''}</span>
           <div className="team-btn-group">
              <Link to={`/teams?selected=${team.id}`} className="btn-details">Details</Link>
-             {team.is_open && onJoin && (
+             
+             {!isMember && team.is_open && onJoin && !currentUser?.is_admin && (
                <button 
                  className="btn-join-minimal" 
-                 onClick={() => onJoin(team.id)} 
+                 onClick={(e) => { e.stopPropagation(); onJoin(team.id); }} 
                  disabled={isJoining}
                >
                  {isJoining ? '...' : 'Join'}
+               </button>
+             )}
+
+             {isCreator && (
+               <span className="badge-role leader">Leader</span>
+             )}
+
+             {isMember && !isCreator && (
+               <span className="badge-role member">Joined</span>
+             )}
+
+             {canDelete && onDelete && (
+               <button
+                 className="btn-delete-card"
+                 title="Delete Team"
+                 onClick={(e) => { e.stopPropagation(); onDelete(team.id, e); }}
+               >
+                 <Trash2 size={15} />
                </button>
              )}
           </div>
@@ -114,13 +138,34 @@ export default function TeamCard({ team, onJoin, isJoining }) {
 
         .team-card-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.05); }
         .creator-tag { font-size: 12px; color: var(--color-text-muted); font-weight: 600; }
-        .team-btn-group { display: flex; gap: 10px; }
+        .team-btn-group { display: flex; align-items: center; gap: 8px; }
         
         .btn-details { font-size: 13px; font-weight: 700; color: var(--color-green); text-decoration: none; padding: 6px 14px; border-radius: 10px; background: rgba(34, 197, 94, 0.1); transition: all 0.2s; }
         .btn-details:hover { background: var(--color-green); color: white; }
         
-        .btn-join-minimal { border: none; background: transparent; font-size: 13px; font-weight: 700; color: var(--color-text-muted); cursor: pointer; padding: 6px 4px; }
+        .btn-join-minimal { border: none; background: transparent; font-size: 13px; font-weight: 700; color: var(--color-text-muted); cursor: pointer; padding: 6px 8px; }
         .btn-join-minimal:hover { color: var(--color-green); }
+
+        .badge-role { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 8px; }
+        .badge-role.leader { background: rgba(34, 197, 94, 0.15); color: #22C55E; border: 1px solid rgba(34, 197, 94, 0.3); }
+        .badge-role.member { background: rgba(59, 130, 246, 0.15); color: #3B82F6; border: 1px solid rgba(59, 130, 246, 0.3); }
+
+        .btn-delete-card {
+          border: none;
+          background: rgba(239, 68, 68, 0.1);
+          color: #EF4444;
+          padding: 6px 8px;
+          border-radius: 8px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+        }
+        .btn-delete-card:hover {
+          background: #EF4444;
+          color: white;
+        }
       `}</style>
     </div>
   );

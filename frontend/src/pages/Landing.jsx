@@ -4,7 +4,6 @@ import client from '../api/client';
 import ScoreBadge from '../components/ScoreBadge';
 import { useAuth } from '../contexts/AuthContext';
 import { Users, Award, Trophy, Briefcase, UsersRound, Star, Zap, BookOpen, Rocket, Medal, Target } from 'lucide-react';
-import CompanyLogo from '../components/CompanyLogo';
 
 const RANK_ICONS = [
   <Medal size={18} color="#B45309" strokeWidth={2.5} style={{ display: 'inline' }} />,
@@ -81,18 +80,15 @@ export default function Landing() {
   const { user } = useAuth();
   const [stats, setStats] = useState({ totalStudents: 0, totalAchievements: 0, totalHackathonWins: 0, totalInternships: 0, activeTeams: 0 });
   const [topStudents, setTopStudents] = useState([]);
-  const [updates, setUpdates] = useState({ hackathons: [], jobs: [] });
 
   useEffect(() => {
     if (!user) return;
     Promise.all([
       client.get('/leaderboard/stats'),
       client.get('/leaderboard/top'),
-      client.get('/updates'),
-    ]).then(([s, t, u]) => {
+    ]).then(([s, t]) => {
       setStats(s.data);
       setTopStudents(t.data);
-      setUpdates(u.data);
     });
   }, [user]);
 
@@ -198,47 +194,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── Live Opportunities ────────────────── */}
-      <section className="lp-section lp-section-alt">
-        <div className="container">
-          <div className="section-header">
-            <div>
-              <h2 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Zap size={24} className="text-gradient" /> Live Opportunities</h2>
-              <p className="section-subtitle">Latest hackathons and jobs — updated regularly</p>
-            </div>
-            <Link to="/updates" className="btn btn-primary btn-sm">See All →</Link>
-          </div>
-          <div className="lp-opp-grid">
-            <div>
-              <div className="lp-opp-cat" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Trophy size={16} /> Hackathons</div>
-              {updates.hackathons?.slice(0, 3).map(h => (
-                <div key={h.id} className="lp-opp-row card">
-                  <span className="lp-opp-icon"><CompanyLogo logo={h.logo} size={22} /></span>
-                  <div className="lp-opp-info">
-                    <div className="lp-opp-title">{h.title}</div>
-                    <div className="lp-opp-meta">{h.organizer} · {h.prize}</div>
-                  </div>
-                  <a href={h.link} target="_blank" rel="noopener noreferrer" className="btn btn-secondary btn-sm" style={{ flexShrink: 0 }}>Apply →</a>
-                </div>
-              ))}
-            </div>
-            <div>
-              <div className="lp-opp-cat" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Briefcase size={16} /> Jobs</div>
-              {updates.jobs?.slice(0, 3).map(j => (
-                <div key={j.id} className="lp-opp-row card">
-                  <span className="lp-opp-icon"><CompanyLogo logo={j.logo} size={22} /></span>
-                  <div className="lp-opp-info">
-                    <div className="lp-opp-title">{j.title}</div>
-                    <div className="lp-opp-meta">{j.company} · {j.package}</div>
-                  </div>
-                  <a href={j.link} target="_blank" rel="noopener noreferrer" className="btn btn-secondary btn-sm" style={{ flexShrink: 0 }}>View →</a>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* ── Scoring ───────────────────────────── */}
       <section className="lp-section">
         <div className="container">
@@ -264,20 +219,6 @@ export default function Landing() {
                 <div className="lp-score-pts" style={{ color: item.color }}>{item.pts}</div>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── CTA ───────────────────────────────── */}
-      <section className="lp-cta">
-        <div className="container lp-cta-inner">
-          <div>
-            <h2 className="lp-cta-title">Ready to make your mark?</h2>
-            <p className="lp-cta-sub">Join the SIET Inceptron Achievement Portal and start building your profile today.</p>
-          </div>
-          <div className="lp-cta-btns">
-            <a href="http://110.172.151.102/" className="btn btn-primary btn-lg">Sign Into Your Profile →</a>
-            <Link to="/updates" className="btn btn-secondary btn-lg">Browse Opportunities</Link>
           </div>
         </div>
       </section>
@@ -441,17 +382,6 @@ export default function Landing() {
         .lp-pm-meta { font-size: 12px; color: var(--color-text-muted); margin-top: 1px; }
         .lp-pm-score { font-size: 18px; font-weight: 900; color: var(--color-green); font-family: 'Space Grotesk', sans-serif; flex-shrink: 0; }
 
-        /* ── Opportunities ── */
-        .lp-opp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
-        @media (max-width: 768px) { .lp-opp-grid { grid-template-columns: 1fr; } }
-        .lp-opp-cat { font-size: 14px; font-weight: 700; color: var(--color-text); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
-        .lp-opp-row { padding: 13px 16px; display: flex; align-items: center; gap: 12px; margin-bottom: 8px; transition: border-color var(--transition); }
-        .lp-opp-row:hover { border-color: var(--color-green); }
-        .lp-opp-icon { font-size: 22px; flex-shrink: 0; }
-        .lp-opp-info { flex: 1; min-width: 0; }
-        .lp-opp-title { font-size: 13px; font-weight: 600; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .lp-opp-meta { font-size: 12px; color: var(--color-text-muted); margin-top: 2px; }
-
         /* ── Scoring ── */
         .lp-score-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 28px; }
         @media (max-width: 768px) { .lp-score-grid { grid-template-columns: 1fr 1fr; } }
@@ -460,39 +390,6 @@ export default function Landing() {
         .lp-score-title { font-size: 12px; color: var(--color-text-muted); margin-bottom: 8px; font-weight: 500; }
         .lp-score-pts { font-size: 24px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; }
 
-        /* ── CTA ── */
-        .lp-cta {
-          background: var(--color-green);
-          padding: 60px 0;
-        }
-        .lp-cta-inner {
-          display: flex; align-items: center; justify-content: space-between;
-          gap: 32px; flex-wrap: wrap;
-        }
-        .lp-cta-title {
-          font-size: clamp(22px, 3.5vw, 36px); font-weight: 900;
-          font-family: 'Space Grotesk', sans-serif;
-          color: #fff; margin-bottom: 8px;
-        }
-        .lp-cta-sub {
-          font-size: 16px; color: rgba(255,255,255,0.7); max-width: 480px;
-        }
-        .lp-cta-btns { display: flex; gap: 12px; flex-wrap: wrap; }
-        .lp-cta .btn-primary {
-          background: var(--color-gold);
-          border-color: var(--gold-600);
-          color: var(--green-900);
-        }
-        .lp-cta .btn-primary:hover { background: var(--gold-600); color: #fff; }
-        .lp-cta .btn-secondary {
-          background: transparent;
-          color: #fff;
-          border-color: rgba(255,255,255,0.5);
-        }
-        .lp-cta .btn-secondary:hover {
-          background: rgba(255,255,255,0.1);
-          border-color: #fff;
-        }
       `}</style>
     </div>
   );

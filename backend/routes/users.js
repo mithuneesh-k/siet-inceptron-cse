@@ -7,22 +7,30 @@ const { withHttpCache } = require('../services/httpCache');
 
 // ─── GET /api/users — All students with score ─────────────────────────────────
 router.get('/', withHttpCache('users:list', 300), async (req, res) => {
-  const cached = await cache.get('users');
-  if (cached) return res.json(cached);
-
   const page = parseInt(req.query.page || '1', 10);
-  const limit = Math.min(parseInt(req.query.limit || '100', 10), 200);
+  const limit = Math.min(parseInt(req.query.limit || '50', 10), 200);
   const offset = (page - 1) * limit;
+  const { batch, class: classFilter, search } = req.query;
 
-  // Check if requesting all (no pagination) for full cache
-  const requestingAll = !req.query.page && !req.query.limit;
+  // Check if requesting all (no pagination)
+  const requestingAll = req.query.all === 'true' || (!req.query.page && !req.query.limit && !batch && !classFilter && !search);
 
-  // Parallel fetch: profiles and verified achievements
+  // Build profile query with filters and exact total count
   let profilesQuery = supabase
     .from('students')
-    .select('user_id, name, roll_no, class, batch, year, github, linkedin, avatar_url')
-    .order('name');
-  if (!requestingAll) profilesQuery = profilesQuery.range(offset, offset + limit - 1);
+    .select('user_id, name, roll_no, class, batch, year, github, linkedin, avatar_url', { count: 'exact' });
+
+  if (classFilter) profilesQuery = profilesQuery.eq('class', classFilter);
+  if (batch) profilesQuery = profilesQuery.eq('batch', batch);
+  if (search && search.trim()) {
+    const q = search.trim();
+    profilesQuery = profilesQuery.or(`name.ilike.%${q}%,roll_no.ilike.%${q}%`);
+  }
+
+  profilesQuery = profilesQuery.order('name');
+  if (!requestingAll) {
+    profilesQuery = profilesQuery.range(offset, offset + limit - 1);
+  }
 
   const [pRes, aRes] = await Promise.all([
     profilesQuery,
@@ -32,8 +40,13 @@ router.get('/', withHttpCache('users:list', 300), async (req, res) => {
       .eq('verified', true)
   ]);
 
-  if (pRes.error) return res.status(500).json({ error: 'Failed to fetch students' });
+  if (pRes.error) {
+    console.error('Error fetching students profile:', pRes.error);
+    return res.status(500).json({ error: 'Failed to fetch students' });
+  }
+
   const profiles = pRes.data || [];
+  const totalCount = pRes.count !== null ? pRes.count : profiles.length;
   const achs = aRes.data || [];
 
   // Group achievements by user_id for O(1) lookup
@@ -68,17 +81,9 @@ router.get('/', withHttpCache('users:list', 300), async (req, res) => {
     avatar_url: s.avatar_url,
     score: achMap[s.user_id]?.score || 0,
     achievement_count: achMap[s.user_id]?.count || 0,
-  })).sort((a, b) => b.score - a.score);
+  }));
 
-  // Cache full result only when requesting all
-  if (requestingAll) await cache.set('users', result, 300);
-
-  // Get total count for pagination
-  const { count } = await supabase
-    .from('students')
-    .select('*', { count: 'exact', head: true });
-
-  res.json({ students: result, total: count, page, limit });
+  res.json({ students: result, total: totalCount, page, limit });
 });
 
 // ─── GET /api/users/:id ───────────────────────────────────────────────────────

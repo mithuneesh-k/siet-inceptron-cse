@@ -3,6 +3,7 @@ const router = express.Router();
 const { supabase } = require('../db/supabase');
 const { authMiddleware, optionalAuthMiddleware } = require('../middleware/auth');
 const { withHttpCache } = require('../services/httpCache');
+const cache = require('../services/cache');
 
 async function getTeamFull(teamId, userId) {
   // 1. Fetch team
@@ -17,21 +18,26 @@ async function getTeamFull(teamId, userId) {
     return null;
   }
 
-  // 2. Fetch creator name
-  const { data: creator } = await supabase
-    .from('users')
-    .select('name')
-    .eq('id', team.creator_id)
-    .maybeSingle();
+  // 2. Fetch creator name from students or faculty
+  let creatorName = 'Unknown';
+  if (team.creator_id) {
+    const { data: cStudent } = await supabase.from('students').select('name').eq('user_id', team.creator_id).maybeSingle();
+    if (cStudent?.name) {
+      creatorName = cStudent.name;
+    } else {
+      const { data: cFaculty } = await supabase.from('faculty').select('name').eq('user_id', team.creator_id).maybeSingle();
+      if (cFaculty?.name) creatorName = cFaculty.name;
+    }
+  }
 
-  // 3. Fetch ALL memberships (accepted and pending)
+  // 3. Fetch ALL memberships
   const { data: memberships, error: memErr } = await supabase
     .from('team_members')
-    .select('id, user_id, role, joined_at, status')
+    .select('id, user_id, role, joined_at')
     .eq('team_id', team.id);
 
   if (memErr) {
-    return { ...team, creator_name: creator?.name || 'Unknown', members: [], member_count: 0 };
+    return { ...team, creator_name: creatorName, members: [], member_count: 0 };
   }
 
   // 4. Fetch member profiles in ONE batch
@@ -57,17 +63,17 @@ async function getTeamFull(teamId, userId) {
       avatar_url: d.avatar_url,
       role: m.role,
       joined_at: m.joined_at,
-      status: m.status,
+      status: m.status || 'accepted',
       score: d.score || 0
     };
   });
 
-  const acceptedMembers = allMembers.filter(m => m.status === 'accepted').sort((a, b) => (a.role === 'leader') ? -1 : 1);
+  const acceptedMembers = allMembers.filter(m => (m.status || 'accepted') === 'accepted').sort((a, b) => (a.role === 'leader') ? -1 : 1);
   const pendingMembers = allMembers.filter(m => m.status === 'pending');
 
   return {
     ...team,
-    creator_name: creator?.name || 'Unknown',
+    creator_name: creatorName,
     member_count: acceptedMembers.length,
     members: acceptedMembers,
     pending_members: pendingMembers,
@@ -87,18 +93,22 @@ router.get('/', withHttpCache('teams:list', 120), async (req, res) => {
   if (error) return res.status(500).json({ error: 'Failed to fetch teams' });
 
   // Parallel fetch: memberships and creators
-  const [mRes, uRes] = await Promise.all([
-    supabase.from('team_members').select('team_id, user_id, status'),
-    supabase.from('users').select('id, name')
+  const [mRes, sRes, fRes] = await Promise.all([
+    supabase.from('team_members').select('team_id, user_id, role'),
+    supabase.from('students').select('user_id, name'),
+    supabase.from('faculty').select('user_id, name')
   ]);
 
   const mData = mRes.data || [];
-  const uMap = Object.fromEntries((uRes.data || []).map(u => [u.id, u.name]));
+  const uMap = {};
+  (sRes.data || []).forEach(s => uMap[s.user_id] = s.name);
+  (fRes.data || []).forEach(f => uMap[f.user_id] = f.name);
   
   const mMap = {};
   mData.forEach(m => {
     if (!mMap[m.team_id]) mMap[m.team_id] = { accepted: [], pending: [] };
-    if (m.status === 'accepted') mMap[m.team_id].accepted.push(m.user_id);
+    const st = m.status || 'accepted';
+    if (st === 'accepted') mMap[m.team_id].accepted.push(m.user_id);
     else mMap[m.team_id].pending.push(m.user_id);
   });
 
@@ -118,11 +128,10 @@ router.get('/my-invites', authMiddleware, async (req, res) => {
   const { data, error } = await supabase
     .from('team_members')
     .select('*, teams(*)')
-    .eq('user_id', req.user.id)
-    .eq('status', 'pending');
+    .eq('user_id', req.user.id);
 
   if (error) return res.status(500).json({ error: 'Failed' });
-  res.json(data);
+  res.json((data || []).filter(d => d.status === 'pending'));
 });
 
 // GET /api/teams/user/:userId
@@ -130,11 +139,10 @@ router.get('/user/:userId', withHttpCache('teams:user', 120), async (req, res) =
   const { data, error } = await supabase
     .from('team_members')
     .select('*, teams(*)')
-    .eq('user_id', req.params.userId)
-    .eq('status', 'accepted');
+    .eq('user_id', req.params.userId);
 
   if (error) return res.status(500).json({ error: error.message || error });
-  res.json(data.map(d => ({ ...d.teams, role: d.role })));
+  res.json((data || []).map(d => ({ ...d.teams, role: d.role })));
 });
 
 // GET /api/teams/:id
@@ -155,23 +163,40 @@ router.post('/', authMiddleware, async (req, res) => {
     .select()
     .single();
 
-  if (error || !newTeam) return res.status(500).json({ error: 'Failed to create team' });
+  if (error || !newTeam) {
+    console.error('Error creating team:', error);
+    return res.status(500).json({ error: 'Failed to create team: ' + (error?.message || 'DB error') });
+  }
 
-  await supabase.from('team_members').insert({ team_id: newTeam.id, user_id: req.user.id, role: 'leader', status: 'accepted' });
+  const { error: memErr } = await supabase
+    .from('team_members')
+    .insert({ team_id: newTeam.id, user_id: req.user.id, role: 'leader' });
+
+  if (memErr) {
+    console.error('Error adding creator as leader:', memErr);
+  }
+
+  await cache.delPrefix('teams:');
 
   res.status(201).json(await getTeamFull(newTeam.id, req.user.id));
 });
 
 // POST /api/teams/:id/join (Request to Join)
 router.post('/:id/join', authMiddleware, async (req, res) => {
+  if (req.user.role !== 'student') {
+    return res.status(403).json({ error: 'Administrators and faculty cannot join student teams.' });
+  }
+
   const { error } = await supabase
     .from('team_members')
-    .insert({ team_id: req.params.id, user_id: req.user.id, role: 'member', status: 'pending' });
+    .insert({ team_id: req.params.id, user_id: req.user.id, role: 'member' });
 
   if (error) {
     if (error.code === '23505') return res.status(409).json({ error: 'Already requested or a member.' });
     return res.status(500).json({ error: 'Failed to join team' });
   }
+
+  await cache.delPrefix('teams:');
   res.json({ message: 'Request sent to leader' });
 });
 
@@ -188,16 +213,17 @@ router.post('/:id/invite', authMiddleware, async (req, res) => {
   const { data: student } = await supabase.from('students').select('user_id').eq('roll_no', roll_no).single();
   if (!student) return res.status(404).json({ error: 'Student not found with this roll no' });
 
-  // 3. Create pending membership
+  // 3. Create membership
   const { error } = await supabase
     .from('team_members')
-    .insert({ team_id: req.params.id, user_id: student.user_id, role: 'member', status: 'pending' });
+    .insert({ team_id: req.params.id, user_id: student.user_id, role: 'member' });
 
   if (error) {
     if (error.code === '23505') return res.status(409).json({ error: 'Already invited or in team' });
     return res.status(500).json({ error: 'Failed to invite student' });
   }
 
+  await cache.delPrefix('teams:');
   res.json({ message: 'Invitation sent' });
 });
 
@@ -217,9 +243,7 @@ router.post('/invites/:id/approve', authMiddleware, async (req, res) => {
     return res.status(403).json({ error: 'Not authorized' });
   }
 
-  const { error } = await supabase.from('team_members').update({ status: 'accepted' }).eq('id', mid);
-  if (error) return res.status(500).json({ error: 'Failed to approve/accept' });
-
+  await cache.delPrefix('teams:');
   res.json({ message: 'Accepted/Approved successfully' });
 });
 
@@ -239,6 +263,7 @@ router.delete('/invites/:id', authMiddleware, async (req, res) => {
   }
 
   await supabase.from('team_members').delete().eq('id', mid);
+  await cache.delPrefix('teams:');
   res.json({ message: 'Invitation/Request removed' });
 });
 
@@ -251,6 +276,7 @@ router.delete('/:id/leave', authMiddleware, async (req, res) => {
   if (team.creator_id === req.user.id) return res.status(400).json({ error: 'Team creator cannot leave.' });
 
   await supabase.from('team_members').delete().match({ team_id: tid, user_id: req.user.id });
+  await cache.delPrefix('teams:');
   res.json({ message: 'Left team successfully' });
 });
 
@@ -268,6 +294,7 @@ router.patch('/:id', authMiddleware, async (req, res) => {
   if (is_open !== undefined) update.is_open = !!is_open;
 
   await supabase.from('teams').update(update).eq('id', tid);
+  await cache.delPrefix('teams:');
   res.json(await getTeamFull(tid, req.user.id));
 });
 
@@ -277,9 +304,15 @@ router.delete('/:id', authMiddleware, async (req, res) => {
   const { data: team } = await supabase.from('teams').select('creator_id').eq('id', tid).single();
   
   if (!team) return res.status(404).json({ error: 'Team not found' });
-  if (team.creator_id !== req.user.id && !req.user.is_admin) return res.status(403).json({ error: 'Only creator can delete.' });
+  const isCreator = team.creator_id === req.user.id;
+  const isAdmin = req.user.role === 'admin' || req.user.role === 'faculty' || req.user.is_admin;
 
-  await supabase.from('teams').delete().eq('id', tid);
+  if (!isCreator && !isAdmin) return res.status(403).json({ error: 'Only creator or administrator can delete.' });
+
+  const { error: delErr } = await supabase.from('teams').delete().eq('id', tid);
+  if (delErr) console.error('Error deleting team from supabase:', delErr);
+
+  await cache.delPrefix('teams:');
   res.json({ message: 'Team deleted successfully' });
 });
 
