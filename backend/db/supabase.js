@@ -103,16 +103,23 @@ async function getUserWithScore(id) {
 
 // ─── getAdminScope ────────────────────────────────────────────────────────────
 // Identifies if user is full admin/HOD or restricted faculty advisor
+const scopeCache = new Map();
+
 async function getAdminScope(userId, role) {
   if (role === 'admin') return { hasFullAccess: true };
   if (role === 'faculty') {
-    const { data } = await supabase.from('faculty').select('designation, advising_class, advising_batch').eq('user_id', userId).single();
-    if (data?.designation?.toUpperCase() === 'HOD') return { hasFullAccess: true };
-    return { 
-      hasFullAccess: false, 
+    const cached = scopeCache.get(userId);
+    if (cached && Date.now() < cached.expiry) return cached.val;
+
+    const { data } = await supabase.from('faculty').select('designation, advising_class, advising_batch').eq('user_id', userId).maybeSingle();
+    const isHod = data?.designation?.toUpperCase() === 'HOD';
+    const val = { 
+      hasFullAccess: isHod, 
       advisingClass: data?.advising_class || null, 
       advisingBatch: data?.advising_batch || null 
     };
+    scopeCache.set(userId, { val, expiry: Date.now() + 60000 });
+    return val;
   }
   return { hasFullAccess: false };
 }

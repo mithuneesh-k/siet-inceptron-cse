@@ -151,11 +151,10 @@ export default function Profile() {
     completionPct = Math.round((filled / fields.length) * 100);
   }
   const typeBreakdown = ACH_TYPES.map(t => {
-    const list = achievements.filter(a => a.type === t);
-    const approvedList = list.filter(a => (a.status ? a.status === 'approved' : a.verified === true));
+    const approvedList = achievements.filter(a => a.type === t && (a.status ? a.status === 'approved' : a.verified === true));
     return {
       type: t,
-      count: list.length,
+      count: approvedList.length,
       pts: approvedList.reduce((s, a) => s + (a.points || 0), 0)
     };
   }).filter(t => t.count > 0);

@@ -3,7 +3,11 @@ import { Link } from 'react-router-dom';
 import client from '../api/client';
 import ScoreBadge from '../components/ScoreBadge';
 import { useAuth } from '../contexts/AuthContext';
-import { Users, Award, Trophy, Briefcase, UsersRound, Star, Zap, BookOpen, Rocket, Medal, Target } from 'lucide-react';
+import { 
+  Users, Award, Trophy, Briefcase, UsersRound, Star, Zap, BookOpen, 
+  Rocket, Medal, Target, Megaphone, ChevronLeft, ChevronRight, Sparkles,
+  ZoomIn, X
+} from 'lucide-react';
 
 const RANK_ICONS = [
   <Medal size={18} color="#B45309" strokeWidth={2.5} style={{ display: 'inline' }} />,
@@ -80,8 +84,16 @@ export default function Landing() {
   const { user } = useAuth();
   const [stats, setStats] = useState({ totalStudents: 0, totalAchievements: 0, totalHackathonWins: 0, totalInternships: 0, activeTeams: 0 });
   const [topStudents, setTopStudents] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
+  const [activeNewsIdx, setActiveNewsIdx] = useState(0);
+  const [previewImage, setPreviewImage] = useState(null);
 
   useEffect(() => {
+    // Fetch active announcements for news feed
+    client.get('/announcements/active').then(res => {
+      setAnnouncements(res.data || []);
+    }).catch(() => {});
+
     if (!user) return;
     Promise.all([
       client.get('/leaderboard/stats'),
@@ -143,6 +155,140 @@ export default function Landing() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* ── Latest News & Announcements ── */}
+      <section className="lp-section news-section" style={{ paddingTop: 20, paddingBottom: 20 }}>
+        <div className="container">
+          {(() => {
+            const PAGE_SIZE = 3;
+            const totalPages = Math.ceil(announcements.length / PAGE_SIZE) || 1;
+            const currentPage = Math.min(Math.max(1, activeNewsIdx + 1), totalPages);
+            const visibleNews = announcements.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+            return (
+              <>
+                <div className="section-header" style={{ marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+                  <div>
+                    <h2 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 'clamp(22px, 3.2vw, 28px)' }}>
+                      <Megaphone size={26} className="text-gradient" /> Department News
+                    </h2>
+                    <p className="section-subtitle">Hackathon winners, achievements, placements and important department updates</p>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    {user?.is_admin && (
+                      <Link to="/admin?tab=post-notify" className="btn btn-primary btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', fontWeight: 700 }}>
+                        <Megaphone size={15} /> Manage Post & Notify →
+                      </Link>
+                    )}
+                    {totalPages > 1 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <button
+                          className="btn btn-secondary btn-sm"
+                          disabled={currentPage <= 1}
+                          onClick={() => setActiveNewsIdx(currentPage - 2)}
+                          style={{ padding: '6px 14px' }}
+                        >
+                          <ChevronLeft size={16} /> Prev
+                        </button>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text-muted)', minWidth: 60, textAlign: 'center' }}>
+                          {currentPage} / {totalPages}
+                        </span>
+                        <button
+                          className="btn btn-secondary btn-sm"
+                          disabled={currentPage >= totalPages}
+                          onClick={() => setActiveNewsIdx(currentPage)}
+                          style={{ padding: '6px 14px' }}
+                        >
+                          Next <ChevronRight size={16} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {visibleNews.length === 0 ? (
+                  <div className="news-card card animate-fadeIn" style={{ padding: '36px 40px' }}>
+                    <div className="news-meta" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                      <span className="badge badge-gold" style={{ fontSize: 12 }}>
+                        Department Bulletin
+                      </span>
+                      <span className="news-date-text">
+                        SIET CSE Department
+                      </span>
+                    </div>
+
+                    <h3 className="news-headline">Welcome to Inceptron Department News! 📢</h3>
+                    <p className="news-body-text" style={{ maxWidth: 800, marginBottom: user?.is_admin ? 16 : 0 }}>
+                      This section displays real-time hackathon winner announcements, internship highlights, placement updates, and important department notifications published by faculty and administrators.
+                    </p>
+
+                    {user?.is_admin && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 16 }}>
+                        <Link to="/admin?tab=post-notify" className="btn btn-primary btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                          <Megaphone size={14} /> Go to Post & Notify Management →
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                    {visibleNews.map(news => {
+                      const hasUploadedImage = Boolean(news.image_url && news.image_url.trim());
+                      const displayImg = hasUploadedImage ? news.image_url : '/inceptron-logo.png';
+                      const isImportant = news.category === 'Important';
+
+                      return (
+                        <div className={`news-card card animate-fadeIn ${isImportant ? 'news-card-important' : ''}`} key={news.id}>
+                          <div className="news-grid">
+                            {/* Left Column: Image with Automatic CSE Inceptron Logo Fallback & Click Lightbox */}
+                            <div className="news-left-col" style={isImportant ? { background: '#FEF2F2' } : {}}>
+                              <div
+                                className="news-image-wrapper"
+                                onClick={() => setPreviewImage({ url: displayImg, title: news.title, category: news.category })}
+                                title="Click to open full photo view"
+                              >
+                                <img
+                                  src={displayImg}
+                                  alt={news.title}
+                                  className={hasUploadedImage ? 'news-img' : 'news-img-logo-contain'}
+                                  onError={(e) => { e.target.src = '/inceptron-logo.png'; }}
+                                />
+                                <div className="news-category-badge">
+                                  <span className={`badge ${isImportant ? 'badge-important' : 'badge-gold'}`} style={{ fontSize: 12, boxShadow: 'var(--shadow-sm)' }}>
+                                    {isImportant ? '🚨 Important' : (news.category || 'General')}
+                                  </span>
+                                </div>
+                                <span className="news-zoom-hint">
+                                  <ZoomIn size={14} /> View Full Photo
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Right Column: News Details */}
+                            <div className="news-right-col">
+                              <div className="news-meta">
+                                <span style={{ fontSize: 13, color: isImportant ? '#DC2626' : 'var(--color-green)', fontWeight: 700 }}>
+                                  {isImportant ? '🚨 Urgent Department Notice' : 'Official Announcement'}
+                                </span>
+                                <span className="news-date-text" style={isImportant ? { color: '#B91C1C' } : {}}>
+                                  {new Date(news.created_at).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+                                </span>
+                              </div>
+
+                              <h3 className="news-headline" style={isImportant ? { color: '#DC2626' } : {}}>{news.title}</h3>
+                              <p className="news-body-text" style={isImportant ? { color: '#991B1B' } : {}}>{news.content}</p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
       </section>
 
@@ -387,10 +533,104 @@ export default function Landing() {
         @media (max-width: 768px) { .lp-score-grid { grid-template-columns: 1fr 1fr; } }
         .lp-score-card { padding: 20px 16px; text-align: center; border-left: 4px solid var(--border); }
         .lp-score-icon { font-size: 28px; display: block; margin-bottom: 8px; }
-        .lp-score-title { font-size: 12px; color: var(--color-text-muted); margin-bottom: 8px; font-weight: 500; }
         .lp-score-pts { font-size: 24px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; }
-
       `}</style>
+
+      {/* ── Photo Lightbox Modal ── */}
+      {previewImage && (
+        <div
+          className="modal-overlay animate-fadeIn"
+          onClick={() => setPreviewImage(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20
+          }}
+        >
+          <div
+            className="card animate-scaleIn"
+            onClick={e => e.stopPropagation()}
+            style={{
+              position: 'relative',
+              background: 'var(--bg-card)',
+              borderRadius: 'var(--radius-lg)',
+              padding: 24,
+              maxWidth: 620,
+              width: '100%',
+              boxShadow: 'var(--shadow-xl)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              border: '1.5px solid var(--border)'
+            }}
+          >
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => setPreviewImage(null)}
+              style={{
+                position: 'absolute',
+                top: 14,
+                right: 14,
+                borderRadius: '50%',
+                width: 36,
+                height: 36,
+                padding: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'var(--bg-hover)',
+                color: 'var(--color-text)',
+                zIndex: 10
+              }}
+            >
+              <X size={20} />
+            </button>
+
+            <div
+              style={{
+                width: '100%',
+                height: 'min(500px, 60vh)',
+                overflow: 'hidden',
+                borderRadius: 'var(--radius-md)',
+                background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.06), rgba(168, 85, 247, 0.04))',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '1px solid var(--border)',
+                padding: 12
+              }}
+            >
+              <img
+                src={previewImage.url}
+                alt={previewImage.title || 'Announcement Photo'}
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                  objectFit: 'contain',
+                  borderRadius: 'var(--radius-sm)'
+                }}
+              />
+            </div>
+
+            {previewImage.title && (
+              <div style={{ marginTop: 16, textAlign: 'center', width: '100%' }}>
+                <span className="badge badge-gold" style={{ fontSize: 12, marginBottom: 6 }}>
+                  {previewImage.category || 'Announcement Photo'}
+                </span>
+                <h4 style={{ fontSize: 17, fontWeight: 800, color: 'var(--color-text)', marginTop: 4 }}>
+                  {previewImage.title}
+                </h4>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -95,15 +95,10 @@ export default function Navbar() {
           })}
 
           {user?.is_admin && (
-            <>
-              <Link to="/admin" className={`nav-link ${isActive('/admin') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
-                <span className="nav-icon"><Shield size={18} /></span> Admin
-              </Link>
-              <Link to="/approvals" className={`nav-link ${isActive('/approvals') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
-                <span className="nav-icon"><CheckCircle size={18} /></span> Approvals
-                {pendingCount > 0 && <span className="nav-pending-badge">{pendingCount}</span>}
-              </Link>
-            </>
+            <Link to="/admin" className={`nav-link ${isActive('/admin') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
+              <span className="nav-icon"><Shield size={18} /></span> Admin
+              {pendingCount > 0 && <span className="nav-pending-badge">{pendingCount}</span>}
+            </Link>
           )}
         </div>
 

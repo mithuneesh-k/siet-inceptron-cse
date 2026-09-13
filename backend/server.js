@@ -27,6 +27,7 @@ app.use('/api/achievements', require('./routes/achievements'));
 app.use('/api/leaderboard', require('./routes/leaderboard'));
 app.use('/api/teams', require('./routes/teams'));
 app.use('/api/updates', require('./routes/updates'));
+app.use('/api/announcements', require('./routes/announcements'));
 app.use('/api/admin', require('./routes/admin'));
 
 app.get('/api/health', (req, res) => {

@@ -13,7 +13,7 @@ const DEFAULT_PASSWORD = 'password123';
 router.get('/students', async (req, res) => {
   const { search, class: cls, batch } = req.query;
   const scope = await getAdminScope(req.user.id, req.user.role);
-  const cacheKey = `admin:students:${scope.user_id}:${cls || ''}:${batch || ''}:${search || ''}`;
+  const cacheKey = `admin:students:${req.user.id}:${cls || ''}:${batch || ''}:${search || ''}`;
 
   let cached = await cache.get(cacheKey);
   if (cached) return res.json(cached);
@@ -33,30 +33,24 @@ router.get('/students', async (req, res) => {
 
   if (search) query = query.ilike('name', `%${search}%`);
 
-  // Parallel fetch: profiles and all verified achievements
-  const [pRes, aRes] = await Promise.all([
-    query,
-    supabase.from('achievements').select('user_id, points').eq('verified', true)
-  ]);
-
-  if (pRes.error) return res.status(500).json({ error: 'Failed to fetch students', details: pRes.error.message });
-  const profiles = pRes.data || [];
-  const achs = aRes.data || [];
-
-  if (!profiles.length) {
+  const { data: profiles, error: pErr } = await query;
+  if (pErr) return res.status(500).json({ error: 'Failed to fetch students', details: pErr.message });
+  
+  if (!profiles || !profiles.length) {
     await cache.set(cacheKey, [], 1800);
     return res.json([]);
   }
 
   const userIds = profiles.map(s => s.user_id);
 
-  // Fetch emails and group achievements in parallel
-  const [uRes] = await Promise.all([
-    supabase.from('users').select('id, email').in('id', userIds)
+  // Parallel fetch: emails and verified achievements ONLY for the requested student userIds
+  const [uRes, aRes] = await Promise.all([
+    supabase.from('users').select('id, email').in('id', userIds),
+    supabase.from('achievements').select('user_id, points').eq('verified', true).in('user_id', userIds)
   ]);
 
   const emailMap = Object.fromEntries((uRes.data || []).map(u => [u.id, u.email]));
-
+  const achs = aRes.data || [];
   const achMap = {};
   for (const a of achs) {
     if (!achMap[a.user_id]) achMap[a.user_id] = { score: 0, count: 0 };
@@ -776,4 +770,86 @@ router.post('/clear-cache', hodMiddleware, async (req, res) => {
   res.json({ message: 'Cache cleared successfully' });
 });
 
+// ─── Admin: Post & Notify (Announcements) ────────────────────────────────────
+const {
+  getAdminAnnouncements,
+  createAnnouncement,
+  updateAnnouncement,
+  deleteAnnouncement
+} = require('../services/announcementStore');
+
+// GET /api/admin/announcements - Fetch all posts (active & inactive)
+router.get('/announcements', async (req, res) => {
+  try {
+    const data = await getAdminAnnouncements();
+    res.json(data || []);
+  } catch (err) {
+    console.error('Admin announcements fetch error:', err);
+    res.status(500).json({ error: 'Failed to fetch announcements' });
+  }
+});
+
+// POST /api/admin/announcements - Create a new post
+router.post('/announcements', async (req, res) => {
+  try {
+    const { title, content, image_url, category, is_active } = req.body;
+
+    if (!title || !title.trim() || !content || !content.trim()) {
+      return res.status(400).json({ error: 'Title and content/message are required.' });
+    }
+
+    const newPost = {
+      title: title.trim(),
+      content: content.trim(),
+      image_url: image_url?.trim() || null,
+      category: category || 'General',
+      is_active: is_active !== undefined ? Boolean(is_active) : true,
+      created_by: req.user.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    const data = await createAnnouncement(newPost);
+    res.status(201).json(data);
+  } catch (err) {
+    console.error('Create announcement exception:', err);
+    res.status(500).json({ error: 'Failed to create announcement' });
+  }
+});
+
+// PATCH /api/admin/announcements/:id - Update post / toggle status
+router.patch('/announcements/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = {};
+    const { title, content, image_url, category, is_active } = req.body;
+
+    if (title !== undefined) updates.title = title.trim();
+    if (content !== undefined) updates.content = content.trim();
+    if (image_url !== undefined) updates.image_url = image_url?.trim() || null;
+    if (category !== undefined) updates.category = category;
+    if (is_active !== undefined) updates.is_active = Boolean(is_active);
+    updates.updated_at = new Date().toISOString();
+
+    const data = await updateAnnouncement(id, updates);
+    res.json(data);
+  } catch (err) {
+    console.error('Update announcement exception:', err);
+    res.status(500).json({ error: 'Failed to update announcement' });
+  }
+});
+
+// DELETE /api/admin/announcements/:id - Delete an announcement
+router.delete('/announcements/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await deleteAnnouncement(id);
+    res.json({ message: 'Announcement deleted successfully' });
+  } catch (err) {
+    console.error('Delete announcement exception:', err);
+    res.status(500).json({ error: 'Failed to delete announcement' });
+  }
+});
+
 module.exports = router;
+

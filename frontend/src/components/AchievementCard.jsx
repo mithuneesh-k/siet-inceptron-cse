@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Zap, Briefcase, BookOpen, Rocket, Award, ExternalLink, Calendar, Trophy, Clock, Trash2, Hourglass, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import ConfirmModal from './ConfirmModal';
 
 const TYPE_CONFIG = {
   hackathon: { icon: <Zap size={14} style={{ flexShrink: 0 }} />, label: 'Hackathon', cls: 'type-hackathon badge' },
@@ -23,6 +24,7 @@ function MedalIcon({ color, rank }) {
 
 export default function AchievementCard({ achievement, onDelete, showDelete }) {
   const [showModal, setShowModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const cfg = TYPE_CONFIG[achievement.type] || TYPE_CONFIG.course;
 
   // Determine status authoritatively when status exists, fallback to verified
@@ -70,7 +72,7 @@ export default function AchievementCard({ achievement, onDelete, showDelete }) {
                 className="btn btn-ghost btn-xs" 
                 onClick={(e) => { 
                   e.stopPropagation(); 
-                  if (window.confirm(`Delete "${achievement.title}"?`)) onDelete(achievement.id); 
+                  setShowDeleteConfirm(true); 
                 }}
                 title="Delete achievement"
                 style={{ color: '#DC2626', padding: '2px 6px', background: 'rgba(239, 68, 68, 0.08)', borderRadius: 6 }}
@@ -173,6 +175,17 @@ export default function AchievementCard({ achievement, onDelete, showDelete }) {
           </div>
         </div>
       )}
+
+      {/* Confirm Delete Modal */}
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={() => onDelete(achievement.id)}
+        title="Delete Achievement?"
+        message={`Are you sure you want to delete "${achievement.title}"?`}
+        confirmText="Delete"
+        type="danger"
+      />
     </>
   );
 }

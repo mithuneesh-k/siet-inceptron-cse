@@ -46,30 +46,31 @@ export default function Approvals() {
     setTimeout(() => setToast(null), 3500);
   };
 
-  const fetchPending = async () => {
-    setLoading(true);
+  const fetchPending = async (isInitial = false) => {
+    if (isInitial) setLoading(true);
     try {
       const res = await client.get('/achievements/all/pending');
       setAchievements(res.data);
     } catch {
-      showToast('Failed to load pending achievements.', 'error');
+      if (isInitial) showToast('Failed to load pending achievements.', 'error');
     } finally {
-      setLoading(false);
+      if (isInitial) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchPending();
-    const interval = setInterval(fetchPending, 5000);
-    const handleFocus = () => fetchPending();
+    fetchPending(true);
+    const interval = setInterval(() => fetchPending(false), 5000);
+    const handleFocus = () => fetchPending(false);
+    const handlePendingUpdated = () => fetchPending(false);
 
     window.addEventListener('focus', handleFocus);
-    window.addEventListener('pendingUpdated', fetchPending);
+    window.addEventListener('pendingUpdated', handlePendingUpdated);
 
     return () => {
       clearInterval(interval);
       window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('pendingUpdated', fetchPending);
+      window.removeEventListener('pendingUpdated', handlePendingUpdated);
     };
   }, []);
 

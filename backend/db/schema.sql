@@ -156,6 +156,18 @@ LEFT JOIN (
   GROUP BY a.user_id
 ) agg ON agg.user_id = s.user_id;
 
+CREATE TABLE IF NOT EXISTS public.announcements (
+  id          uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title       text NOT NULL,
+  content     text NOT NULL,
+  image_url   text,
+  category    text DEFAULT 'General' CHECK (category IN ('General', 'Hackathon Winner', 'Placement', 'Department Update', 'Event', 'Achievement')),
+  is_active   boolean DEFAULT true,
+  created_by  uuid REFERENCES public.users(id) ON DELETE SET NULL,
+  created_at  timestamptz DEFAULT now(),
+  updated_at  timestamptz DEFAULT now()
+);
+
 -- ═══════════════════════════════════════════════════════════════════════
 -- 8. INDEXES for performance
 -- ═══════════════════════════════════════════════════════════════════════
@@ -169,6 +181,7 @@ CREATE INDEX IF NOT EXISTS idx_teams_creator_id       ON public.teams(creator_id
 CREATE INDEX IF NOT EXISTS idx_team_members_team_id   ON public.team_members(team_id);
 CREATE INDEX IF NOT EXISTS idx_team_members_user_id   ON public.team_members(user_id);
 CREATE INDEX IF NOT EXISTS idx_team_members_status    ON public.team_members(status);
+CREATE INDEX IF NOT EXISTS idx_announcements_active   ON public.announcements(is_active);
 
 -- ═══════════════════════════════════════════════════════════════════════
 -- 9. ROW LEVEL SECURITY — Disable for now (service role key bypasses RLS)
@@ -180,6 +193,7 @@ ALTER TABLE public.faculty ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.achievements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.teams ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.team_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.announcements ENABLE ROW LEVEL SECURITY;
 
 -- Allow service_role full access (your backend uses service_role key)
 CREATE POLICY "Service role full access on users"        ON public.users        FOR ALL USING (true) WITH CHECK (true);
@@ -188,8 +202,10 @@ CREATE POLICY "Service role full access on faculty"      ON public.faculty      
 CREATE POLICY "Service role full access on achievements" ON public.achievements FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Service role full access on teams"        ON public.teams        FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Service role full access on team_members" ON public.team_members FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access on announcements" ON public.announcements FOR ALL USING (true) WITH CHECK (true);
 
 -- ═══════════════════════════════════════════════════════════════════════
 -- DONE! Your database is ready.
 -- Next: seed an admin user so you can log in.
 -- ═══════════════════════════════════════════════════════════════════════
+
