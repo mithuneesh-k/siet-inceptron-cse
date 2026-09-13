@@ -64,18 +64,33 @@ export default function Profile() {
     }
   };
 
-  useEffect(() => { fetchData(); }, [id]);
+  useEffect(() => { 
+    fetchData();
+    const interval = setInterval(fetchData, 5000);
+    const handleFocus = () => fetchData();
+
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('scoreUpdated', fetchData);
+    window.addEventListener('pendingUpdated', fetchData);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('scoreUpdated', fetchData);
+      window.removeEventListener('pendingUpdated', fetchData);
+    };
+  }, [id]);
 
   const addAchievement = async (e) => {
     e.preventDefault();
     try {
       const { data } = await client.post('/achievements', form);
       setAchievements(prev => [data, ...prev]);
-      // Points and count only update in DB/Refresh when verified.
-      // For now, just show a message.
       setShowAddModal(false);
       setForm({ type: 'hackathon', title: '', description: '', position: '', duration: '', proof_url: '' });
       showToast(<span>Achievement submitted for Admin Approval! <Hourglass size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /></span>);
+      window.dispatchEvent(new Event('pendingUpdated'));
+      window.dispatchEvent(new Event('scoreUpdated'));
       if (isOwn) refreshUser();
     } catch (err) {
       showToast(err.response?.data?.error || 'Failed to add achievement', 'error');
@@ -85,11 +100,23 @@ export default function Profile() {
   const deleteAchievement = async (achId) => {
     const ach = achievements.find(a => a.id === achId);
     if (!ach) return;
-    await client.delete(`/achievements/${achId}`);
-    setAchievements(prev => prev.filter(a => a.id !== achId));
-    setUser(u => ({ ...u, score: u.score - ach.points, achievement_count: u.achievement_count - 1 }));
-    showToast('Achievement removed');
-    if (isOwn) refreshUser();
+    try {
+      const { data } = await client.delete(`/achievements/${achId}`);
+      setAchievements(prev => prev.filter(a => a.id !== achId));
+      if (data && typeof data.score === 'number' && typeof data.achievement_count === 'number') {
+        setUser(prev => ({
+          ...prev,
+          score: data.score,
+          achievement_count: data.achievement_count
+        }));
+      }
+      showToast('Achievement removed');
+      window.dispatchEvent(new Event('pendingUpdated'));
+      window.dispatchEvent(new Event('scoreUpdated'));
+      if (isOwn) refreshUser();
+    } catch (err) {
+      showToast(err.response?.data?.error || 'Failed to delete achievement', 'error');
+    }
   };
 
   const renderSkeleton = () => (
@@ -123,10 +150,15 @@ export default function Profile() {
     const filled = fields.filter(f => !!user[f]).length;
     completionPct = Math.round((filled / fields.length) * 100);
   }
-  const typeBreakdown = ACH_TYPES.map(t => ({
-    type: t, count: achievements.filter(a => a.type === t).length,
-    pts: achievements.filter(a => a.type === t).reduce((s, a) => s + a.points, 0)
-  })).filter(t => t.count > 0);
+  const typeBreakdown = ACH_TYPES.map(t => {
+    const list = achievements.filter(a => a.type === t);
+    const approvedList = list.filter(a => (a.status ? a.status === 'approved' : a.verified === true));
+    return {
+      type: t,
+      count: list.length,
+      pts: approvedList.reduce((s, a) => s + (a.points || 0), 0)
+    };
+  }).filter(t => t.count > 0);
 
   return (
     <div className="page-content">
@@ -314,7 +346,8 @@ export default function Profile() {
             </div>
 
             {(() => {
-              const visibleList = achievements.filter(a => a.verified || isOwn || authUser?.is_admin);
+              const isTeacherOrAdmin = authUser?.is_admin || authUser?.role === 'faculty' || authUser?.role === 'admin';
+              const visibleList = achievements.filter(a => (a.status ? a.status === 'approved' : a.verified === true) || isOwn || isTeacherOrAdmin);
               return visibleList.length === 0 ? (
                 <div className="empty-state">
                   <div className="empty-icon">
@@ -330,7 +363,7 @@ export default function Profile() {
               ) : (
                 <div className="grid-auto">
                   {visibleList.map(a => (
-                    <AchievementCard key={a.id} achievement={a} showDelete={isOwn || authUser?.is_admin} onDelete={deleteAchievement} />
+                    <AchievementCard key={a.id} achievement={a} showDelete={isOwn || isTeacherOrAdmin} onDelete={deleteAchievement} />
                   ))}
                 </div>
               );

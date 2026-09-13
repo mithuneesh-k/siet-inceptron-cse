@@ -17,8 +17,8 @@ export default function Leaderboard() {
   const [stats, setStats] = useState({});
   const [showFilters, setShowFilters] = useState(false);
 
-  useEffect(() => {
-    setLoading(true);
+  const fetchLeaderboard = (showLoading = false) => {
+    if (showLoading) setLoading(true);
     const params = new URLSearchParams();
     if (batchFilter) params.set('batch', batchFilter);
     if (classFilter) params.set('class', classFilter);
@@ -26,9 +26,34 @@ export default function Leaderboard() {
       client.get(`/leaderboard?${params.toString()}`),
       client.get('/leaderboard/stats'),
     ]).then(([lRes, sRes]) => {
-      setStudents(lRes.data);
-      setStats(sRes.data);
-    }).finally(() => setLoading(false));
+      setStudents(lRes.data || []);
+      setStats(sRes.data || {});
+    }).catch(err => {
+      console.error('Failed to load leaderboard data:', err);
+      if (showLoading) {
+        setStudents([]);
+        setStats({});
+      }
+    }).finally(() => {
+      if (showLoading) setLoading(false);
+    });
+  };
+
+  useEffect(() => {
+    fetchLeaderboard(true);
+    const interval = setInterval(() => fetchLeaderboard(false), 5000);
+    const handleFocus = () => fetchLeaderboard(false);
+
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('scoreUpdated', handleFocus);
+    window.addEventListener('pendingUpdated', handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('scoreUpdated', handleFocus);
+      window.removeEventListener('pendingUpdated', handleFocus);
+    };
   }, [batchFilter, classFilter]);
 
   const top3 = students.slice(0, 3);

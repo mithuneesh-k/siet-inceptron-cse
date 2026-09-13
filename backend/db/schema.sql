@@ -65,18 +65,36 @@ CREATE TABLE IF NOT EXISTS public.faculty (
 -- 4. ACHIEVEMENTS — Student achievements (hackathons, internships, etc.)
 -- ═══════════════════════════════════════════════════════════════════════
 CREATE TABLE IF NOT EXISTS public.achievements (
-  id          uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id     uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-  type        text NOT NULL CHECK (type IN ('hackathon', 'internship', 'course', 'project', 'certification')),
-  title       text NOT NULL,
-  description text,
-  position    text,        -- '1st', '2nd', '3rd', 'participated' (for hackathons)
-  duration    text,        -- 'short', 'medium', 'long' (for internships)
-  proof_url   text,
-  points      int NOT NULL DEFAULT 0,
-  verified    boolean DEFAULT false,
-  created_at  timestamptz DEFAULT now()
+  id               uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id          uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  type             text NOT NULL CHECK (type IN ('hackathon', 'internship', 'course', 'project', 'certification')),
+  title            text NOT NULL,
+  description      text,
+  position         text,        -- '1st', '2nd', '3rd', 'participated' (for hackathons)
+  duration         text,        -- 'short', 'medium', 'long' (for internships)
+  proof_url        text,
+  points           int NOT NULL DEFAULT 0,
+  verified         boolean DEFAULT false,
+  status           text DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+  rejection_reason text,
+  reviewed_by      uuid REFERENCES public.users(id),
+  reviewed_at      timestamptz,
+  created_at       timestamptz DEFAULT now()
 );
+
+-- Migration for existing databases
+ALTER TABLE public.achievements ADD COLUMN IF NOT EXISTS status text DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected'));
+ALTER TABLE public.achievements ADD COLUMN IF NOT EXISTS rejection_reason text;
+ALTER TABLE public.achievements ADD COLUMN IF NOT EXISTS reviewed_by uuid REFERENCES public.users(id);
+ALTER TABLE public.achievements ADD COLUMN IF NOT EXISTS reviewed_at timestamptz;
+
+-- Backfill existing achievement statuses during migration
+UPDATE public.achievements
+SET status = CASE
+    WHEN verified = true THEN 'approved'
+    ELSE 'pending'
+END
+WHERE status IS NULL;
 
 -- ═══════════════════════════════════════════════════════════════════════
 -- 5. TEAMS — Student teams (hackathon teams, project groups, etc.)

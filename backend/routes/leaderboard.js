@@ -17,11 +17,9 @@ async function buildLeaderboardFromAchievements(batchFilter, classFilter, limit)
     return [];
   }
 
-  const userIds = students.map((u) => u.user_id);
   const { data: achievements } = await supabase
     .from('achievements')
-    .select('user_id, points, type, title, position, verified')
-    .in('user_id', userIds)
+    .select('user_id, points, type, title, position, verified, description')
     .eq('verified', true);
 
   const achMap = new Map();
@@ -87,48 +85,12 @@ async function buildLeaderboardFromAchievements(batchFilter, classFilter, limit)
 }
 
 async function buildLeaderboard(batchFilter, classFilter, limit) {
-  let query = supabase
-    .from('student_leaderboard')
-    .select('user_id, name, roll_no, class, batch, year, github, linkedin, avatar_url, score, achievement_count, gold_wins');
-
-  if (batchFilter && batchFilter !== 'all') query = query.eq('batch', batchFilter);
-  if (classFilter && classFilter !== 'all') query = query.eq('class', classFilter);
-
-  query = query.order('score', { ascending: false })
-    .order('gold_wins', { ascending: false })
-    .order('achievement_count', { ascending: false })
-    .order('name', { ascending: true })
-    .limit(limit || 100);
-
-  const { data: students, error } = await query;
-  if (error) {
-    console.error('Leaderboard view query error, using fallback:', error.message);
-    return buildLeaderboardFromAchievements(batchFilter, classFilter, limit);
-  }
-
-  if (!students?.length) {
-    return buildLeaderboardFromAchievements(batchFilter, classFilter, limit);
-  }
-
-  return students.map((u, i) => ({
-    id: u.user_id,
-    name: u.name,
-    roll_no: u.roll_no,
-    class: u.class,
-    batch: u.batch,
-    year: u.year,
-    github: u.github,
-    linkedin: u.linkedin,
-    avatar_url: u.avatar_url,
-    score: u.score || 0,
-    achievement_count: u.achievement_count || 0,
-    gold_wins: u.gold_wins || 0,
-    rank: i + 1,
-  }));
+  return buildLeaderboardFromAchievements(batchFilter, classFilter, limit);
 }
 
 // ─── GET /api/leaderboard/stats ───────────────────────────────────────────────
-router.get('/stats', withHttpCache('leaderboard:stats', 120), async (req, res) => {
+router.get('/stats', async (req, res) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   const [
     { count: totalStudents },
     { count: totalAchievements },
@@ -153,13 +115,15 @@ router.get('/stats', withHttpCache('leaderboard:stats', 120), async (req, res) =
 });
 
 // ─── GET /api/leaderboard/top ─────────────────────────────────────────────────
-router.get('/top', withHttpCache('leaderboard:top', 120), async (req, res) => {
+router.get('/top', async (req, res) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   const top = await buildLeaderboard(null, null, 5);
   res.json(top);
 });
 
 // ─── GET /api/leaderboard?batch=&class=&limit= ────────────────────────────────
-router.get('/', withHttpCache('leaderboard:list', 120), async (req, res) => {
+router.get('/', async (req, res) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   const { batch, class: cls, limit, year } = req.query;
   const board = await buildLeaderboard(batch || year, cls, parseInt(limit) || 100);
   res.json(board);

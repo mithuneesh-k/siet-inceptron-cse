@@ -22,11 +22,28 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    if (user?.is_admin) {
-      client.get('/achievements/all/pending')
-        .then(res => setPendingCount(res.data?.length || 0))
-        .catch(() => {});
-    }
+    const updateCount = () => {
+      if (user?.is_admin) {
+        client.get('/achievements/all/pending')
+          .then(res => setPendingCount(res.data?.length || 0))
+          .catch(() => setPendingCount(0));
+      } else {
+        setPendingCount(0);
+      }
+    };
+
+    updateCount();
+    const interval = setInterval(updateCount, 5000);
+    window.addEventListener('pendingUpdated', updateCount);
+    window.addEventListener('scoreUpdated', updateCount);
+    window.addEventListener('focus', updateCount);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('pendingUpdated', updateCount);
+      window.removeEventListener('scoreUpdated', updateCount);
+      window.removeEventListener('focus', updateCount);
+    };
   }, [user, location.pathname]);
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');

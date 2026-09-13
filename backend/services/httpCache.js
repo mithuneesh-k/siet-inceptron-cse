@@ -17,7 +17,7 @@ function withHttpCache(scope, ttl = 300) {
     const cached = await cache.get(key);
     if (cached) {
       res.set('X-Cache', 'HIT');
-      res.set('Cache-Control', `public, max-age=${ttl}`);
+      res.set('Cache-Control', 'no-cache, private, must-revalidate');
       return res.json(cached);
     }
 
@@ -25,7 +25,7 @@ function withHttpCache(scope, ttl = 300) {
     res.json = (body) => {
       cache.set(key, body, ttl).catch(() => {});
       res.set('X-Cache', 'MISS');
-      res.set('Cache-Control', `public, max-age=${ttl}`);
+      res.set('Cache-Control', 'no-cache, private, must-revalidate');
       return originalJson(body);
     };
 

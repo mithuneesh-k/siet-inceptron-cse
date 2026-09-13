@@ -388,8 +388,17 @@ router.get('/advisor/students', facultyAdvisorMiddleware, async (req, res) => {
   res.json(result);
 });
 
+function isMissingColumnError(error) {
+  if (!error) return false;
+  return error.code === '42703' || error.code === 'PGRST204' || (error.message && error.message.includes('Could not find'));
+}
+
 // GET /api/admin/advisor/achievements - Get pending achievements for advisor's students
 router.get('/advisor/achievements', facultyAdvisorMiddleware, async (req, res) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+
   const scope = await getAdminScope(req.user.id, req.user.role);
 
   // Get student IDs in advisor's class
@@ -404,21 +413,36 @@ router.get('/advisor/achievements', facultyAdvisorMiddleware, async (req, res) =
   const studentIds = students.map(s => s.user_id);
 
   // Fetch pending achievements for these students
-  const { data: achievements, error } = await supabase
+  let { data: achievements, error } = await supabase
     .from('achievements')
-    .select('*, students!inner(name, roll_no, class, batch)')
-    .eq('verified', false)
+    .select('*')
     .in('user_id', studentIds)
     .order('created_at', { ascending: false });
 
   if (error) return res.status(500).json({ error: 'Failed to fetch achievements' });
-  res.json(achievements || []);
+
+  achievements = (achievements || []).filter(a => a.verified === false && (!a.status || a.status === 'pending') && (!a.description || !a.description.trim().toUpperCase().includes('[REJECTED:')));
+
+  if (!achievements.length) return res.json([]);
+
+  const { data: studentProfiles } = await supabase
+    .from('students')
+    .select('user_id, name, roll_no, class, batch')
+    .in('user_id', studentIds);
+
+  const profileMap = Object.fromEntries((studentProfiles || []).map(s => [s.user_id, s]));
+  const result = achievements.map(a => ({
+    ...a,
+    students: profileMap[a.user_id] || null
+  }));
+
+  res.json(result);
 });
 
-// PATCH /api/admin/advisor/achievements/:id - Verify or reject achievement
+// PATCH /api/admin/advisor/achievements/:id - Approve or reject achievement
 router.patch('/advisor/achievements/:id', facultyAdvisorMiddleware, async (req, res) => {
   const { id } = req.params;
-  const { action } = req.body; // 'verify' or 'reject'
+  const { action, rejection_reason } = req.body; // 'approve', 'verify', or 'reject'
 
   const scope = await getAdminScope(req.user.id, req.user.role);
 
@@ -442,30 +466,82 @@ router.patch('/advisor/achievements/:id', facultyAdvisorMiddleware, async (req, 
     return res.status(403).json({ error: 'Not authorized to modify this achievement' });
   }
 
-  if (action === 'verify') {
-    const { error } = await supabase
+  if (action === 'verify' || action === 'approve') {
+    const updatePayload = {
+      status: 'approved',
+      verified: true,
+      reviewed_by: req.user.id,
+      reviewed_at: new Date().toISOString(),
+      rejection_reason: null
+    };
+
+    let { error } = await supabase
       .from('achievements')
-      .update({ verified: true, verified_by: req.user.id, verified_at: new Date().toISOString() })
+      .update(updatePayload)
       .eq('id', id);
+
+    if (isMissingColumnError(error)) {
+      const fallback = await supabase.from('achievements').update({ verified: true }).eq('id', id);
+      error = fallback.error;
+    }
+
     if (error) return res.status(500).json({ error: 'Failed to verify achievement' });
     
-    // Refresh student score cache
-    const cacheKeys = await cache.keys();
-    const adminKeys = cacheKeys.filter(k => k.startsWith('admin:students:'));
-    for (const key of adminKeys) await cache.del(key);
-    await cache.delPrefix('leaderboard:');
-    await cache.delPrefix('users:');
+    // Refresh caches
+    await cache.flush();
 
     return res.json({ message: 'Achievement verified successfully' });
   }
 
   if (action === 'reject') {
-    const { error } = await supabase.from('achievements').delete().eq('id', id);
+    if (!rejection_reason || !rejection_reason.trim()) {
+      return res.status(400).json({ error: 'Rejection reason is required' });
+    }
+
+    const updatePayload = {
+      status: 'rejected',
+      verified: false,
+      rejection_reason: rejection_reason.trim(),
+      reviewed_by: req.user.id,
+      reviewed_at: new Date().toISOString()
+    };
+
+    let { error } = await supabase
+      .from('achievements')
+      .update(updatePayload)
+      .eq('id', id);
+
+    if (isMissingColumnError(error)) {
+      const { data: ach } = await supabase.from('achievements').select('description').eq('id', id).maybeSingle();
+      let existingDesc = ach?.description || '';
+      if (existingDesc.trim().toUpperCase().includes('[REJECTED:')) {
+        const match = existingDesc.match(/^\[REJECTED:\s*[\s\S]*?\]\s*(.*)$/i);
+        if (match) existingDesc = match[1] || '';
+      }
+      const cleanDesc = `[REJECTED: ${rejection_reason.trim()}] ${existingDesc}`.trim();
+
+      let fallback = await supabase
+        .from('achievements')
+        .update({ status: 'rejected', verified: false, description: cleanDesc })
+        .eq('id', id);
+
+      if (isMissingColumnError(fallback.error)) {
+        fallback = await supabase
+          .from('achievements')
+          .update({ verified: false, description: cleanDesc })
+          .eq('id', id);
+      }
+      error = fallback.error;
+    }
+
     if (error) return res.status(500).json({ error: 'Failed to reject achievement' });
-    return res.json({ message: 'Achievement rejected and removed' });
+
+    await cache.flush();
+
+    return res.json({ message: 'Achievement rejected successfully' });
   }
 
-  res.status(400).json({ error: 'Invalid action. Use "verify" or "reject"' });
+  res.status(400).json({ error: 'Invalid action. Use "approve" or "reject"' });
 });
 
 // ─── Admin: Faculty Management (HOD only) ────────────────────────────────────
@@ -591,12 +667,13 @@ router.delete('/faculty/:id', hodMiddleware, async (req, res) => {
 
 // ─── Admin Overview ────────────────────────────────────────────────────────
 router.get('/overview', hodMiddleware, async (req, res) => {
-  // Total counts
-  const [{ count: totalStudents }, { count: totalFaculty }, { count: totalAchievements }, { count: pendingAchievements }] = await Promise.all([
+  let { data: allUnapproved } = await supabase.from('achievements').select('*').eq('verified', false);
+  const pendingAchievements = (allUnapproved || []).filter(a => (!a.status || a.status === 'pending') && (!a.description || !a.description.trim().toUpperCase().includes('[REJECTED:'))).length;
+
+  const [{ count: totalStudents }, { count: totalFaculty }, { count: totalAchievements }] = await Promise.all([
     supabase.from('students').select('*', { count: 'exact', head: true }),
     supabase.from('faculty').select('*', { count: 'exact', head: true }),
     supabase.from('achievements').select('*', { count: 'exact', head: true }).eq('verified', true),
-    supabase.from('achievements').select('*', { count: 'exact', head: true }).eq('status', 'pending')
   ]);
 
   // Top performing classes
@@ -653,15 +730,18 @@ router.get('/advisor/dashboard', facultyAdvisorMiddleware, async (req, res) => {
   if (sErr) return res.status(500).json({ error: 'Failed to fetch students' });
 
   // Get pending achievements for this class
-  const { data: pending, error: pErr } = await supabase
-    .from('achievements')
-    .select('id, user_id, title, type, points, status, proof_url, created_at, students!inner(class, batch)')
-    .eq('students.class', advising_class)
-    .eq('students.batch', advising_batch)
-    .eq('status', 'pending')
-    .order('created_at', { ascending: false });
+  const studentIds = (students || []).map(s => s.user_id);
+  let pending = [];
 
-  if (pErr) return res.status(500).json({ error: 'Failed to fetch pending achievements' });
+  if (studentIds.length > 0) {
+    const { data: achData } = await supabase
+      .from('achievements')
+      .select('*')
+      .in('user_id', studentIds)
+      .order('created_at', { ascending: false });
+
+    pending = (achData || []).filter(a => a.verified === false && (!a.status || a.status === 'pending') && (!a.description || !a.description.trim().toUpperCase().includes('[REJECTED:')));
+  }
 
   // Get class stats
   const { data: stats } = await supabase

@@ -62,30 +62,31 @@ async function getUserWithScore(id) {
     profile = data || {};
   }
 
-  // 3. Canonical score from the leaderboard view (with fallback)
+  // 3. Compute canonical score directly from achievements table (never stale!)
   let score = 0;
   let achievementCount = 0;
 
-  const { data: leaderboardRow, error: lbErr } = await supabase
-    .from('student_leaderboard')
-    .select('score, achievement_count, gold_wins')
-    .eq('user_id', id)
-    .maybeSingle();
-
-  if (!lbErr && leaderboardRow) {
-    score = leaderboardRow.score || 0;
-    achievementCount = leaderboardRow.achievement_count || 0;
-  } else {
-    // Fallback: compute directly from achievements table
-    const { data: achs } = await supabase
+  if (authUser.role === 'student') {
+    let { data: achs, error: achErr } = await supabase
       .from('achievements')
-      .select('points')
-      .eq('user_id', id)
-      .eq('verified', true);
-    if (achs && achs.length) {
-      score = achs.reduce((sum, a) => sum + (a.points || 0), 0);
-      achievementCount = achs.length;
+      .select('points, status, verified, description')
+      .eq('user_id', id);
+
+    if (achErr) {
+      const fallback = await supabase
+        .from('achievements')
+        .select('points, verified, description')
+        .eq('user_id', id);
+      achs = fallback.data || [];
     }
+
+    const approvedAchs = (achs || []).filter(a => 
+      (a.status === 'approved' || a.verified === true) && 
+      (!a.description || !a.description.trim().toUpperCase().includes('[REJECTED:'))
+    );
+
+    score = approvedAchs.reduce((sum, a) => sum + (a.points || 0), 0);
+    achievementCount = approvedAchs.length;
   }
 
   return {

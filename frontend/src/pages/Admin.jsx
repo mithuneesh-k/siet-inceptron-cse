@@ -103,18 +103,31 @@ export default function Admin() {
   const totalScore = students.reduce((s, u) => s + u.score, 0);
   const avgScore = students.length ? Math.round(totalScore / students.length) : 0;
 
-  const verifyAch = async (id, verified) => {
-    try {
-      if (verified) {
-        await client.patch(`/achievements/${id}/verify`, { verified: true });
-        showToast('Achievement verified ✅');
-      } else {
-        await client.delete(`/achievements/${id}`);
-        showToast('Achievement rejected ✕', 'error');
+  const verifyAch = async (id, approved) => {
+    let reason = null;
+    if (!approved) {
+      reason = window.prompt('Enter reason for rejection:');
+      if (!reason || !reason.trim()) {
+        showToast('Rejection cancelled: reason is required.', 'error');
+        return;
       }
-      setAchievements(prev => prev.filter(a => a.id !== id));
+    }
+
+    const targetAch = achievements.find(a => a.id === id);
+    setAchievements(prev => prev.filter(a => a.id !== id));
+    showToast(approved ? 'Achievement approved ✅' : 'Achievement rejected ✕', approved ? 'success' : 'error');
+    window.dispatchEvent(new Event('pendingUpdated'));
+
+    try {
+      if (approved) {
+        await client.patch(`/achievements/${id}/approve`);
+      } else {
+        await client.patch(`/achievements/${id}/reject`, { rejection_reason: reason.trim() });
+      }
     } catch {
+      if (targetAch) setAchievements(prev => [targetAch, ...prev]);
       showToast('Action failed.', 'error');
+      window.dispatchEvent(new Event('pendingUpdated'));
     }
   };
 
