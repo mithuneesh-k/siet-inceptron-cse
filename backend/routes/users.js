@@ -87,7 +87,10 @@ router.get('/', withHttpCache('users:list', 300), async (req, res) => {
 });
 
 // ─── GET /api/users/:id ───────────────────────────────────────────────────────
-router.get('/:id', withHttpCache('users:profile', 300), async (req, res) => {
+router.get('/:id', async (req, res) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
   const user = await getUserWithScore(req.params.id);
   if (!user) return res.status(404).json({ error: 'User not found' });
   res.json(user);

@@ -39,6 +39,7 @@ export default function Approvals() {
   const [actionInProgress, setActionInProgress] = useState(null);
   const [toast, setToast] = useState(null);
   const [rejectConfirm, setRejectConfirm] = useState(null);
+  const [rejectionReason, setRejectionReason] = useState('');
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
@@ -59,6 +60,17 @@ export default function Approvals() {
 
   useEffect(() => {
     fetchPending();
+    const interval = setInterval(fetchPending, 5000);
+    const handleFocus = () => fetchPending();
+
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('pendingUpdated', fetchPending);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('pendingUpdated', fetchPending);
+    };
   }, []);
 
   if (!user?.is_admin) {
@@ -68,25 +80,34 @@ export default function Approvals() {
   const handleApprove = async (ach) => {
     setActionInProgress(ach.id);
     try {
-      await client.patch(`/achievements/${ach.id}/verify`, { verified: true });
+      await client.patch(`/achievements/${ach.id}/approve`);
       setAchievements(prev => prev.filter(a => a.id !== ach.id));
       showToast(`✓ Approved "${ach.title}"! +${ach.points} pts awarded to ${ach.student_name}.`);
-    } catch {
-      showToast('Approval failed. Please try again.', 'error');
+      window.dispatchEvent(new Event('pendingUpdated'));
+      window.dispatchEvent(new Event('scoreUpdated'));
+    } catch (err) {
+      showToast(err.response?.data?.error || 'Approval failed. Please try again.', 'error');
     } finally {
       setActionInProgress(null);
     }
   };
 
-  const handleReject = async (ach) => {
+  const handleReject = async (ach, reason) => {
+    if (!reason || !reason.trim()) {
+      showToast('Please provide a reason for rejection.', 'error');
+      return;
+    }
+    const cleanReason = reason.trim();
     setActionInProgress(ach.id);
+    setRejectConfirm(null);
     try {
-      await client.delete(`/achievements/${ach.id}`);
+      await client.patch(`/achievements/${ach.id}/reject`, { rejection_reason: cleanReason });
       setAchievements(prev => prev.filter(a => a.id !== ach.id));
-      setRejectConfirm(null);
       showToast(`✕ Rejected submission for ${ach.student_name}.`, 'error');
-    } catch {
-      showToast('Rejection failed. Please try again.', 'error');
+      window.dispatchEvent(new Event('pendingUpdated'));
+      window.dispatchEvent(new Event('scoreUpdated'));
+    } catch (err) {
+      showToast(err.response?.data?.error || 'Rejection failed. Please try again.', 'error');
     } finally {
       setActionInProgress(null);
     }
@@ -135,9 +156,6 @@ export default function Approvals() {
             <button className="btn btn-secondary btn-sm" onClick={fetchPending} disabled={loading} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <RefreshCw size={14} className={loading ? 'anim-spin' : ''} /> Refresh
             </button>
-            <div className="badge badge-gold" style={{ padding: '8px 16px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Shield size={14} /> {user.name}
-            </div>
           </div>
         </div>
 
@@ -359,7 +377,7 @@ export default function Approvals() {
 
                     <button 
                       className="btn btn-danger" 
-                      onClick={() => setRejectConfirm(ach)}
+                      onClick={() => { setRejectionReason('Verification document incomplete or invalid'); setRejectConfirm(ach); }}
                       disabled={isWorking}
                       style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', minWidth: 150 }}
                     >
@@ -375,21 +393,40 @@ export default function Approvals() {
         {/* Reject Confirmation Modal */}
         {rejectConfirm && (
           <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setRejectConfirm(null)}>
-            <div className="modal" style={{ maxWidth: 440 }}>
+            <div className="modal" style={{ maxWidth: 460 }}>
               <div className="modal-header">
                 <h2 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#DC2626' }}>
-                  <XCircle size={22} /> Reject Achievement?
+                  <XCircle size={22} /> Reject Achievement
                 </h2>
                 <button className="modal-close btn btn-ghost" onClick={() => setRejectConfirm(null)}>✕</button>
               </div>
-              <p style={{ fontSize: 14.5, lineHeight: 1.6, color: 'var(--color-text-muted)', marginBottom: 20 }}>
-                Are you sure you want to reject <strong>"{rejectConfirm.title}"</strong> submitted by <strong>{rejectConfirm.student_name}</strong>? 
-                This entry will not be added to their achievements and no points will be awarded.
+              <p style={{ fontSize: 14.5, lineHeight: 1.6, color: 'var(--color-text-muted)', marginBottom: 16 }}>
+                Rejecting <strong>"{rejectConfirm.title}"</strong> submitted by <strong>{rejectConfirm.student_name}</strong>. The achievement will remain in the student's profile marked as 🔴 <strong>Rejected</strong>, and 0 points will be added to the leaderboard.
               </p>
+
+              <div className="form-group" style={{ marginBottom: 20 }}>
+                <label className="form-label" style={{ fontWeight: 700, color: 'var(--color-text)' }}>
+                  Reason for Rejection <span style={{ color: '#DC2626' }}>*</span>
+                </label>
+                <textarea
+                  className="form-input"
+                  rows={3}
+                  placeholder="e.g. Uploaded certificate does not clearly show the student's name..."
+                  value={rejectionReason}
+                  onChange={e => setRejectionReason(e.target.value)}
+                  style={{ resize: 'vertical' }}
+                  required
+                />
+              </div>
+
               <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                 <button className="btn btn-secondary" onClick={() => setRejectConfirm(null)}>Cancel</button>
-                <button className="btn btn-danger" onClick={() => handleReject(rejectConfirm)}>
-                  Yes, Reject Submission
+                <button 
+                  className="btn btn-danger" 
+                  onClick={() => handleReject(rejectConfirm, rejectionReason)}
+                  disabled={!rejectionReason.trim()}
+                >
+                  Confirm Rejection
                 </button>
               </div>
             </div>

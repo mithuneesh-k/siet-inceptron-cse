@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import client from '../api/client';
 
 const AuthContext = createContext(null);
@@ -32,10 +32,29 @@ export function AuthProvider({ children }) {
 
   const refreshUser = useCallback(async () => {
     if (!user) return;
-    const { data } = await client.get(`/users/${user.id}`);
-    localStorage.setItem('SIET_user', JSON.stringify(data));
-    setUser(data);
+    try {
+      const { data } = await client.get(`/users/${user.id}`);
+      localStorage.setItem('SIET_user', JSON.stringify(data));
+      setUser(data);
+    } catch {}
   }, [user]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const handleUpdate = () => {
+      client.get(`/users/${user.id}`).then(({ data }) => {
+        localStorage.setItem('SIET_user', JSON.stringify(data));
+        setUser(data);
+      }).catch(() => {});
+    };
+
+    window.addEventListener('scoreUpdated', handleUpdate);
+    window.addEventListener('pendingUpdated', handleUpdate);
+    return () => {
+      window.removeEventListener('scoreUpdated', handleUpdate);
+      window.removeEventListener('pendingUpdated', handleUpdate);
+    };
+  }, [user?.id]);
 
   return (
     <AuthContext.Provider value={{ user, login, register, logout, refreshUser }}>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Zap, Briefcase, BookOpen, Rocket, Award, ExternalLink, Calendar, Trophy, Clock, Trash2, Hourglass } from 'lucide-react';
+import { Zap, Briefcase, BookOpen, Rocket, Award, ExternalLink, Calendar, Trophy, Clock, Trash2, Hourglass, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 
 const TYPE_CONFIG = {
   hackathon: { icon: <Zap size={14} style={{ flexShrink: 0 }} />, label: 'Hackathon', cls: 'type-hackathon badge' },
@@ -25,6 +25,35 @@ export default function AchievementCard({ achievement, onDelete, showDelete }) {
   const [showModal, setShowModal] = useState(false);
   const cfg = TYPE_CONFIG[achievement.type] || TYPE_CONFIG.course;
 
+  // Determine status authoritatively when status exists, fallback to verified
+  const isApproved = achievement.status ? achievement.status === 'approved' : achievement.verified === true;
+  const isRejected = achievement.status === 'rejected';
+  const isPending = achievement.status ? achievement.status === 'pending' : !achievement.verified;
+
+  const effectivePoints = isApproved ? achievement.points : 0;
+
+  const renderBadge = () => {
+    if (isApproved) {
+      return (
+        <span className="badge badge-green" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          <CheckCircle2 size={12} /> Approved
+        </span>
+      );
+    }
+    if (isRejected) {
+      return (
+        <span className="badge badge-red" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          <XCircle size={12} /> Rejected
+        </span>
+      );
+    }
+    return (
+      <span className="badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(234, 179, 8, 0.15)', color: '#B45309', borderColor: 'rgba(234, 179, 8, 0.3)' }}>
+        <Hourglass size={12} /> Pending Approval
+      </span>
+    );
+  };
+
   return (
     <>
       <div 
@@ -34,21 +63,44 @@ export default function AchievementCard({ achievement, onDelete, showDelete }) {
       >
         <div className="ach-top">
           <span className={cfg.cls} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>{cfg.icon} {cfg.label}</span>
-          {!achievement.verified && <span className="badge badge-red" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Hourglass size={12} /> Pending</span>}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            {renderBadge()}
+            {showDelete && (
+              <button 
+                className="btn btn-ghost btn-xs" 
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  if (window.confirm(`Delete "${achievement.title}"?`)) onDelete(achievement.id); 
+                }}
+                title="Delete achievement"
+                style={{ color: '#DC2626', padding: '2px 6px', background: 'rgba(239, 68, 68, 0.08)', borderRadius: 6 }}
+              >
+                <Trash2 size={13} />
+              </button>
+            )}
+          </div>
         </div>
 
         <h4 className="ach-title">{achievement.title}</h4>
         
+        {isRejected && achievement.rejection_reason && (
+          <p style={{ fontSize: 12, color: '#DC2626', background: 'rgba(239, 68, 68, 0.08)', padding: '6px 10px', borderRadius: 6, marginBottom: 12, fontStyle: 'italic', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            Reason: {achievement.rejection_reason}
+          </p>
+        )}
+
         <div className="ach-footer">
           <span className="ach-date">{new Date(achievement.created_at).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}</span>
-          <span className="ach-points">+{achievement.points} pts</span>
+          <span className="ach-points" style={{ color: isApproved ? 'var(--color-gold)' : 'var(--color-text-muted)' }}>
+            +{effectivePoints} pts {!isApproved && <span style={{ fontSize: 10, opacity: 0.7 }}>(+{achievement.points} potential)</span>}
+          </span>
         </div>
 
         <style>{`
-          .achievement-card { padding: 18px; position: relative; display: flex; flex-direction: column; ${!achievement.verified ? 'opacity: 0.85; border: 1.5px dashed var(--border);' : ''} }
-          .ach-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-          .ach-points { font-size: 14px; font-weight: 800; color: var(--color-gold); }
-          .ach-title { font-size: 15px; font-weight: 700; line-height: 1.4; margin-bottom: 20px; color: var(--color-text); }
+          .achievement-card { padding: 18px; position: relative; display: flex; flex-direction: column; ${!isApproved ? 'opacity: 0.9; border: 1.5px dashed var(--border);' : ''} }
+          .ach-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 8px; flex-wrap: wrap; }
+          .ach-points { font-size: 14px; font-weight: 800; }
+          .ach-title { font-size: 15px; font-weight: 700; line-height: 1.4; margin-bottom: 14px; color: var(--color-text); }
           .ach-footer { display: flex; align-items: center; justify-content: space-between; margin-top: auto; }
           .ach-date { font-size: 12px; color: var(--color-text-faint); font-weight: 600; }
         `}</style>
@@ -58,21 +110,33 @@ export default function AchievementCard({ achievement, onDelete, showDelete }) {
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowModal(false); }}>
           <div className="modal">
             <div className="modal-header" style={{ marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 <span className={cfg.cls} style={{ fontSize: '13px', padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>{cfg.icon} {cfg.label}</span>
-                {!achievement.verified && <span className="badge badge-red" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Hourglass size={12} /> Pending Approval</span>}
+                {renderBadge()}
               </div>
               <button className="modal-close btn btn-ghost" onClick={() => setShowModal(false)}>✕</button>
             </div>
             
             <h2 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '16px', lineHeight: 1.3 }}>{achievement.title}</h2>
             
+            {/* Rejection Alert Box */}
+            {isRejected && (
+              <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', padding: '12px 16px', borderRadius: 8, marginBottom: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#DC2626', fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
+                  <AlertCircle size={16} /> Rejection Reason
+                </div>
+                <p style={{ fontSize: 13.5, color: 'var(--color-text)', margin: 0, lineHeight: 1.5 }}>
+                  {achievement.rejection_reason || 'No reason provided by reviewer.'}
+                </p>
+              </div>
+            )}
+
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '20px' }}>
               <span className="badge" style={{ background: 'var(--green-50)', color: 'var(--color-green)', borderColor: 'var(--green-100)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                 <Calendar size={13} /> {new Date(achievement.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
               </span>
-              <span className="badge" style={{ background: '#FFFBEB', color: '#B45309', borderColor: '#FEF3C7', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                <Trophy size={13} /> +{achievement.points} Points
+              <span className="badge" style={{ background: isApproved ? '#FFFBEB' : 'var(--bg-hover)', color: isApproved ? '#B45309' : 'var(--color-text-muted)', borderColor: isApproved ? '#FEF3C7' : 'var(--border)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <Trophy size={13} /> {isApproved ? `+${achievement.points} Leaderboard Points` : `0 Leaderboard Points (+${achievement.points} Potential)`}
               </span>
               {achievement.position && (
                 <span className="badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#FFFDF0', color: '#B45309', borderColor: '#FEF3C7' }}>
@@ -112,3 +176,4 @@ export default function AchievementCard({ achievement, onDelete, showDelete }) {
     </>
   );
 }
+
