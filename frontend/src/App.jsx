@@ -20,8 +20,9 @@ const Approvals = lazyWithPreload(() => import('./pages/Approvals'));
 const Students = lazyWithPreload(() => import('./pages/Students'));
 const EditProfile = lazyWithPreload(() => import('./pages/EditProfile'));
 const Updates = lazyWithPreload(() => import('./pages/Updates'));
+const Platforms = lazyWithPreload(() => import('./pages/Platforms'));
 
-const priorityPreloads = [Leaderboard, Students, Updates];
+const priorityPreloads = [Leaderboard, Students, Updates, Platforms];
 const backgroundPreloads = [Landing, Login, Profile, Teams, Admin, Approvals, EditProfile];
 
 function preloadRoutes(routes) {
@@ -61,6 +62,7 @@ function AppContent() {
           <Route path="/login" element={<Login />} />
           <Route path="/updates" element={<StudentOnlyRoute><Updates /></StudentOnlyRoute>} />
           <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
+          <Route path="/platforms" element={<ProtectedRoute><Platforms /></ProtectedRoute>} />
           <Route path="/teams" element={<ProtectedRoute><Teams /></ProtectedRoute>} />
           <Route path="/students" element={<ProtectedRoute><Students /></ProtectedRoute>} />
           <Route path="/profile/:id" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

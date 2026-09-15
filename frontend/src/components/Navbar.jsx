@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import client from '../api/client';
-import { Home, Trophy, GraduationCap, Users, Shield, CheckCircle, Zap } from 'lucide-react';
+import { Home, Zap, Trophy, GraduationCap, Users, Shield, CheckCircle, Code } from 'lucide-react';
 import { subscribeAchievementEvents } from '../utils/achievementEvents';
 import './Navbar.css';
 
@@ -61,6 +61,7 @@ export default function Navbar() {
     { to: '/', label: 'Home', icon: <Home size={18} /> },
     { to: '/updates', label: 'Updates', icon: <Zap size={18} />, studentOnly: true },
     { to: '/leaderboard', label: 'Leaderboard', icon: <Trophy size={18} /> },
+    { to: '/platforms', label: 'Platforms', icon: <Code size={18} /> },
     { to: '/students', label: 'Students', icon: <GraduationCap size={18} /> },
     { to: '/teams', label: 'Teams', icon: <Users size={18} /> },
   ];

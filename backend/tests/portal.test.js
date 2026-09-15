@@ -343,10 +343,14 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
     assert.strictEqual(invalidatesLeaderboard, false);
   });
 
-  console.log(`\nResults: ${passedTests}/${totalTests} tests passed.`);
+  const { runPlatformTests } = require('./platform.test');
+  await runPlatformTests();
+
+  console.log(`\nResults: ${passedTests}/${totalTests} portal baseline tests passed.`);
   if (passedTests !== totalTests) {
     process.exit(1);
   }
 })();
+
 
 
