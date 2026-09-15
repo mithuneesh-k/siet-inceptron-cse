@@ -128,7 +128,7 @@ async function connectPlatform(userId, platformCode, rawHandle) {
     metrics: cfResult.metrics,
     status: 'connected',
     ownershipVerified: false,
-    lastSyncedAt: now,
+    lastSyncedAt: null, // First sync immediately after connection must be allowed
     lastAttemptedAt: now,
     lastErrorCode: null
   };
@@ -215,11 +215,16 @@ async function syncPlatform(userId, platformCode) {
   const attemptedAt = new Date().toISOString();
 
   if (!cfResult.found) {
+    const errorCode = cfResult.isOutage ? 'CODEFORCES_UNAVAILABLE' : 'CODEFORCES_HANDLE_NOT_FOUND';
+    const errorMessage = cfResult.isOutage
+      ? 'Last sync failed. Codeforces is temporarily unavailable.'
+      : 'Last sync failed. Connected handle could not be found on Codeforces.';
+
     // KEEP previous metrics! Do NOT replace with zeros!
     const updatePayload = {
       status: 'sync_error',
       last_attempted_at: attemptedAt,
-      last_error_code: 'CODEFORCES_UNAVAILABLE'
+      last_error_code: errorCode
     };
 
     const { connection: updatedConn } = await platformStore.updateConnectionStatus(userId, platformCode, updatePayload);
@@ -227,7 +232,7 @@ async function syncPlatform(userId, platformCode) {
     return {
       status: 200,
       syncError: true,
-      message: 'Last sync failed. Codeforces is temporarily unavailable.',
+      message: errorMessage,
       connection: {
         id: connection.id,
         platformCode: connection.platform_code,
@@ -238,7 +243,7 @@ async function syncPlatform(userId, platformCode) {
         metrics: connection.metrics || {}, // Keep previous metrics
         lastSyncedAt: connection.last_synced_at,
         lastAttemptedAt: attemptedAt,
-        lastErrorCode: 'CODEFORCES_UNAVAILABLE'
+        lastErrorCode: errorCode
       }
     };
   }

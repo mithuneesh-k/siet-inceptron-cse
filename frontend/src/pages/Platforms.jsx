@@ -53,7 +53,7 @@ export default function Platforms() {
 
     setConnecting(true);
     try {
-      const res = await client.post('/api/platforms/connect', {
+      const res = await client.post('/platforms/connect', {
         platformCode: 'codeforces',
         handle: connectHandle.trim()
       });
@@ -82,7 +82,7 @@ export default function Platforms() {
     setSyncingCodeforces(true);
 
     try {
-      const res = await client.post('/api/platforms/sync', { platformCode: 'codeforces' });
+      const res = await client.post('/platforms/sync', { platformCode: 'codeforces' });
       const resData = res.data || {};
 
       if (resData.connection) {
@@ -111,7 +111,7 @@ export default function Platforms() {
     setDisconnecting(true);
 
     try {
-      await client.delete('/api/platforms/codeforces');
+      await client.delete('/platforms/codeforces');
       setPlatforms(prev => prev.map(p => p.code === 'codeforces' ? {
         ...p,
         connectionStatus: 'not_connected',

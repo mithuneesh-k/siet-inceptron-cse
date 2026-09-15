@@ -4,14 +4,22 @@ function isMissingTableError(error) {
   if (!error) return false;
   const code = error.code || '';
   const message = (error.message || '').toLowerCase();
-  return Boolean(
-    code === '42P01' ||
-    code === 'PGRST204' ||
-    code === 'PGRST205' ||
-    message.includes('relation "student_platform_connections" does not exist') ||
-    message.includes('could not find the table') ||
-    message.includes('schema cache')
-  );
+
+  if (code === '42P01' || code === 'PGRST205') {
+    return true;
+  }
+
+  if (
+    message.includes('student_platform_connections') &&
+    (code === 'PGRST204' ||
+     message.includes('does not exist') ||
+     message.includes('could not find') ||
+     message.includes('schema cache'))
+  ) {
+    return true;
+  }
+
+  return false;
 }
 
 async function getConnection(userId, platformCode) {
@@ -71,7 +79,7 @@ async function saveConnection(payload) {
     metrics = {},
     status = 'connected',
     ownershipVerified = false,
-    lastSyncedAt = new Date().toISOString(),
+    lastSyncedAt = null,
     lastAttemptedAt = new Date().toISOString(),
     lastErrorCode = null
   } = payload;

@@ -22,19 +22,23 @@ function normalizeHandle(input) {
   if (cleaned.startsWith('http://') || cleaned.startsWith('https://')) {
     try {
       const url = new URL(cleaned);
-      if (url.hostname.includes('codeforces.com')) {
-        const parts = url.pathname.split('/').filter(Boolean);
-        const profileIndex = parts.indexOf('profile');
-        if (profileIndex !== -1 && parts[profileIndex + 1]) {
-          cleaned = parts[profileIndex + 1];
-        }
+      const host = url.hostname.toLowerCase();
+      if (host !== 'codeforces.com' && host !== 'www.codeforces.com') {
+        throw new Error('Only official codeforces.com URLs are accepted.');
       }
-    } catch {
-      throw new Error('Invalid Codeforces URL format.');
+      const parts = url.pathname.split('/').filter(Boolean);
+      const profileIndex = parts.indexOf('profile');
+      if (profileIndex !== -1 && parts[profileIndex + 1]) {
+        cleaned = parts[profileIndex + 1];
+      } else {
+        throw new Error('Invalid Codeforces profile URL format.');
+      }
+    } catch (err) {
+      throw new Error(err.message || 'Invalid Codeforces URL format.');
     }
   }
 
-  // Validate handle format (letters, digits, underscores, hyphens, dots, 2-24 chars)
+  // Validate handle format (letters, digits, underscores, hyphens, dots, 2-30 chars)
   if (!/^[a-zA-Z0-9_.-]{2,30}$/.test(cleaned)) {
     throw new Error('Codeforces handle contains invalid characters.');
   }
@@ -61,43 +65,67 @@ async function fetchCodeforcesUser(handleInput) {
   if (!userRes || userRes.status !== 'OK' || !Array.isArray(userRes.result) || userRes.result.length === 0) {
     const errorComment = userRes?.comment || '';
     if (errorComment.toLowerCase().includes('not found')) {
-      return { found: false, error: 'Codeforces handle not found.' };
+      return { found: false, error: 'Codeforces handle not found.', isOutage: false };
     }
-    return { found: false, error: 'Codeforces handle not found.' };
+    return { found: false, error: 'Codeforces handle not found.', isOutage: false };
   }
 
   const u = userRes.result[0];
   const canonicalHandle = u.handle || handle;
-  const rating = u.rating !== undefined && u.rating !== null ? u.rating : 0;
-  const maxRating = u.maxRating !== undefined && u.maxRating !== null ? u.maxRating : 0;
-  const rank = u.rank || 'Unrated';
-  const maxRank = u.maxRank || 'Unrated';
+  const rating = u.rating !== undefined && u.rating !== null ? u.rating : null;
+  const maxRating = u.maxRating !== undefined && u.maxRating !== null ? u.maxRating : null;
+  const rank = u.rank || 'unrated';
+  const maxRank = u.maxRank || 'unrated';
 
-  // Fetch unique solved problems and contests count
+  // Fetch unique solved problems with complete bounded pagination
   let solvedProblems = null;
-  let contestCount = null;
+  const solvedSet = new Set();
+  const PAGE_SIZE = 10000;
+  const MAX_PAGES = 10; // Bounded protection: up to 100,000 submissions
+  let from = 1;
+  let paginationFailed = false;
 
-  try {
-    const statusUrl = `https://codeforces.com/api/user.status?handle=${encodeURIComponent(canonicalHandle)}&from=1&count=10000`;
-    const statusRes = await fetch(statusUrl, { headers: { 'User-Agent': 'SIET-Portal/1.0' } });
-    if (statusRes.ok) {
-      const statusData = await statusRes.json();
-      if (statusData && statusData.status === 'OK' && Array.isArray(statusData.result)) {
-        const solvedSet = new Set();
-        for (const sub of statusData.result) {
-          if (sub.verdict === 'OK' && sub.problem) {
-            const probKey = `${sub.problem.contestId || ''}_${sub.problem.index || ''}_${sub.problem.name || ''}`;
-            solvedSet.add(probKey);
-          }
-        }
-        solvedProblems = solvedSet.size;
+  for (let page = 0; page < MAX_PAGES; page++) {
+    try {
+      const statusUrl = `https://codeforces.com/api/user.status?handle=${encodeURIComponent(canonicalHandle)}&from=${from}&count=${PAGE_SIZE}`;
+      const statusRes = await fetch(statusUrl, { headers: { 'User-Agent': 'SIET-Portal/1.0' } });
+      if (!statusRes.ok) {
+        paginationFailed = true;
+        break;
       }
+      const statusData = await statusRes.json();
+      if (!statusData || statusData.status !== 'OK' || !Array.isArray(statusData.result)) {
+        paginationFailed = true;
+        break;
+      }
+
+      const submissions = statusData.result;
+      for (const sub of submissions) {
+        if (sub.verdict === 'OK' && sub.problem) {
+          const probKey = `${sub.problem.contestId || ''}_${sub.problem.index || ''}`;
+          solvedSet.add(probKey);
+        }
+      }
+
+      if (submissions.length < PAGE_SIZE) {
+        break; // All submissions fetched
+      }
+      from += PAGE_SIZE;
+    } catch (err) {
+      console.warn('Codeforces user.status page fetch error:', err.message);
+      paginationFailed = true;
+      break;
     }
-  } catch (err) {
-    console.warn('Codeforces user.status fetch error:', err.message);
+  }
+
+  if (!paginationFailed) {
+    solvedProblems = solvedSet.size;
+  } else {
     solvedProblems = null;
   }
 
+  // Fetch contests count
+  let contestCount = null;
   try {
     const ratingUrl = `https://codeforces.com/api/user.rating?handle=${encodeURIComponent(canonicalHandle)}`;
     const ratingRes = await fetch(ratingUrl, { headers: { 'User-Agent': 'SIET-Portal/1.0' } });
