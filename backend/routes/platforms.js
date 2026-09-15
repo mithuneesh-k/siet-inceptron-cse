@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { requireAuth } = require('../middleware/auth');
+const { authMiddleware: requireAuth } = require('../middleware/auth');
 const { getAllPlatformMeta, getAdapter } = require('../platforms');
 const platformStore = require('../services/platformStore');
 const syncService = require('../services/syncService');
