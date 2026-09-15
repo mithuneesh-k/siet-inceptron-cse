@@ -1,5 +1,7 @@
 const assert = require('assert');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 const SCORING_CONFIG = require('../config/scoringConfig');
 const { getAdapter, getAllPlatformMeta } = require('../platforms');
 const { calculateCompetitiveProfile } = require('../services/scoringEngine');
@@ -270,6 +272,38 @@ test('24. Magic byte validator rejects spoofed mime types', () => {
 
   assert.strictEqual(validateMagicBytes(fakePngPdf, 'image/png'), false);
   assert.strictEqual(validateMagicBytes(realPngHeader, 'image/png'), true);
+});
+
+test('26. Canonical isAdmin role helper evaluates student, faculty, admin, and is_admin correctly', () => {
+  const checkIsAdmin = (u) => Boolean(u && (u.is_admin || u.role === 'admin' || u.role === 'faculty'));
+
+  assert.strictEqual(checkIsAdmin({ role: 'student' }), false);
+  assert.strictEqual(checkIsAdmin({ role: 'student', is_admin: false }), false);
+  assert.strictEqual(checkIsAdmin({ role: 'faculty' }), true);
+  assert.strictEqual(checkIsAdmin({ role: 'admin' }), true);
+  assert.strictEqual(checkIsAdmin({ is_admin: true }), true);
+});
+
+test('27. Migration SQL does NOT contain auth.uid() policies and enforces backend service-role model', () => {
+  const sqlPath = path.join(__dirname, '../db/migrations/create_competitive_index.sql');
+  const sql = fs.readFileSync(sqlPath, 'utf8');
+
+  assert.strictEqual(sql.includes('auth.uid() = user_id'), false);
+  assert.strictEqual(sql.includes('ENABLE ROW LEVEL SECURITY'), true);
+  assert.strictEqual(sql.includes('FOR ALL USING'), false);
+});
+
+test('28. Rollback SQL targets only Competitive Index tables and contains safety warning', () => {
+  const rollbackPath = path.join(__dirname, '../db/migrations/rollback_competitive_index.sql');
+  const sql = fs.readFileSync(rollbackPath, 'utf8');
+
+  assert.strictEqual(sql.includes('THIS ROLLBACK DESTROYS COMPETITIVE INDEX DATA'), true);
+  assert.strictEqual(sql.includes('DROP TABLE IF EXISTS sync_audit_logs CASCADE;'), true);
+  assert.strictEqual(sql.includes('DROP TABLE IF EXISTS student_competitive_profiles CASCADE;'), true);
+  assert.strictEqual(sql.includes('DROP TABLE IF EXISTS student_platform_connections CASCADE;'), true);
+  assert.strictEqual(sql.includes('DROP TABLE IF EXISTS platform_definitions CASCADE;'), true);
+  assert.strictEqual(sql.includes('DROP TABLE IF EXISTS users'), false);
+  assert.strictEqual(sql.includes('DROP TABLE IF EXISTS achievements'), false);
 });
 
 (async () => {

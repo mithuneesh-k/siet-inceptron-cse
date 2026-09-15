@@ -21,11 +21,13 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const isAdmin = Boolean(user && (user.is_admin || user.role === 'admin' || user.role === 'faculty'));
+
   useEffect(() => {
     let isMounted = true;
     const updateCount = () => {
       if (document.hidden) return;
-      if (user?.is_admin || user?.role === 'admin' || user?.role === 'faculty') {
+      if (isAdmin) {
         client.get('/achievements/pending/count')
           .then(res => {
             if (isMounted) setPendingCount(res.data?.pendingCount || 0);
@@ -51,7 +53,7 @@ export default function Navbar() {
       window.removeEventListener('scoreUpdated', updateCount);
       window.removeEventListener('focus', updateCount);
     };
-  }, [user, location.pathname]);
+  }, [user, location.pathname, isAdmin]);
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
@@ -87,7 +89,7 @@ export default function Navbar() {
         <div className={`navbar-links ${menuOpen ? 'open' : ''}`}>
           {navLinks.map(link => {
             if (!user && link.to !== '/') return null;
-            if (link.studentOnly && (user?.is_admin || (user?.role && user?.role !== 'student'))) return null;
+            if (link.studentOnly && isAdmin) return null;
             return (
               <Link
                 key={link.to}
@@ -101,7 +103,7 @@ export default function Navbar() {
             );
           })}
 
-          {user?.is_admin && (
+          {isAdmin && (
             <>
               <Link to="/admin" className={`nav-link ${isActive('/admin') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
                 <span className="nav-icon"><Shield size={18} /></span> Admin

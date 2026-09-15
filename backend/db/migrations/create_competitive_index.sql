@@ -90,16 +90,16 @@ CREATE TABLE IF NOT EXISTS sync_audit_logs (
 
 CREATE INDEX IF NOT EXISTS idx_sync_audit_user ON sync_audit_logs(user_id);
 
--- RLS Policies (Restricted to User Own Data / Authenticated Admins)
+-- Security Architecture: RLS Enabled (Backend Service-Role Authoritative)
+-- The application uses custom JWT authentication. Frontend operations route through Express API.
+-- No direct client write policies are granted. Supabase Service Role bypasses RLS safely.
+
+ALTER TABLE platform_definitions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE student_platform_connections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE student_competitive_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sync_audit_logs ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Students manage own platform connections" ON student_platform_connections
-    FOR ALL USING (auth.uid() = user_id);
-
-CREATE POLICY "Public read competitive profiles" ON student_competitive_profiles
+-- Optional public read policies for metadata (No direct client writes allowed)
+CREATE POLICY "Public read platform definitions" ON platform_definitions
     FOR SELECT USING (true);
 
-CREATE POLICY "Users read own audit logs" ON sync_audit_logs
-    FOR SELECT USING (auth.uid() = user_id);

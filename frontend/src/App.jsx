@@ -42,14 +42,16 @@ if (typeof window !== 'undefined') {
 function ProtectedRoute({ children, adminOnly = false }) {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
-  if (adminOnly && !user.is_admin) return <Navigate to="/" replace />;
+  const isAdmin = Boolean(user && (user.is_admin || user.role === 'admin' || user.role === 'faculty'));
+  if (adminOnly && !isAdmin) return <Navigate to="/" replace />;
   return children;
 }
 
 function StudentOnlyRoute({ children }) {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
-  if (user.is_admin || (user.role && user.role !== 'student')) return <Navigate to="/" replace />;
+  const isAdmin = Boolean(user && (user.is_admin || user.role === 'admin' || user.role === 'faculty'));
+  if (isAdmin) return <Navigate to="/" replace />;
   return children;
 }
 
