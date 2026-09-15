@@ -397,8 +397,10 @@ router.patch('/:id/approve', authMiddleware, adminMiddleware, async (req, res) =
   clearAchievementCaches(updatedAch.user_id).catch(() => {});
 
   const formatted = formatAchievement(updatedAch);
-  const enriched = await enrichAchievementWithStudentProfile(formatted);
-  const canonical = await getStudentCanonicalScore(updatedAch.user_id);
+  const [enriched, canonical] = await Promise.all([
+    enrichAchievementWithStudentProfile(formatted),
+    getStudentCanonicalScore(updatedAch.user_id)
+  ]);
 
   res.json({
     success: true,
@@ -492,9 +494,12 @@ router.patch('/:id/reject', authMiddleware, adminMiddleware, async (req, res) =>
   clearAchievementCaches(updatedAch.user_id).catch(() => {});
 
   const formatted = formatAchievement(updatedAch);
-  const enriched = await enrichAchievementWithStudentProfile(formatted);
   const wasApproved = ach.status === 'approved' || ach.verified === true;
-  const canonical = wasApproved ? await getStudentCanonicalScore(updatedAch.user_id) : null;
+
+  const [enriched, canonical] = await Promise.all([
+    enrichAchievementWithStudentProfile(formatted),
+    wasApproved ? getStudentCanonicalScore(updatedAch.user_id) : Promise.resolve(null)
+  ]);
 
   res.json({
     success: true,
