@@ -100,24 +100,46 @@ export default function Profile() {
     e.preventDefault();
     if (submitting) return;
     setSubmitting(true);
+
+    const tempId = 'temp-' + Date.now();
+    const isPrivileged = authUser?.role === 'admin' || authUser?.role === 'faculty';
+    const optimisticAch = {
+      id: tempId,
+      user_id: authUser?.id || id,
+      type: form.type,
+      title: form.title,
+      description: form.description || null,
+      position: form.position || null,
+      duration: form.duration || null,
+      proof_url: form.proof_url || null,
+      points: form.type === 'hackathon' ? (form.position === '1st' ? 100 : form.position === '2nd' ? 60 : form.position === '3rd' ? 40 : 10)
+        : form.type === 'internship' ? (form.duration === 'long' ? 70 : form.duration === 'medium' ? 40 : 20)
+        : form.type === 'course' ? 15 : form.type === 'project' ? 25 : 10,
+      status: isPrivileged ? 'approved' : 'pending',
+      verified: isPrivileged,
+      created_at: new Date().toISOString()
+    };
+
+    const submittedForm = { ...form };
+    setShowAddModal(false);
+    setForm({ type: 'hackathon', title: '', description: '', position: '', duration: '', proof_url: '' });
+    setAchievements(prev => [optimisticAch, ...prev]);
+    showToast(<span>Achievement submitted for Admin Approval! <Hourglass size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /></span>);
+
     try {
-      const res = await client.post('/achievements', form);
+      const res = await client.post('/achievements', submittedForm);
       const resData = res.data || {};
       const newAch = resData.achievement || resData;
       const score = resData.score;
       const achievement_count = resData.achievement_count;
 
-      setAchievements(prev => [newAch, ...prev.filter(a => a.id !== newAch.id)]);
+      setAchievements(prev => [newAch, ...prev.filter(a => a.id !== tempId && a.id !== newAch.id)]);
       if (typeof score === 'number' && typeof achievement_count === 'number') {
         setUser(prev => prev ? ({ ...prev, score, achievement_count }) : prev);
         if (isOwn) {
           updateUserStats({ score, achievement_count });
         }
       }
-
-      setShowAddModal(false);
-      setForm({ type: 'hackathon', title: '', description: '', position: '', duration: '', proof_url: '' });
-      showToast(<span>Achievement submitted for Admin Approval! <Hourglass size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /></span>);
 
       dispatchAchievementEvent({
         action: 'created',
@@ -127,6 +149,7 @@ export default function Profile() {
         achievement_count
       });
     } catch (err) {
+      setAchievements(prev => prev.filter(a => a.id !== tempId));
       showToast(err.response?.data?.error || 'Failed to add achievement', 'error');
     } finally {
       setSubmitting(false);

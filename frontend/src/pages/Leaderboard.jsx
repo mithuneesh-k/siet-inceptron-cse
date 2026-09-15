@@ -17,7 +17,9 @@ export default function Leaderboard() {
   const [fetchError, setFetchError] = useState(false);
   const [batchFilter, setBatchFilter] = useState('all');
   const [classFilter, setClassFilter] = useState('all');
-  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+
+  const isFilterActive = (batchFilter && batchFilter !== 'all') || (classFilter && classFilter !== 'all');
 
   const fetchLeaderboard = (showLoading = true) => {
     if (showLoading) {
@@ -26,8 +28,8 @@ export default function Leaderboard() {
     }
 
     const params = new URLSearchParams();
-    if (batchFilter !== 'all') params.append('batch', batchFilter);
-    if (classFilter !== 'all') params.append('class', classFilter);
+    if (batchFilter && batchFilter !== 'all') params.append('batch', batchFilter);
+    if (classFilter && classFilter !== 'all') params.append('class', classFilter);
     params.append('limit', '100');
 
     Promise.allSettled([
@@ -97,25 +99,25 @@ export default function Leaderboard() {
         {/* Filters */}
         <div className="lb-filters animate-fadeInUp delay-2">
           <button 
-            className={`btn ${batchFilter || classFilter ? 'btn-primary' : 'btn-secondary'}`}
+            className={`btn ${isFilterActive ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => setShowFilters(true)}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
-            Filters {(batchFilter || classFilter) && '(Active)'}
+            Filters {isFilterActive && '(Active)'}
           </button>
         </div>
 
         <FilterModal 
           isOpen={showFilters} 
           onClose={() => setShowFilters(false)}
-          onClear={() => { setBatchFilter(''); setClassFilter(''); }}
+          onClear={() => { setBatchFilter('all'); setClassFilter('all'); }}
         >
           <div className="form-group">
             <label className="form-label">Batch</label>
             <CustomSelect
               value={batchFilter}
               onChange={setBatchFilter}
-              options={[{ value: '', label: 'All Batches' }, ...BATCH_OPTIONS.map(b => ({ value: b, label: b }))]}
+              options={[{ value: 'all', label: 'All Batches' }, ...BATCH_OPTIONS.map(b => ({ value: b, label: b }))]}
               placeholder="All Batches"
             />
           </div>
@@ -124,7 +126,7 @@ export default function Leaderboard() {
             <CustomSelect
               value={classFilter}
               onChange={setClassFilter}
-              options={[{ value: '', label: 'All Sections' }, ...CLASS_OPTIONS.map(c => ({ value: c, label: c }))]}
+              options={[{ value: 'all', label: 'All Sections' }, ...CLASS_OPTIONS.map(c => ({ value: c, label: c }))]}
               placeholder="All Sections"
             />
           </div>
@@ -160,7 +162,9 @@ export default function Leaderboard() {
           </div>
         ) : fetchError && students.length === 0 ? (
           <div className="card" style={{ padding: '40px 20px', textAlign: 'center' }}>
-            <p style={{ color: '#DC2626', fontWeight: 600, fontSize: 15, marginBottom: 12 }}>{fetchError}</p>
+            <p style={{ color: '#DC2626', fontWeight: 600, fontSize: 15, marginBottom: 12 }}>
+              Failed to load leaderboard data. Please check your connection and try again.
+            </p>
             <button className="btn btn-secondary btn-sm" onClick={() => fetchLeaderboard(true)}>Retry</button>
           </div>
         ) : students.length === 0 ? (
@@ -169,7 +173,7 @@ export default function Leaderboard() {
           <>
             {/* Top 3 Podium */}
             {(() => {
-              const showPodium = !batchFilter && !classFilter && top3.length === 3 && top3[0].score > 0;
+              const showPodium = !isFilterActive && top3.length === 3 && top3[0].score > 0;
               return (
                 <>
                 {showPodium && (

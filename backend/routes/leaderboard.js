@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { supabase } = require('../db/supabase');
+const cache = require('../services/cache');
 
 function isMissingColumnError(error) {
   if (!error) return false;
@@ -26,7 +27,7 @@ async function fetchVerifiedAchievements() {
   let { data, error } = await supabase
     .from('achievements')
     .select('user_id, points, type, title, position, status, verified, description')
-    .eq('verified', true);
+    .or('verified.eq.true,status.eq.approved');
 
   if (isMissingColumnError(error)) {
     const fallbackRes = await supabase
@@ -42,7 +43,7 @@ async function fetchVerifiedAchievements() {
     throw error;
   }
 
-  return data || [];
+  return (data || []).filter(isApprovedAchievement);
 }
 
 async function buildLeaderboardFromAchievements(batchFilter, classFilter, limit) {
@@ -195,7 +196,18 @@ router.get('/', async (req, res) => {
   res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   try {
     const { batch, class: cls, limit, year } = req.query;
-    const board = await buildLeaderboard(batch || year, cls, parseInt(limit) || 100);
+    const batchVal = batch || year || 'all';
+    const classVal = cls || 'all';
+    const limitVal = parseInt(limit) || 100;
+
+    const cacheKey = `leaderboard:${batchVal}:${classVal}:${limitVal}`;
+    const cached = await cache.get(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+
+    const board = await buildLeaderboard(batchVal, classVal, limitVal);
+    await cache.set(cacheKey, board, 300); // 5 min cache
     res.json(board);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch leaderboard' });
