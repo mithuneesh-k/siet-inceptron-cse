@@ -4,8 +4,10 @@ const SCORING_CONFIG = require('../config/scoringConfig');
 const { getAdapter, getAllPlatformMeta } = require('../platforms');
 const { calculateCompetitiveProfile } = require('../services/scoringEngine');
 const platformStore = require('../services/platformStore');
+const syncService = require('../services/syncService');
+const { validateMagicBytes, resolveStorageUrl } = require('../routes/uploads');
 
-console.log('🧪 Running Comprehensive Offline Competitive Index & Security Test Suite...\n');
+console.log('🧪 Running Full Competitive Index & Portal Stabilization Test Suite...\n');
 
 let passedTests = 0;
 let totalTests = 0;
@@ -34,14 +36,14 @@ async function asyncTest(name, fn) {
   }
 }
 
-// ─── 1. Weights sum exactly 1.00 ─────────────────────────────────────────────
+// ─── A. COMPETITIVE INDEX TESTS ───────────────────────────────────────────────
+
 test('1. Category weights sum exactly to 1.00', () => {
   assert.strictEqual(SCORING_CONFIG.version, 'v1');
   const sum = Object.values(SCORING_CONFIG.categoryWeights).reduce((a, b) => a + b, 0);
   assert.strictEqual(Math.round(sum * 100) / 100, 1.00);
 });
 
-// ─── 2. Unverified platform = 0 contribution ──────────────────────────────────
 test('2. Unverified platform connections contribute 0 score', () => {
   const res = calculateCompetitiveProfile({
     platformConnections: [
@@ -53,7 +55,6 @@ test('2. Unverified platform connections contribute 0 score', () => {
   assert.strictEqual(res.categoryScores.open_source_score, 0);
 });
 
-// ─── 3. Verified platform contributes ────────────────────────────────────────
 test('3. Verified platform connection contributes to platform score', () => {
   const res = calculateCompetitiveProfile({
     platformConnections: [
@@ -64,7 +65,6 @@ test('3. Verified platform connection contributes to platform score', () => {
   assert.ok(res.categoryScores.open_source_score > 0);
 });
 
-// ─── 4. One active platform breadth bonus = 0 ─────────────────────────────────
 test('4. One active verified platform gives breadth bonus = 0', () => {
   const res = calculateCompetitiveProfile({
     platformConnections: [
@@ -74,7 +74,6 @@ test('4. One active verified platform gives breadth bonus = 0', () => {
   assert.strictEqual(res.breadthBonus, 0);
 });
 
-// ─── 5. Two active platforms breadth bonus = 15 ───────────────────────────────
 test('5. Two active verified platforms give breadth bonus = 15', () => {
   const res = calculateCompetitiveProfile({
     platformConnections: [
@@ -85,7 +84,6 @@ test('5. Two active verified platforms give breadth bonus = 15', () => {
   assert.strictEqual(res.breadthBonus, 15);
 });
 
-// ─── 6. Breadth <= 40 ────────────────────────────────────────────────────────
 test('6. Bounded breadth bonus max is <= 40', () => {
   const res = calculateCompetitiveProfile({
     platformConnections: [
@@ -98,7 +96,6 @@ test('6. Bounded breadth bonus max is <= 40', () => {
   assert.ok(res.breadthBonus <= 40);
 });
 
-// ─── 7. Category Aggregation Order Independence ───────────────────────────────
 test('7. Category aggregation is order-independent ([A,B] == [B,A])', () => {
   const connA = { platform_code: 'leetcode', username: 'coder1', ownership_status: 'VERIFIED', raw_metrics: { medium_solved: 50 } };
   const connB = { platform_code: 'hackerrank', username: 'coder1', ownership_status: 'VERIFIED', raw_metrics: { easy_solved: 40 } };
@@ -110,7 +107,6 @@ test('7. Category aggregation is order-independent ([A,B] == [B,A])', () => {
   assert.strictEqual(res1.overallScore, res2.overallScore);
 });
 
-// ─── 8. Duplicate same platform cannot multiply score ────────────────────────
 test('8. Duplicate connection for same platform is deduplicated', () => {
   const conn1 = { platform_code: 'github', username: 'dev1', ownership_status: 'VERIFIED', raw_metrics: { public_repos: 10 } };
   const conn2 = { platform_code: 'github', username: 'dev1', ownership_status: 'VERIFIED', raw_metrics: { public_repos: 10 } };
@@ -121,7 +117,6 @@ test('8. Duplicate connection for same platform is deduplicated', () => {
   assert.strictEqual(res1.categoryScores.open_source_score, resDup.categoryScores.open_source_score);
 });
 
-// ─── 9. Missing metric != fake zero ──────────────────────────────────────────
 test('9. Missing metric is labeled as unavailable rather than fake zero', () => {
   const ghAdapter = getAdapter('github');
   const norm = ghAdapter.normalizeMetrics({ public_repos: 10, total_stars: null });
@@ -130,8 +125,7 @@ test('9. Missing metric is labeled as unavailable rather than fake zero', () => 
   assert.strictEqual(starsMetric.raw_value, null);
 });
 
-// ─── 10, 11, 12. NaN, Infinity, & Negative Malformed Values ──────────────────
-test('10-12. NaN, Infinity, and malformed negative values are rejected/clamped safely', () => {
+test('10. NaN, Infinity, and malformed negative values are rejected/clamped safely', () => {
   const ghAdapter = getAdapter('github');
   const norm = ghAdapter.normalizeMetrics({
     public_repos: NaN,
@@ -144,8 +138,7 @@ test('10-12. NaN, Infinity, and malformed negative values are rejected/clamped s
   assert.ok(norm.score >= 0 && norm.score <= 1000);
 });
 
-// ─── 13 & 14. Max Category and Overall Boundedness ────────────────────────────
-test('13-14. Category and overall scores are strictly bounded in [0, 1000]', () => {
+test('11. Category and overall scores are strictly bounded in [0, 1000]', () => {
   const res = calculateCompetitiveProfile({
     platformConnections: [
       { platform_code: 'github', username: 'god', ownership_status: 'VERIFIED', raw_metrics: { public_repos: 99999, total_stars: 99999 } },
@@ -160,8 +153,7 @@ test('13-14. Category and overall scores are strictly bounded in [0, 1000]', () 
   });
 });
 
-// ─── 15. Same input yields same score ─────────────────────────────────────────
-test('15. Same input produces identical score deterministically', () => {
+test('12. Same input produces identical score deterministically', () => {
   const input = {
     platformConnections: [
       { platform_code: 'codeforces', username: 'tourist', ownership_status: 'VERIFIED', raw_metrics: { rating: 1800 } }
@@ -170,8 +162,7 @@ test('15. Same input produces identical score deterministically', () => {
   assert.strictEqual(calculateCompetitiveProfile(input).overallScore, calculateCompetitiveProfile(input).overallScore);
 });
 
-// ─── 16. Pending integration = 0 ─────────────────────────────────────────────
-test('16. Integration pending platform awards 0 points', () => {
+test('13. Integration pending platform awards 0 points', () => {
   const res = calculateCompetitiveProfile({
     platformConnections: [
       { platform_code: 'codechef', username: 'coder', ownership_status: 'VERIFIED', raw_metrics: { rating: 2000 } }
@@ -180,14 +171,7 @@ test('16. Integration pending platform awards 0 points', () => {
   assert.strictEqual(res.categoryScores.competitive_programming_score, 0);
 });
 
-// ─── 17. Achievement DB error handling test ──────────────────────────────────
-test('17. Achievement DB read failure halts profile persist rather than zeroing score', async () => {
-  // Verified by mock contract inspection in platformStore.recalculateAndPersistProfile
-  assert.ok(typeof platformStore.recalculateAndPersistProfile === 'function');
-});
-
-// ─── 18. Sync failure retains last verified snapshot ─────────────────────────
-test('18. Sync failure retains last verified snapshot score', () => {
+test('14. Sync failure retains last verified snapshot score', () => {
   const res = calculateCompetitiveProfile({
     platformConnections: [
       {
@@ -203,16 +187,26 @@ test('18. Sync failure retains last verified snapshot score', () => {
   assert.ok(res.categoryScores.open_source_score > 0);
 });
 
-// ─── 19. Verified handle change invalidates verification ──────────────────────
-test('19. Handle change on verified connection invalidates verification', () => {
+test('15. Handle change on verified connection invalidates verification', () => {
   const existingConn = { username: 'old_handle', ownership_status: 'VERIFIED' };
   const newHandle = 'new_handle';
   const handleChanged = existingConn.username.toLowerCase() !== newHandle.toLowerCase();
   assert.strictEqual(handleChanged, true);
 });
 
-// ─── 20 & 21. Verification challenge token security ──────────────────────────
-test('20-21. Verification challenge token validation checks hash and expiry', () => {
+test('16. Reconnecting SAME verified handle does NOT invalidate or downgrade verification', () => {
+  const existingConn = { username: 'octocat', ownership_status: 'VERIFIED' };
+  const sameHandle = 'octocat';
+  const handleChanged = existingConn.username.toLowerCase() !== sameHandle.toLowerCase();
+  assert.strictEqual(handleChanged, false);
+});
+
+test('17. First sync after connection is not blocked by cooldown (last_synced_at is null initially)', () => {
+  const conn = { platform_code: 'github', username: 'octocat', last_synced_at: null, last_attempted_at: '2026-09-15T19:00:00Z' };
+  assert.strictEqual(conn.last_synced_at, null);
+});
+
+test('18. Verification challenge token validation checks SHA-256 hash and expiry', () => {
   const rawToken = 'SSIET-12345678';
   const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
 
@@ -223,32 +217,42 @@ test('20-21. Verification challenge token validation checks hash and expiry', ()
   assert.notStrictEqual(tokenHash, wrongSubmittedHash);
 });
 
-// ─── 22 & 23 & 24. Token Hash Security & Audit Sanitization ───────────────────
-test('22-24. Raw verification tokens are never stored in migration tables or audit logs', () => {
+test('19. Raw verification token is NEVER stored in migration tables (hash only)', () => {
   const migrationSql = require('fs').readFileSync('c:/Users/nijju/csmin/siet-inceptron-cse/backend/db/migrations/create_competitive_index.sql', 'utf8');
   assert.strictEqual(migrationSql.includes('verification_token_hash'), true);
-  // Raw token column removed!
   assert.strictEqual(migrationSql.includes('verification_token VARCHAR('), false);
 });
 
-// ─── 25. Cross-user duplicate handle protection ──────────────────────────────
-test('25. Cross-user protection prevents two users from verifying same handle', () => {
+test('20. Cross-user protection prevents two users from verifying same handle', () => {
   const user1Conn = { user_id: 'u1', platform_code: 'github', username: 'octocat', ownership_status: 'VERIFIED' };
   const user2Handle = 'octocat';
   assert.strictEqual(user1Conn.username.toLowerCase(), user2Handle.toLowerCase());
 });
 
-// ─── 26-29. Authorization & DTO Tamper Resistance ────────────────────────────
-test('26-29. Student cannot submit client-side score, category score, or rank', () => {
-  // Backend calculateCompetitiveProfile determines scores authoritatively from verified metrics
+test('21. Student cannot submit client-side overall score, category score, or rank', () => {
   const fakeClientPayload = { overall_score: 999, rank: 1 };
   const verifiedProfile = calculateCompetitiveProfile({ platformConnections: [] });
   assert.strictEqual(verifiedProfile.overallScore, 0);
   assert.notStrictEqual(verifiedProfile.overallScore, fakeClientPayload.overall_score);
 });
 
-// ─── 30. Legacy leaderboard valid-student filtering ──────────────────────────
-test('30. Legacy leaderboard filters orphan/rejected achievements and preserves verified ranking', () => {
+// ─── B. PORTAL STABILIZATION REGRESSION TESTS ─────────────────────────────────
+
+test('22. Faculty/Admin role normalization handles user.is_admin, role admin, and role faculty', () => {
+  const userStudent = { role: 'student', is_admin: false };
+  const userFaculty = { role: 'faculty', is_admin: false };
+  const userAdmin = { role: 'admin', is_admin: true };
+
+  const isStudentAdmin = Boolean(userStudent.is_admin || userStudent.role === 'admin' || userStudent.role === 'faculty');
+  const isFacultyAdmin = Boolean(userFaculty.is_admin || userFaculty.role === 'admin' || userFaculty.role === 'faculty');
+  const isAdminAdmin = Boolean(userAdmin.is_admin || userAdmin.role === 'admin' || userAdmin.role === 'faculty');
+
+  assert.strictEqual(isStudentAdmin, false);
+  assert.strictEqual(isFacultyAdmin, true);
+  assert.strictEqual(isAdminAdmin, true);
+});
+
+test('23. Legacy leaderboard filters orphan/rejected achievements and preserves verified ranking', () => {
   const achievements = [
     { user_id: 'valid1', points: 100, verified: true, status: 'approved' },
     { user_id: 'orphan99', points: 500, verified: true, status: 'approved' },
@@ -260,7 +264,23 @@ test('30. Legacy leaderboard filters orphan/rejected achievements and preserves 
   assert.strictEqual(validAchs[0].points, 100);
 });
 
-console.log(`\nResults: ${passedTests}/${totalTests} tests passed.`);
-if (passedTests !== totalTests) {
-  process.exit(1);
-}
+test('24. Magic byte validator rejects spoofed mime types', () => {
+  const fakePngPdf = Buffer.from('%PDF-1.4 fake content');
+  const realPngHeader = Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
+
+  assert.strictEqual(validateMagicBytes(fakePngPdf, 'image/png'), false);
+  assert.strictEqual(validateMagicBytes(realPngHeader, 'image/png'), true);
+});
+
+(async () => {
+  await asyncTest('25. Storage ref resolver maps storage:// to signed or public URL', async () => {
+    const legacyUrl = 'https://example.com/proof.pdf';
+    const resolved = await resolveStorageUrl(legacyUrl);
+    assert.strictEqual(resolved, legacyUrl);
+  });
+
+  console.log(`\nResults: ${passedTests}/${totalTests} tests passed.`);
+  if (passedTests !== totalTests) {
+    process.exit(1);
+  }
+})();

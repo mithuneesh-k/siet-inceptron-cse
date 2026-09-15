@@ -22,23 +22,30 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
+    let isMounted = true;
     const updateCount = () => {
-      if (user?.is_admin) {
-        client.get('/achievements/all/pending')
-          .then(res => setPendingCount(res.data?.length || 0))
-          .catch(() => setPendingCount(0));
+      if (document.hidden) return;
+      if (user?.is_admin || user?.role === 'admin' || user?.role === 'faculty') {
+        client.get('/achievements/pending/count')
+          .then(res => {
+            if (isMounted) setPendingCount(res.data?.pendingCount || 0);
+          })
+          .catch(() => {
+            if (isMounted) setPendingCount(0);
+          });
       } else {
-        setPendingCount(0);
+        if (isMounted) setPendingCount(0);
       }
     };
 
     updateCount();
-    const interval = setInterval(updateCount, 5000);
+    const interval = setInterval(updateCount, 10000);
     window.addEventListener('pendingUpdated', updateCount);
     window.addEventListener('scoreUpdated', updateCount);
     window.addEventListener('focus', updateCount);
 
     return () => {
+      isMounted = false;
       clearInterval(interval);
       window.removeEventListener('pendingUpdated', updateCount);
       window.removeEventListener('scoreUpdated', updateCount);
@@ -50,8 +57,9 @@ export default function Navbar() {
 
   const handleLogout = () => {
     logout();
-    navigate('/');
+    setPendingCount(0);
     setMenuOpen(false);
+    navigate('/login', { replace: true });
   };
 
   const navLinks = [
@@ -60,7 +68,6 @@ export default function Navbar() {
     { to: '/leaderboard', label: 'Leaderboard', icon: <Trophy size={18} /> },
     { to: '/platforms', label: 'Platforms', icon: <Shield size={18} /> },
     { to: '/students', label: 'Students', icon: <GraduationCap size={18} /> },
-
     { to: '/teams', label: 'Teams', icon: <Users size={18} /> },
   ];
 
@@ -79,9 +86,7 @@ export default function Navbar() {
 
         <div className={`navbar-links ${menuOpen ? 'open' : ''}`}>
           {navLinks.map(link => {
-            // Hide everything except Home if not logged in
             if (!user && link.to !== '/') return null;
-            // Hide student-only links from non-student accounts (Faculty / Admin)
             if (link.studentOnly && (user?.is_admin || (user?.role && user?.role !== 'student'))) return null;
             return (
               <Link
@@ -111,13 +116,13 @@ export default function Navbar() {
 
         <div className="navbar-actions">
           {user ? (
-      <div className="user-menu">
-        <Link to={`/profile/${user.id}`} className="user-chip">
-          <div className="user-avatar-sm">{user.name?.[0] || '?'}</div>
-          <span className="user-name">{user.name?.split(' ')[0] || 'User'}</span>
-        </Link>
-        <button className="btn btn-ghost btn-sm" onClick={handleLogout}>Logout</button>
-      </div>
+            <div className="user-menu">
+              <Link to={`/profile/${user.id}`} className="user-chip">
+                <div className="user-avatar-sm">{user.name?.[0] || '?'}</div>
+                <span className="user-name">{user.name?.split(' ')[0] || 'User'}</span>
+              </Link>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={handleLogout}>Logout</button>
+            </div>
           ) : (
             <div style={{ display: 'flex', gap: '8px' }}>
               <Link to="/login" className="btn btn-primary btn-sm">Login</Link>

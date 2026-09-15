@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import client from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
@@ -29,6 +29,20 @@ const DURATION_LABEL = {
   long: '⏱️ 3+ Months' 
 };
 
+// Stable comparison function ignoring rotating proof URLs
+function isPendingListEqual(arr1, arr2) {
+  if (arr1 === arr2) return true;
+  if (!arr1 || !arr2 || arr1.length !== arr2.length) return false;
+  for (let i = 0; i < arr1.length; i++) {
+    const a = arr1[i];
+    const b = arr2[i];
+    if (a.id !== b.id || a.status !== b.status || a.user_id !== b.user_id || a.title !== b.title) {
+      return false;
+    }
+  }
+  return true;
+}
+
 export default function Approvals() {
   const { user } = useAuth();
   const [achievements, setAchievements] = useState([]);
@@ -40,36 +54,46 @@ export default function Approvals() {
   const [toast, setToast] = useState(null);
   const [rejectConfirm, setRejectConfirm] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
+  const isFetchingRef = useRef(false);
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
   };
 
-  const fetchPending = async () => {
-    setLoading(true);
+  const fetchPending = async (isInitial = false) => {
+    if (isFetchingRef.current) return;
+    if (document.hidden && !isInitial) return;
+    
+    isFetchingRef.current = true;
+    if (isInitial) setLoading(true);
+
     try {
       const res = await client.get('/achievements/all/pending');
-      setAchievements(res.data);
+      setAchievements(prev => {
+        if (isPendingListEqual(prev, res.data)) return prev;
+        return res.data;
+      });
     } catch {
-      showToast('Failed to load pending achievements.', 'error');
+      if (isInitial) showToast('Failed to load pending achievements.', 'error');
     } finally {
-      setLoading(false);
+      if (isInitial) setLoading(false);
+      isFetchingRef.current = false;
     }
   };
 
   useEffect(() => {
-    fetchPending();
-    const interval = setInterval(fetchPending, 5000);
-    const handleFocus = () => fetchPending();
+    fetchPending(true);
+    const interval = setInterval(() => fetchPending(false), 10000);
+    const handleFocus = () => fetchPending(false);
 
     window.addEventListener('focus', handleFocus);
-    window.addEventListener('pendingUpdated', fetchPending);
+    window.addEventListener('pendingUpdated', () => fetchPending(false));
 
     return () => {
       clearInterval(interval);
       window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('pendingUpdated', fetchPending);
+      window.removeEventListener('pendingUpdated', () => fetchPending(false));
     };
   }, []);
 
@@ -80,7 +104,7 @@ export default function Approvals() {
   const handleApprove = async (ach) => {
     setActionInProgress(ach.id);
     try {
-      await client.patch(`/achievements/${ach.id}/approve`);
+      const res = await client.patch(`/achievements/${ach.id}/approve`);
       setAchievements(prev => prev.filter(a => a.id !== ach.id));
       showToast(`✓ Approved "${ach.title}"! +${ach.points} pts awarded to ${ach.student_name}.`);
       window.dispatchEvent(new Event('pendingUpdated'));
@@ -153,7 +177,7 @@ export default function Approvals() {
           </div>
 
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <button className="btn btn-secondary btn-sm" onClick={fetchPending} disabled={loading} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button className="btn btn-secondary btn-sm" onClick={() => fetchPending(true)} disabled={loading} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <RefreshCw size={14} className={loading ? 'anim-spin' : ''} /> Refresh
             </button>
           </div>
@@ -352,9 +376,6 @@ export default function Approvals() {
                           >
                             <ExternalLink size={14} /> Inspect Document / Certificate ↗
                           </a>
-                          <span style={{ fontSize: 12, color: 'var(--color-text-faint)', maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {ach.proof_url}
-                          </span>
                         </div>
                       ) : (
                         <span className="badge badge-red" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>

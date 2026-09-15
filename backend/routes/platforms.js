@@ -11,6 +11,7 @@ router.use(requireAuth);
 /**
  * GET /api/platforms
  * Lists all available platforms + authenticated student's current connections.
+ * Sanitizes internal error messages and diagnostics.
  */
 router.get('/', async (req, res, next) => {
   try {
@@ -31,6 +32,12 @@ router.get('/', async (req, res, next) => {
       const adapter = getAdapter(p.code);
       const normRes = (conn && isVerified && adapter) ? adapter.normalizeMetrics(conn.raw_metrics || {}) : { score: 0, metrics: [] };
 
+      // Sanitized status category
+      let syncErrorCategory = null;
+      if (conn?.sync_status === 'SYNC_FAILED') {
+        syncErrorCategory = conn.last_error_message?.includes('not found') ? 'not_found' : 'server_error';
+      }
+
       return {
         platform_code: p.code,
         platform_name: p.name,
@@ -46,7 +53,7 @@ router.get('/', async (req, res, next) => {
         platform_score: isVerified ? (normRes.score || conn?.snapshot_score || 0) : 0,
         normalized_metrics: isVerified ? normRes.metrics : [],
         last_synced_at: conn?.last_synced_at || null,
-        last_error_message: conn?.last_error_message || null
+        sync_error_category: syncErrorCategory
       };
     });
 
@@ -94,7 +101,8 @@ router.post('/connect', async (req, res, next) => {
 
 /**
  * POST /api/platforms/verify/initiate
- * Initiates ownership verification token generation for authenticated student.
+ * Initiates ownership verification challenge token generation.
+ * Returns raw token ONCE to the user. Does NOT persist raw token in database.
  */
 router.post('/verify/initiate', async (req, res, next) => {
   try {
@@ -121,21 +129,27 @@ router.post('/verify/initiate', async (req, res, next) => {
 /**
  * POST /api/platforms/verify/confirm
  * Confirms token placement in public profile.
+ * Validates BOTH platformCode and verificationToken in request body.
  */
 router.post('/verify/confirm', async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const { platformCode } = req.body;
+    const { platformCode, verificationToken } = req.body;
 
-    if (!platformCode) {
-      return res.status(400).json({ error: 'platformCode is required' });
+    if (!platformCode || !verificationToken) {
+      return res.status(400).json({ error: 'platformCode and verificationToken are required' });
     }
 
-    const result = await syncService.confirmVerification(userId, platformCode);
+    const result = await syncService.confirmVerification(userId, platformCode, verificationToken);
     res.json({
       success: true,
       message: `Ownership verified successfully! ${platformCode} now contributes to your competitive score.`,
-      verified: true
+      verified: true,
+      connection: {
+        platform_code: result.connection.platform_code,
+        username: result.connection.username,
+        ownership_status: result.connection.ownership_status
+      }
     });
   } catch (err) {
     if (err.status) {

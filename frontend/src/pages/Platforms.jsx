@@ -69,7 +69,11 @@ export default function Platforms() {
     if (!activeModal?.platform) return;
     try {
       setActionLoading(true);
-      const res = await client.post('/platforms/verify/confirm', { platformCode: activeModal.platform.platform_code });
+      const res = await client.post('/platforms/verify/confirm', {
+        platformCode: activeModal.platform.platform_code,
+        verificationToken: verificationData?.verificationToken
+      });
+
       setMessage({ text: res.data.message, type: 'success' });
       setActiveModal(null);
       setVerificationData(null);

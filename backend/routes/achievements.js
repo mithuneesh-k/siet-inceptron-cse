@@ -3,19 +3,40 @@ const router = express.Router();
 const { supabase, getAdminScope } = require('../db/supabase');
 const { authMiddleware, adminMiddleware, optionalAuthMiddleware } = require('../middleware/auth');
 const cache = require('../services/cache');
+const { resolveStorageUrl, deleteStorageObject } = require('./uploads');
+const platformStore = require('../services/platformStore');
 
 function isMissingColumnError(error) {
   if (!error) return false;
   return error.code === '42703' || error.code === 'PGRST204' || (error.message && error.message.includes('Could not find'));
 }
 
-// Helper to clear relevant caches after achievement updates
-async function clearAchievementCaches() {
-  await cache.flush();
+// Targeted cache invalidation helper
+async function clearTargetedCaches(userId) {
+  try {
+    if (userId) await cache.del(`user:${userId}`);
+    await cache.flushByPrefix('leaderboard');
+    await cache.flushByPrefix('achievements');
+  } catch (err) {
+    console.warn('Targeted cache clear warning:', err.message);
+  }
 }
 
-// Parse fallback [REJECTED: reason] in description
-function formatAchievement(a) {
+// Safe Competitive Profile Recalculation Trigger
+async function safeRecalculateCompetitiveProfile(userId) {
+  try {
+    await platformStore.recalculateAndPersistProfile(userId);
+  } catch (err) {
+    if (err.message && err.message.includes('not configured yet')) {
+      // Normal expected behavior before SQL migration is executed
+      return;
+    }
+    console.warn(`Safe competitive profile recalculation warning for user ${userId}:`, err.message);
+  }
+}
+
+// Format achievement and resolve proof signed URL
+async function formatAchievement(a) {
   if (!a) return a;
   let status = a.status;
   let rejection_reason = a.rejection_reason;
@@ -34,14 +55,88 @@ function formatAchievement(a) {
     status = a.verified ? 'approved' : 'pending';
   }
 
+  // Preserve original storage_ref and resolve signed proof_url
+  const storage_ref = a.proof_url || null;
+  const resolved_proof_url = storage_ref ? await resolveStorageUrl(storage_ref) : null;
+
   return {
     ...a,
     status,
     verified: status === 'approved',
     rejection_reason: status === 'rejected' ? (rejection_reason || 'Rejected by admin') : null,
-    description
+    description,
+    storage_ref,
+    proof_url: resolved_proof_url
   };
 }
+
+async function getStudentCanonicalScore(userId) {
+  if (!userId) return { score: 0, achievement_count: 0 };
+  let { data: achs, error } = await supabase
+    .from('achievements')
+    .select('points, status, verified, description')
+    .eq('user_id', userId);
+
+  if (isMissingColumnError(error)) {
+    const fallback = await supabase
+      .from('achievements')
+      .select('points, verified, description')
+      .eq('user_id', userId);
+    achs = fallback.data || [];
+  }
+
+  const approvedAchs = (achs || []).filter(a => 
+    (a.status === 'approved' || a.verified === true) && 
+    (!a.description || !a.description.trim().toUpperCase().includes('[REJECTED:'))
+  );
+
+  const score = approvedAchs.reduce((sum, a) => sum + (a.points || 0), 0);
+  const achievement_count = approvedAchs.length;
+  return { score, achievement_count };
+}
+
+// ─── GET /api/achievements/pending/count ─────────────────────────────────────
+router.get('/pending/count', authMiddleware, adminMiddleware, async (req, res) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+
+  try {
+    const scope = await getAdminScope(req.user.id, req.user.role);
+    let { data: pendingRaw, error } = await supabase
+      .from('achievements')
+      .select('user_id, description, verified')
+      .eq('verified', false);
+
+    if (error) return res.status(500).json({ error: 'Failed to count pending achievements' });
+
+    let pending = (pendingRaw || [])
+      .filter(a => a.verified === false && (!a.description || !a.description.trim().toUpperCase().includes('[REJECTED:')));
+
+    if (!scope.hasFullAccess) {
+      const userIds = [...new Set(pending.map(a => a.user_id))];
+      if (userIds.length > 0) {
+        const { data: students } = await supabase
+          .from('students')
+          .select('user_id, class, batch')
+          .in('user_id', userIds);
+        
+        const advisorStudents = new Set(
+          (students || [])
+            .filter(s => s.class === scope.advisingClass && s.batch === scope.advisingBatch)
+            .map(s => s.user_id)
+        );
+        pending = pending.filter(a => advisorStudents.has(a.user_id));
+      } else {
+        pending = [];
+      }
+    }
+
+    res.json({ pendingCount: pending.length });
+  } catch (err) {
+    res.status(500).json({ error: 'Pending count failed' });
+  }
+});
 
 // ─── GET /api/achievements/all/pending ───────────────────────────────────────
 router.get('/all/pending', authMiddleware, adminMiddleware, async (req, res) => {
@@ -51,7 +146,6 @@ router.get('/all/pending', authMiddleware, adminMiddleware, async (req, res) => 
 
   const scope = await getAdminScope(req.user.id, req.user.role);
   
-  // Directly select unverified achievements (status column may not exist in DB schema)
   let { data: pendingRaw, error } = await supabase
     .from('achievements')
     .select('*')
@@ -60,14 +154,11 @@ router.get('/all/pending', authMiddleware, adminMiddleware, async (req, res) => 
 
   if (error) return res.status(500).json({ error: 'Failed to fetch pending achievements' });
 
-  // Filter out any rejected items (marked via [REJECTED: ...]) and format
   const pending = (pendingRaw || [])
-    .filter(a => a.verified === false && (!a.description || !a.description.trim().toUpperCase().includes('[REJECTED:')))
-    .map(formatAchievement);
+    .filter(a => a.verified === false && (!a.description || !a.description.trim().toUpperCase().includes('[REJECTED:')));
 
   if (pending.length === 0) return res.json([]);
 
-  // Enrich with student name, roll_no, class, batch, avatar_url
   const userIds = [...new Set(pending.map(a => a.user_id))];
   const { data: studentProfiles } = await supabase
     .from('students')
@@ -76,7 +167,9 @@ router.get('/all/pending', authMiddleware, adminMiddleware, async (req, res) => 
 
   const profileMap = Object.fromEntries((studentProfiles || []).map(s => [s.user_id, s]));
 
-  let result = pending.map(a => ({
+  const formattedPending = await Promise.all(pending.map(a => formatAchievement(a)));
+
+  let result = formattedPending.map(a => ({
     ...a,
     student_name: profileMap[a.user_id]?.name || 'Unknown',
     roll_no: profileMap[a.user_id]?.roll_no || '—',
@@ -85,7 +178,6 @@ router.get('/all/pending', authMiddleware, adminMiddleware, async (req, res) => 
     avatar_url: profileMap[a.user_id]?.avatar_url || null,
   }));
 
-  // Filter if faculty advisor
   if (!scope.hasFullAccess) {
     result = result.filter(a => a.class === scope.advisingClass && a.batch === scope.advisingBatch);
   }
@@ -101,7 +193,6 @@ router.get('/user/:userId', optionalAuthMiddleware, async (req, res) => {
     .eq('user_id', req.params.userId)
     .order('created_at', { ascending: false });
 
-  // If not the owner and not an admin/faculty, only return verified/approved achievements
   const isOwnerOrAdmin = req.user && (req.user.id === req.params.userId || req.user.role !== 'student');
   if (!isOwnerOrAdmin) {
     query = query.or('status.eq.approved,verified.eq.true');
@@ -121,7 +212,7 @@ router.get('/user/:userId', optionalAuthMiddleware, async (req, res) => {
   }
 
   if (error) return res.status(500).json({ error: 'Failed to fetch achievements' });
-  const formatted = (achs || []).map(formatAchievement);
+  const formatted = await Promise.all((achs || []).map(a => formatAchievement(a)));
   res.json(formatted);
 });
 
@@ -158,7 +249,6 @@ router.post('/', authMiddleware, async (req, res) => {
     .single();
 
   if (isMissingColumnError(error)) {
-    // Retry without status / rejection_reason if columns don't exist yet
     delete insertPayload.status;
     delete insertPayload.rejection_reason;
     const fallbackRes = await supabase
@@ -171,59 +261,70 @@ router.post('/', authMiddleware, async (req, res) => {
   }
 
   if (error || !inserted) return res.status(500).json({ error: 'Failed to add achievement' });
-  await clearAchievementCaches();
-  res.status(201).json(formatAchievement(inserted));
+
+  await clearTargetedCaches(req.user.id);
+  await safeRecalculateCompetitiveProfile(req.user.id);
+
+  const canonical = await getStudentCanonicalScore(req.user.id);
+  const formatted = await formatAchievement(inserted);
+
+  res.status(201).json({
+    success: true,
+    achievement: formatted,
+    score: canonical.score,
+    achievement_count: canonical.achievement_count
+  });
 });
-
-async function getStudentCanonicalScore(userId) {
-  if (!userId) return { score: 0, achievement_count: 0 };
-  let { data: achs, error } = await supabase
-    .from('achievements')
-    .select('points, status, verified, description')
-    .eq('user_id', userId);
-
-  if (isMissingColumnError(error)) {
-    const fallback = await supabase
-      .from('achievements')
-      .select('points, verified, description')
-      .eq('user_id', userId);
-    achs = fallback.data || [];
-  }
-
-  const approvedAchs = (achs || []).filter(a => 
-    (a.status === 'approved' || a.verified === true) && 
-    (!a.description || !a.description.trim().toUpperCase().includes('[REJECTED:'))
-  );
-
-  const score = approvedAchs.reduce((sum, a) => sum + (a.points || 0), 0);
-  const achievement_count = approvedAchs.length;
-  return { score, achievement_count };
-}
 
 // ─── DELETE /api/achievements/:id ────────────────────────────────────────────
 router.delete('/:id', authMiddleware, async (req, res) => {
-  let { data: ach } = await supabase
+  const { data: ach } = await supabase
     .from('achievements')
-    .select('user_id')
+    .select('user_id, proof_url')
     .eq('id', req.params.id)
     .maybeSingle();
 
   if (!ach) return res.status(404).json({ error: 'Achievement not found' });
   
-  // Allow if owner OR if non-student (faculty/admin)
+  // Scope Authorization Check BEFORE DB deletion & BEFORE storage cleanup!
   const isOwner = ach.user_id === req.user.id;
-  const isTeacher = req.user.role !== 'student';
-  if (!isOwner && !isTeacher) {
+  let isAuthorized = isOwner;
+
+  if (!isOwner) {
+    const scope = await getAdminScope(req.user.id, req.user.role);
+    if (scope.hasFullAccess) {
+      isAuthorized = true;
+    } else if (req.user.role === 'faculty') {
+      const { data: student } = await supabase
+        .from('students')
+        .select('class, batch')
+        .eq('user_id', ach.user_id)
+        .maybeSingle();
+      if (student && student.class === scope.advisingClass && student.batch === scope.advisingBatch) {
+        isAuthorized = true;
+      }
+    }
+  }
+
+  if (!isAuthorized) {
     return res.status(403).json({ error: 'Not authorized to delete this achievement.' });
   }
 
   const { error } = await supabase.from('achievements').delete().eq('id', req.params.id);
   if (error) return res.status(500).json({ error: 'Failed to delete achievement' });
 
-  await clearAchievementCaches();
+  // Cleanup storage object if present (non-blocking)
+  if (ach.proof_url) {
+    await deleteStorageObject(ach.proof_url);
+  }
+
+  await clearTargetedCaches(ach.user_id);
+  await safeRecalculateCompetitiveProfile(ach.user_id);
+
   const canonical = await getStudentCanonicalScore(ach.user_id);
 
   res.json({
+    success: true,
     message: 'Achievement deleted',
     score: canonical.score,
     achievement_count: canonical.achievement_count
@@ -260,7 +361,6 @@ router.patch('/:id/approve', authMiddleware, adminMiddleware, async (req, res) =
     .single();
 
   if (isMissingColumnError(error)) {
-    // If description had [REJECTED: ...], clean it up
     let cleanDesc = ach.description || '';
     if (cleanDesc.startsWith('[REJECTED:')) {
       const match = cleanDesc.match(/^\[REJECTED:\s*[\s\S]*?\]\s*(.*)$/);
@@ -277,8 +377,19 @@ router.patch('/:id/approve', authMiddleware, adminMiddleware, async (req, res) =
   }
 
   if (error || !updatedAch) return res.status(500).json({ error: 'Failed to approve achievement' });
-  await clearAchievementCaches();
-  res.json(formatAchievement(updatedAch));
+
+  await clearTargetedCaches(ach.user_id);
+  await safeRecalculateCompetitiveProfile(ach.user_id);
+
+  const canonical = await getStudentCanonicalScore(ach.user_id);
+  const formatted = await formatAchievement(updatedAch);
+
+  res.json({
+    success: true,
+    achievement: formatted,
+    score: canonical.score,
+    achievement_count: canonical.achievement_count
+  });
 });
 
 // ─── PATCH /api/achievements/:id/reject ──────────────────────────────────────
@@ -320,7 +431,6 @@ router.patch('/:id/reject', authMiddleware, adminMiddleware, async (req, res) =>
     }
     const cleanDesc = `[REJECTED: ${reasonText}] ${existingDesc}`.trim();
 
-    // Fallback attempt 1: Try updating status and description
     let fallbackRes = await supabase
       .from('achievements')
       .update({ status: 'rejected', verified: false, description: cleanDesc })
@@ -329,7 +439,6 @@ router.patch('/:id/reject', authMiddleware, adminMiddleware, async (req, res) =>
       .single();
 
     if (isMissingColumnError(fallbackRes.error)) {
-      // Fallback attempt 2: Update verified and description only
       fallbackRes = await supabase
         .from('achievements')
         .update({ verified: false, description: cleanDesc })
@@ -343,12 +452,22 @@ router.patch('/:id/reject', authMiddleware, adminMiddleware, async (req, res) =>
   }
 
   if (error || !updatedAch) return res.status(500).json({ error: 'Failed to reject achievement' });
-  await clearAchievementCaches();
-  res.json(formatAchievement(updatedAch));
+
+  await clearTargetedCaches(ach.user_id);
+  await safeRecalculateCompetitiveProfile(ach.user_id);
+
+  const canonical = await getStudentCanonicalScore(ach.user_id);
+  const formatted = await formatAchievement(updatedAch);
+
+  res.json({
+    success: true,
+    achievement: formatted,
+    score: canonical.score,
+    achievement_count: canonical.achievement_count
+  });
 });
 
 // ─── PATCH /api/achievements/:id/verify ──────────────────────────────────────
-// Backward compatibility verification route supporting both approve & reject
 router.patch('/:id/verify', authMiddleware, adminMiddleware, async (req, res) => {
   const { action, verified, rejection_reason } = req.body;
   if (action === 'reject' || verified === false) {
@@ -359,5 +478,3 @@ router.patch('/:id/verify', authMiddleware, adminMiddleware, async (req, res) =>
 });
 
 module.exports = router;
-
-

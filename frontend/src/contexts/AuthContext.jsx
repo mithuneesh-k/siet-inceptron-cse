@@ -3,30 +3,51 @@ import client from '../api/client';
 
 const AuthContext = createContext(null);
 
+function normalizeUser(userData) {
+  if (!userData) return null;
+  const isAdmin = Boolean(
+    userData.is_admin ||
+    userData.role === 'admin' ||
+    userData.role === 'faculty'
+  );
+  return {
+    ...userData,
+    is_admin: isAdmin
+  };
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('SIET_user')); } catch { return null; }
+    try {
+      const stored = localStorage.getItem('SIET_user');
+      return stored ? normalizeUser(JSON.parse(stored)) : null;
+    } catch {
+      return null;
+    }
   });
 
   const login = useCallback(async (email, password) => {
     const { data } = await client.post('/auth/login', { email, password });
+    const normalized = normalizeUser(data.user);
     localStorage.setItem('SIET_token', data.token);
-    localStorage.setItem('SIET_user', JSON.stringify(data.user));
-    setUser(data.user);
-    return data.user;
+    localStorage.setItem('SIET_user', JSON.stringify(normalized));
+    setUser(normalized);
+    return normalized;
   }, []);
 
   const register = useCallback(async (formData) => {
     const { data } = await client.post('/auth/register', formData);
+    const normalized = normalizeUser(data.user);
     localStorage.setItem('SIET_token', data.token);
-    localStorage.setItem('SIET_user', JSON.stringify(data.user));
-    setUser(data.user);
-    return data.user;
+    localStorage.setItem('SIET_user', JSON.stringify(normalized));
+    setUser(normalized);
+    return normalized;
   }, []);
 
   const logout = useCallback(() => {
     localStorage.removeItem('SIET_token');
     localStorage.removeItem('SIET_user');
+    sessionStorage.removeItem('SIET_admin_scope');
     setUser(null);
   }, []);
 
@@ -34,8 +55,9 @@ export function AuthProvider({ children }) {
     if (!user) return;
     try {
       const { data } = await client.get(`/users/${user.id}`);
-      localStorage.setItem('SIET_user', JSON.stringify(data));
-      setUser(data);
+      const normalized = normalizeUser(data);
+      localStorage.setItem('SIET_user', JSON.stringify(normalized));
+      setUser(normalized);
     } catch {}
   }, [user]);
 
@@ -43,8 +65,9 @@ export function AuthProvider({ children }) {
     if (!user?.id) return;
     const handleUpdate = () => {
       client.get(`/users/${user.id}`).then(({ data }) => {
-        localStorage.setItem('SIET_user', JSON.stringify(data));
-        setUser(data);
+        const normalized = normalizeUser(data);
+        localStorage.setItem('SIET_user', JSON.stringify(normalized));
+        setUser(normalized);
       }).catch(() => {});
     };
 

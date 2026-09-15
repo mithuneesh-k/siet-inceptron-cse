@@ -20,7 +20,8 @@ async function runLiveProbe() {
     console.log('🔍 Probing LeetCode GraphQL API (user: "tourist")...');
     const lcMetrics = await lcAdapter.fetchMetrics('tourist');
     const lcNorm = lcAdapter.normalizeMetrics(lcMetrics.rawMetrics);
-    console.log(`  ✅ LeetCode API OK! Total Solved: ${lcMetrics.profile.totalSolved}, Normalized Score: ${lcNorm.score}`);
+    const totalSolved = (lcMetrics.profile.easySolved || 0) + (lcMetrics.profile.mediumSolved || 0) + (lcMetrics.profile.hardSolved || 0);
+    console.log(`  ✅ LeetCode API OK! Solved (E:${lcMetrics.profile.easySolved || 0}, M:${lcMetrics.profile.mediumSolved || 0}, H:${lcMetrics.profile.hardSolved || 0} -> Total:${totalSolved}), Normalized Score: ${lcNorm.score}`);
   } catch (err) {
     console.error('  ⚠️ LeetCode Live Probe Warning:', err.message || err);
   }
