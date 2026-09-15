@@ -108,16 +108,56 @@ export default function Profile() {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const res = await client.post('/uploads/proof', formData);
-      const uploadedUrl = res.data.url || res.data.storage_ref;
+
+      const token = localStorage.getItem('SIET_token');
+      const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
+
+      const response = await fetch(`${apiBase}/uploads/proof`, {
+        method: 'POST',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        body: formData
+      });
+
+      const resData = await response.json();
+      if (!response.ok) {
+        throw new Error(resData.error || 'Failed to upload photo/document');
+      }
+
+      const uploadedUrl = resData.url || resData.storage_ref;
       setForm(f => ({ ...f, proof_url: uploadedUrl }));
       setUploadedFileName(file.name);
       showToast('Photo/Document uploaded successfully!');
-    } catch (err) {
-      console.error('Photo upload error:', err);
-      showToast(err.response?.data?.error || 'Failed to upload photo/document', 'error');
-    } finally {
       setUploadingFile(false);
+    } catch (err) {
+      console.warn('Multipart upload fallback to Base64:', err);
+      // Secondary fallback: Convert to Base64 data URL and send via JSON
+      try {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = async () => {
+          try {
+            const res = await client.post('/uploads/proof', {
+              fileData: reader.result,
+              fileName: file.name
+            });
+            const uploadedUrl = res.data.url || res.data.storage_ref;
+            setForm(f => ({ ...f, proof_url: uploadedUrl }));
+            setUploadedFileName(file.name);
+            showToast('Photo/Document uploaded successfully!');
+          } catch (fallbackErr) {
+            showToast(fallbackErr.response?.data?.error || err.message || 'Failed to upload photo/document', 'error');
+          } finally {
+            setUploadingFile(false);
+          }
+        };
+        reader.onerror = () => {
+          showToast(err.message || 'Failed to upload photo/document', 'error');
+          setUploadingFile(false);
+        };
+      } catch (fErr) {
+        showToast(err.message || 'Failed to upload photo/document', 'error');
+        setUploadingFile(false);
+      }
     }
   };
 

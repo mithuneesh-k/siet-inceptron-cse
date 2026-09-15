@@ -102,18 +102,31 @@ async function deleteStorageObject(storageRef) {
 router.post('/proof', authMiddleware, (req, res, next) => {
   upload.single('file')(req, res, (err) => {
     if (err) {
-      console.error('Multer upload error:', err);
-      return res.status(400).json({ error: err.message || 'File upload error' });
+      console.error('Multer upload notice:', err.message);
     }
     next();
   });
 }, async (req, res, next) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
+    let fileObj = req.file;
+
+    // Base64 JSON fallback if multipart was converted or sent as dataUrl
+    if (!fileObj && req.body && req.body.fileData) {
+      const match = req.body.fileData.match(/^data:(image\/\w+|application\/pdf);base64,(.*)$/);
+      if (match) {
+        fileObj = {
+          mimetype: match[1],
+          buffer: Buffer.from(match[2], 'base64'),
+          originalname: req.body.fileName || 'certificate'
+        };
+      }
     }
 
-    const { buffer, mimetype, originalname } = req.file;
+    if (!fileObj) {
+      return res.status(400).json({ error: 'No file uploaded. Please select a photo (JPG/PNG/WEBP) or PDF file.' });
+    }
+
+    const { buffer, mimetype, originalname } = fileObj;
     if (buffer.length > 5 * 1024 * 1024) {
       return res.status(400).json({ error: 'File size exceeds maximum limit of 5 MB' });
     }
