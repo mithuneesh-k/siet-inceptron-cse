@@ -2,14 +2,8 @@ const SCORING_CONFIG = require('../config/scoringConfig');
 const { getAdapter } = require('../platforms');
 
 /**
- * Calculates a student's full competitive profile & score breakdown.
- * 
- * @param {Object} params
- * @param {Array} params.platformConnections Array of platform connection objects:
- *   [{ platform_code, username, ownership_status, raw_metrics, last_synced_at, snapshot_score }]
- * @param {Array} params.approvedAchievements Array of approved student achievements:
- *   [{ points, type, status, verified, description }]
- * @returns {Object} Canonical Competitive Profile & Breakdown DTO
+ * Canonical Scoring Engine
+ * Order-independent deterministic category aggregation, bounded breadth bonus, and Option A certification policy.
  */
 function calculateCompetitiveProfile({ platformConnections = [], approvedAchievements = [] }) {
   const version = SCORING_CONFIG.version;
@@ -21,25 +15,41 @@ function calculateCompetitiveProfile({ platformConnections = [], approvedAchieve
     college_achievements: { score: 0, weight: SCORING_CONFIG.categoryWeights.college_achievements, weightedScore: 0, platforms: {} }
   };
 
+  // 1. Group & Deduplicate Platform Connections by platform_code
+  const platformDeduplicationMap = new Map();
+  (platformConnections || []).forEach(conn => {
+    const code = (conn.platform_code || '').toLowerCase().trim();
+    if (!code) return;
+    // Prefer VERIFIED connection if duplicate records exist
+    if (!platformDeduplicationMap.has(code) || conn.ownership_status === 'VERIFIED') {
+      platformDeduplicationMap.set(code, conn);
+    }
+  });
+
+  const categoryScoresListMap = {
+    problem_solving: [],
+    competitive_programming: [],
+    open_source: [],
+    certifications: [],
+    college_achievements: []
+  };
+
   let activeVerifiedPlatformCount = 0;
 
-  // 1. Process Platform Connections
-  (platformConnections || []).forEach(conn => {
-    const code = (conn.platform_code || '').toLowerCase();
+  // Process Deduplicated Connections
+  for (const [code, conn] of platformDeduplicationMap.entries()) {
     const adapter = getAdapter(code);
     const categoryKey = adapter ? adapter.category : SCORING_CONFIG.platformMapping[code]?.category;
-
-    if (!categoryKey || !categories[categoryKey]) return;
+    if (!categoryKey || !categories[categoryKey]) continue;
 
     const isVerified = (conn.ownership_status || '').toUpperCase() === 'VERIFIED';
     let platformScore = 0;
     let normalizedRes = { metrics: [] };
 
-    if (isVerified && adapter && conn.raw_metrics) {
+    if (isVerified && adapter && conn.raw_metrics && Object.keys(conn.raw_metrics).length > 0) {
       normalizedRes = adapter.normalizeMetrics(conn.raw_metrics || {});
       platformScore = Math.min(SCORING_CONFIG.maxCategoryScore, Math.max(0, normalizedRes.score || 0));
     } else if (isVerified && conn.snapshot_score != null) {
-      // Preserved snapshot score on sync failure
       platformScore = Math.min(SCORING_CONFIG.maxCategoryScore, Math.max(0, conn.snapshot_score));
     }
 
@@ -47,12 +57,8 @@ function calculateCompetitiveProfile({ platformConnections = [], approvedAchieve
       activeVerifiedPlatformCount++;
     }
 
-    // Category platform aggregation: Bounded highest platform score + secondary contribution
-    const currentCatScore = categories[categoryKey].score;
-    if (platformScore > currentCatScore) {
-      categories[categoryKey].score = Math.min(SCORING_CONFIG.maxCategoryScore, platformScore + Math.round(currentCatScore * 0.1));
-    } else if (platformScore > 0) {
-      categories[categoryKey].score = Math.min(SCORING_CONFIG.maxCategoryScore, currentCatScore + Math.round(platformScore * 0.1));
+    if (isVerified && platformScore > 0) {
+      categoryScoresListMap[categoryKey].push(platformScore);
     }
 
     categories[categoryKey].platforms[code] = {
@@ -64,18 +70,43 @@ function calculateCompetitiveProfile({ platformConnections = [], approvedAchieve
       metrics: isVerified ? (normalizedRes.metrics || []) : [],
       lastSyncedAt: conn.last_synced_at || null
     };
+  }
+
+  // 2. Order-Independent Category Score Aggregation
+  // Formula: strongest_score + round(0.10 * sum(secondary_scores))
+  Object.keys(categoryScoresListMap).forEach(catKey => {
+    if (catKey === 'college_achievements' || catKey === 'certifications') return; // Handled via achievements below
+    const scores = categoryScoresListMap[catKey].sort((a, b) => b - a); // Descending
+    if (scores.length === 0) {
+      categories[catKey].score = 0;
+    } else {
+      const strongest = scores[0];
+      const secondariesSum = scores.slice(1).reduce((sum, s) => sum + s, 0);
+      const aggScore = strongest + Math.round(secondariesSum * 0.10);
+      categories[catKey].score = Math.min(SCORING_CONFIG.maxCategoryScore, Math.max(0, aggScore));
+    }
   });
 
-  // 2. Process Department Achievements (college_achievements)
-  const achievementPointsSum = (approvedAchievements || []).reduce((sum, ach) => {
-    return sum + (ach.points || 0);
-  }, 0);
+  // 3. Process Achievements (Separated by Type: Certification vs College Achievements - Option A Policy)
+  let certPoints = 0;
+  let collegePoints = 0;
 
-  // Map 100 achievement points to ~200 category score, capped at 1000
-  const collegeAchScore = Math.min(SCORING_CONFIG.maxCategoryScore, Math.max(0, Math.round(achievementPointsSum * 2)));
-  categories.college_achievements.score = collegeAchScore;
+  (approvedAchievements || []).forEach(ach => {
+    const isApproved = (ach.status === 'approved' || ach.verified === true) &&
+      (!ach.description || !ach.description.trim().toUpperCase().includes('[REJECTED:'));
+    if (!isApproved) return;
 
-  // 3. Compute Weighted Category Scores
+    if (ach.type === 'certification' || ach.type === 'course') {
+      certPoints += (ach.points || 0);
+    } else {
+      collegePoints += (ach.points || 0);
+    }
+  });
+
+  categories.certifications.score = Math.min(SCORING_CONFIG.maxCategoryScore, Math.max(0, Math.round(certPoints * 2)));
+  categories.college_achievements.score = Math.min(SCORING_CONFIG.maxCategoryScore, Math.max(0, Math.round(collegePoints * 2)));
+
+  // 4. Compute Weighted Category Scores
   let baseWeightedSum = 0;
   Object.keys(categories).forEach(catKey => {
     const cat = categories[catKey];
@@ -83,10 +114,13 @@ function calculateCompetitiveProfile({ platformConnections = [], approvedAchieve
     baseWeightedSum += cat.weightedScore;
   });
 
-  // 4. Compute Bounded Breadth Bonus
-  const breadthBonus = Math.min(SCORING_CONFIG.maxBreadthBonus, activeVerifiedPlatformCount * SCORING_CONFIG.breadthBonusPerPlatform);
+  // 5. Bounded Breadth Bonus Model (Section 9)
+  // activeCount >= 2 ? min(40, (activeCount - 1) * 15) : 0
+  const breadthBonus = activeVerifiedPlatformCount >= 2
+    ? Math.min(SCORING_CONFIG.maxBreadthBonus, (activeVerifiedPlatformCount - 1) * 15)
+    : 0;
 
-  // 5. Final Bounded Overall Score
+  // 6. Bounded Overall Score
   const overallScore = Math.min(SCORING_CONFIG.maxOverallScore, Math.max(0, Math.round(baseWeightedSum + breadthBonus)));
 
   return {

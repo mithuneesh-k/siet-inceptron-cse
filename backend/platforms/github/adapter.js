@@ -39,10 +39,10 @@ class GitHubAdapter extends BasePlatformAdapter {
       profileUrl: data.html_url,
       bio: data.bio || '',
       location: data.location || '',
-      publicRepos: data.public_repos || 0,
-      publicGists: data.public_gists || 0,
-      followers: data.followers || 0,
-      following: data.following || 0,
+      publicRepos: this.safeNumber(data.public_repos, 0),
+      publicGists: this.safeNumber(data.public_gists, 0),
+      followers: this.safeNumber(data.followers, 0),
+      following: this.safeNumber(data.following, 0),
       createdAt: data.created_at
     };
   }
@@ -51,8 +51,8 @@ class GitHubAdapter extends BasePlatformAdapter {
     const profile = await this.fetchProfile(username);
     const { cleanUsername } = await this.validateUsername(username);
     
-    let totalStars = 0;
-    let totalForks = 0;
+    let totalStars = null;
+    let totalForks = null;
 
     try {
       const reposRes = await fetch(`https://api.github.com/users/${cleanUsername}/repos?per_page=100&type=owner`, {
@@ -61,10 +61,12 @@ class GitHubAdapter extends BasePlatformAdapter {
       if (reposRes.ok) {
         const repos = await reposRes.json();
         if (Array.isArray(repos)) {
+          totalStars = 0;
+          totalForks = 0;
           repos.forEach(repo => {
             if (!repo.fork) {
-              totalStars += repo.stargazers_count || 0;
-              totalForks += repo.forks_count || 0;
+              totalStars += this.safeNumber(repo.stargazers_count, 0);
+              totalForks += this.safeNumber(repo.forks_count, 0);
             }
           });
         }
@@ -86,24 +88,28 @@ class GitHubAdapter extends BasePlatformAdapter {
   }
 
   normalizeMetrics(rawMetrics) {
-    const repos = Math.min(rawMetrics.public_repos || 0, 50);
-    const stars = Math.min(rawMetrics.total_stars || 0, 100);
-    const followers = Math.min(rawMetrics.followers || 0, 50);
-    const gists = Math.min(rawMetrics.public_gists || 0, 20);
+    const reposVal = this.safeNumber(rawMetrics?.public_repos, null);
+    const starsVal = this.safeNumber(rawMetrics?.total_stars, null);
+    const followersVal = this.safeNumber(rawMetrics?.followers, null);
+    const gistsVal = this.safeNumber(rawMetrics?.public_gists, null);
 
-    // Formula: (repos * 10) + (stars * 4) + (followers * 2) + (gists * 5) bounded to 1000
-    const rawScore = (repos * 10) + (stars * 4) + (followers * 2) + (gists * 5);
-    const score = Math.min(1000, Math.max(0, rawScore));
+    const reposScore = reposVal !== null ? Math.min(50, reposVal) * 10 : 0;
+    const starsScore = starsVal !== null ? Math.min(100, starsVal) * 4 : 0;
+    const followersScore = followersVal !== null ? Math.min(50, followersVal) * 2 : 0;
+    const gistsScore = gistsVal !== null ? Math.min(20, gistsVal) * 5 : 0;
+
+    const rawScore = reposScore + starsScore + followersScore + gistsScore;
+    const score = Math.min(1000, Math.max(0, Math.round(rawScore)));
 
     return {
       platformCode: this.platformCode,
       category: this.category,
       score,
       metrics: [
-        { metric_key: 'public_repos', raw_value: rawMetrics.public_repos || 0, normalized_value: repos * 10, category: 'open_source', availability: 'available' },
-        { metric_key: 'total_stars', raw_value: rawMetrics.total_stars || 0, normalized_value: stars * 4, category: 'open_source', availability: 'available' },
-        { metric_key: 'followers', raw_value: rawMetrics.followers || 0, normalized_value: followers * 2, category: 'open_source', availability: 'available' },
-        { metric_key: 'public_gists', raw_value: rawMetrics.public_gists || 0, normalized_value: gists * 5, category: 'open_source', availability: 'available' }
+        { metric_key: 'public_repos', raw_value: reposVal, normalized_value: reposScore, category: 'open_source', availability: reposVal !== null ? 'available' : 'unavailable' },
+        { metric_key: 'total_stars', raw_value: starsVal, normalized_value: starsScore, category: 'open_source', availability: starsVal !== null ? 'available' : 'unavailable' },
+        { metric_key: 'followers', raw_value: followersVal, normalized_value: followersScore, category: 'open_source', availability: followersVal !== null ? 'available' : 'unavailable' },
+        { metric_key: 'public_gists', raw_value: gistsVal, normalized_value: gistsScore, category: 'open_source', availability: gistsVal !== null ? 'available' : 'unavailable' }
       ]
     };
   }

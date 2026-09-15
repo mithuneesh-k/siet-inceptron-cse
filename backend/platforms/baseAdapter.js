@@ -11,6 +11,13 @@ class BasePlatformAdapter {
     this.verificationMethod = 'NONE'; // 'BIO_TOKEN' | 'LOCATION_TOKEN' | 'NONE'
   }
 
+  safeNumber(val, defaultVal = 0) {
+    if (val === null || val === undefined) return null;
+    const num = Number(val);
+    if (!Number.isFinite(num) || Number.isNaN(num)) return defaultVal;
+    return Math.max(0, num);
+  }
+
   async validateUsername(username) {
     if (!username || typeof username !== 'string' || !username.trim()) {
       return { valid: false, reason: 'Username is empty' };

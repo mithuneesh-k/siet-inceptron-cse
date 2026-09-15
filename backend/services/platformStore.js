@@ -55,6 +55,28 @@ async function getPlatformConnection(userId, platformCode) {
   return { configured: true, connection: data || null };
 }
 
+/**
+ * Cross-user protection: Checks if another user holds a VERIFIED connection to the handle.
+ */
+async function findVerifiedConnectionByHandle(platformCode, username) {
+  if (!username) return null;
+  const cleanHandle = username.trim().toLowerCase();
+
+  const { data, error } = await supabase
+    .from('student_platform_connections')
+    .select('*')
+    .eq('platform_code', platformCode.toLowerCase())
+    .eq('ownership_status', 'VERIFIED');
+
+  if (error) {
+    if (isTableMissingError(error)) return null;
+    throw error;
+  }
+
+  const existing = (data || []).find(conn => conn.username.toLowerCase() === cleanHandle);
+  return existing || null;
+}
+
 async function upsertPlatformConnection(userId, platformData) {
   const payload = {
     user_id: userId,
@@ -62,14 +84,14 @@ async function upsertPlatformConnection(userId, platformData) {
     username: platformData.username,
     connection_status: platformData.connectionStatus || 'LINKED_UNVERIFIED',
     ownership_status: platformData.ownershipStatus || 'UNVERIFIED',
-    verification_token: platformData.verificationToken || null,
     verification_token_hash: platformData.verificationTokenHash || null,
     verification_expires_at: platformData.verificationExpiresAt || null,
     verified_at: platformData.verifiedAt || null,
     raw_metrics: platformData.rawMetrics || {},
     snapshot_score: platformData.snapshotScore || 0,
     sync_status: platformData.syncStatus || 'IDLE',
-    last_synced_at: platformData.lastSyncedAt || new Date().toISOString(),
+    last_synced_at: platformData.lastSyncedAt || null,
+    last_attempted_at: platformData.lastAttemptedAt || new Date().toISOString(),
     last_error_message: platformData.lastErrorMessage || null,
     updated_at: new Date().toISOString()
   };
@@ -134,8 +156,13 @@ async function recalculateAndPersistProfile(userId) {
   // 2. Get student approved achievements from existing achievements table
   const { data: achs, error: achErr } = await supabase
     .from('achievements')
-    .select('points, status, verified, description')
+    .select('points, status, verified, description, type')
     .eq('user_id', userId);
+
+  if (achErr) {
+    console.error('Recalculate profile achievement query error:', achErr);
+    throw new Error(`Failed to query achievements for user ${userId}: ${achErr.message}`);
+  }
 
   const approvedAchs = (achs || []).filter(a => 
     (a.status === 'approved' || a.verified === true) && 
@@ -190,14 +217,14 @@ async function logSyncAudit(userId, platformCode, status, errorCategory, message
       message: message || null
     });
   } catch (e) {
-    // Non-blocking log warning
-    console.warn('Sync audit log insert failed:', e.message);
+    console.warn('Sync audit log insert warning:', e.message);
   }
 }
 
 module.exports = {
   getUserPlatformConnections,
   getPlatformConnection,
+  findVerifiedConnectionByHandle,
   upsertPlatformConnection,
   deletePlatformConnection,
   getCompetitiveProfile,

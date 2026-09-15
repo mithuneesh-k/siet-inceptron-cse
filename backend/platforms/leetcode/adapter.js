@@ -65,12 +65,19 @@ class LeetCodeAdapter extends BasePlatformAdapter {
     }
 
     const user = json.data.matchedUser;
-    const contest = json.data.userContestRanking || {};
+    const contest = json.data.userContestRanking || null;
     const submitStats = user.submitStats?.acSubmissionNum || [];
 
-    const easyObj = submitStats.find(s => s.difficulty === 'Easy') || { count: 0 };
-    const mediumObj = submitStats.find(s => s.difficulty === 'Medium') || { count: 0 };
-    const hardObj = submitStats.find(s => s.difficulty === 'Hard') || { count: 0 };
+    const easyObj = submitStats.find(s => s.difficulty === 'Easy');
+    const mediumObj = submitStats.find(s => s.difficulty === 'Medium');
+    const hardObj = submitStats.find(s => s.difficulty === 'Hard');
+
+    const easyVal = easyObj ? this.safeNumber(easyObj.count, 0) : null;
+    const mediumVal = mediumObj ? this.safeNumber(mediumObj.count, 0) : null;
+    const hardVal = hardObj ? this.safeNumber(hardObj.count, 0) : null;
+
+    const contestRating = contest ? this.safeNumber(contest.rating, 0) : null;
+    const contestsAttended = contest ? this.safeNumber(contest.attendedContestsCount, 0) : null;
 
     return {
       username: user.username,
@@ -78,13 +85,12 @@ class LeetCodeAdapter extends BasePlatformAdapter {
       avatarUrl: user.profile?.userAvatar,
       profileUrl: `https://leetcode.com/u/${user.username}/`,
       aboutMe: user.profile?.aboutMe || '',
-      ranking: user.profile?.ranking || 0,
-      easySolved: easyObj.count || 0,
-      mediumSolved: mediumObj.count || 0,
-      hardSolved: hardObj.count || 0,
-      totalSolved: (easyObj.count || 0) + (mediumObj.count || 0) + (hardObj.count || 0),
-      contestRating: Math.round(contest.rating || 0),
-      contestsAttended: contest.attendedContestsCount || 0
+      ranking: this.safeNumber(user.profile?.ranking, null),
+      easySolved: easyVal,
+      mediumSolved: mediumVal,
+      hardSolved: hardVal,
+      contestRating,
+      contestsAttended
     };
   }
 
@@ -96,7 +102,6 @@ class LeetCodeAdapter extends BasePlatformAdapter {
         easy_solved: profile.easySolved,
         medium_solved: profile.mediumSolved,
         hard_solved: profile.hardSolved,
-        total_solved: profile.totalSolved,
         ranking: profile.ranking,
         contest_rating: profile.contestRating,
         contests_attended: profile.contestsAttended
@@ -105,31 +110,31 @@ class LeetCodeAdapter extends BasePlatformAdapter {
   }
 
   normalizeMetrics(rawMetrics) {
-    const easy = rawMetrics.easy_solved || 0;
-    const medium = rawMetrics.medium_solved || 0;
-    const hard = rawMetrics.hard_solved || 0;
-    const contestRating = rawMetrics.contest_rating || 0;
+    const easyVal = this.safeNumber(rawMetrics?.easy_solved, null);
+    const medVal = this.safeNumber(rawMetrics?.medium_solved, null);
+    const hardVal = this.safeNumber(rawMetrics?.hard_solved, null);
+    const contestRatingVal = this.safeNumber(rawMetrics?.contest_rating, null);
 
-    // Weighting: Easy = 2pts (max 200), Medium = 5pts (max 400), Hard = 10pts (max 300)
-    const easyPts = Math.min(200, easy * 2);
-    const medPts = Math.min(400, medium * 5);
-    const hardPts = Math.min(300, hard * 10);
+    const easyPts = easyVal !== null ? Math.min(200, easyVal * 2) : 0;
+    const medPts = medVal !== null ? Math.min(400, medVal * 5) : 0;
+    const hardPts = hardVal !== null ? Math.min(300, hardVal * 10) : 0;
 
-    // Contest rating bonus: rating > 1500 gets bonus up to 100pts
-    const ratingBonus = contestRating > 1200 ? Math.min(100, Math.round((contestRating - 1200) * 0.2)) : 0;
+    const ratingBonus = (contestRatingVal !== null && contestRatingVal > 1200) 
+      ? Math.min(100, Math.round((contestRatingVal - 1200) * 0.2)) 
+      : 0;
 
     const rawScore = easyPts + medPts + hardPts + ratingBonus;
-    const score = Math.min(1000, Math.max(0, rawScore));
+    const score = Math.min(1000, Math.max(0, Math.round(rawScore)));
 
     return {
       platformCode: this.platformCode,
       category: this.category,
       score,
       metrics: [
-        { metric_key: 'easy_solved', raw_value: easy, normalized_value: easyPts, category: 'problem_solving', availability: 'available' },
-        { metric_key: 'medium_solved', raw_value: medium, normalized_value: medPts, category: 'problem_solving', availability: 'available' },
-        { metric_key: 'hard_solved', raw_value: hard, normalized_value: hardPts, category: 'problem_solving', availability: 'available' },
-        { metric_key: 'contest_rating', raw_value: contestRating, normalized_value: ratingBonus, category: 'problem_solving', availability: 'available' }
+        { metric_key: 'easy_solved', raw_value: easyVal, normalized_value: easyPts, category: 'problem_solving', availability: easyVal !== null ? 'available' : 'unavailable' },
+        { metric_key: 'medium_solved', raw_value: medVal, normalized_value: medPts, category: 'problem_solving', availability: medVal !== null ? 'available' : 'unavailable' },
+        { metric_key: 'hard_solved', raw_value: hardVal, normalized_value: hardPts, category: 'problem_solving', availability: hardVal !== null ? 'available' : 'unavailable' },
+        { metric_key: 'contest_rating', raw_value: contestRatingVal, normalized_value: ratingBonus, category: 'problem_solving', availability: contestRatingVal !== null ? 'available' : 'unavailable' }
       ]
     };
   }

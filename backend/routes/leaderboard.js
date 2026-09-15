@@ -2,7 +2,11 @@ const express = require('express');
 const router = express.Router();
 const { supabase } = require('../db/supabase');
 
-async function buildLeaderboardFromData(batchFilter, classFilter, limit) {
+/**
+ * Legacy Leaderboard: Authoritative for existing verified achievement points system.
+ * Restores valid-student achievement filtering (prevents ghost/orphan achievements).
+ */
+async function buildLegacyLeaderboard(batchFilter, classFilter, limit) {
   let query = supabase
     .from('students')
     .select('user_id, name, roll_no, reg_no, class, batch, year, github, linkedin, avatar_url');
@@ -16,27 +20,20 @@ async function buildLeaderboardFromData(batchFilter, classFilter, limit) {
     return [];
   }
 
-  // 1. Fetch achievements data
+  const validStudentIds = new Set(students.map(s => s.user_id));
+
+  // Fetch verified achievements
   const { data: achievements } = await supabase
     .from('achievements')
-    .select('user_id, points, type, title, position, verified, description')
+    .select('user_id, points, type, title, position, verified, status, description')
     .eq('verified', true);
-
-  // 2. Fetch competitive profiles if table exists
-  let compProfileMap = new Map();
-  try {
-    const { data: compProfiles } = await supabase
-      .from('student_competitive_profiles')
-      .select('*');
-    if (compProfiles) {
-      compProfiles.forEach(cp => compProfileMap.set(cp.user_id, cp));
-    }
-  } catch (e) {
-    // Non-blocking if table not migrated yet
-  }
 
   const achMap = new Map();
   for (const achievement of achievements || []) {
+    // Valid student filter & rejected legacy filter
+    if (!validStudentIds.has(achievement.user_id)) continue;
+    if (achievement.status === 'rejected' || (achievement.description && achievement.description.trim().toUpperCase().includes('[REJECTED:'))) continue;
+
     const current = achMap.get(achievement.user_id) || {
       score: 0,
       count: 0,
@@ -68,9 +65,6 @@ async function buildLeaderboardFromData(batchFilter, classFilter, limit) {
   return students
     .map((u) => {
       const stats = achMap.get(u.user_id) || { score: 0, count: 0, gold: 0, silver: 0, bronze: 0, topTitle: null };
-      const compProfile = compProfileMap.get(u.user_id);
-
-      const overallScore = compProfile?.overall_score != null ? compProfile.overall_score : (stats.score || 0);
 
       return {
         id: u.user_id,
@@ -83,13 +77,65 @@ async function buildLeaderboardFromData(batchFilter, classFilter, limit) {
         github: u.github,
         linkedin: u.linkedin,
         avatar_url: u.avatar_url,
-        score: overallScore,
-        achievement_score: stats.score || 0,
+        score: stats.score || 0,
         achievement_count: stats.count || 0,
         gold_wins: stats.gold || 0,
         silver_wins: stats.silver || 0,
         bronze_wins: stats.bronze || 0,
-        top_achievement: stats.topTitle || null,
+        top_achievement: stats.topTitle || null
+      };
+    })
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      if ((b.achievement_count || 0) !== (a.achievement_count || 0)) return (b.achievement_count || 0) - (a.achievement_count || 0);
+      if ((b.gold_wins || 0) !== (a.gold_wins || 0)) return (b.gold_wins || 0) - (a.gold_wins || 0);
+      return (a.name || '').localeCompare(b.name || '');
+    })
+    .slice(0, limit || 100)
+    .map((u, i) => ({ ...u, rank: i + 1 }));
+}
+
+/**
+ * Competitive Leaderboard: Ranks Competitive Index profiles separately.
+ */
+async function buildCompetitiveLeaderboard(batchFilter, classFilter, limit) {
+  let query = supabase
+    .from('students')
+    .select('user_id, name, roll_no, reg_no, class, batch, year, github, linkedin, avatar_url');
+
+  if (batchFilter && batchFilter !== 'all') query = query.eq('batch', batchFilter);
+  if (classFilter && classFilter !== 'all') query = query.eq('class', classFilter);
+
+  const { data: students, error } = await query;
+  if (error || !students?.length) return [];
+
+  let compProfileMap = new Map();
+  try {
+    const { data: compProfiles } = await supabase
+      .from('student_competitive_profiles')
+      .select('*');
+    if (compProfiles) {
+      compProfiles.forEach(cp => compProfileMap.set(cp.user_id, cp));
+    }
+  } catch (e) {
+    // Non-blocking if migration table not present yet
+  }
+
+  return students
+    .map((u) => {
+      const compProfile = compProfileMap.get(u.user_id);
+      return {
+        id: u.user_id,
+        name: u.name,
+        roll_no: u.roll_no,
+        reg_no: u.reg_no,
+        class: u.class,
+        batch: u.batch,
+        year: u.year,
+        github: u.github,
+        linkedin: u.linkedin,
+        avatar_url: u.avatar_url,
+        score: compProfile?.overall_score || 0,
         competitive_profile: compProfile ? {
           overall_score: compProfile.overall_score,
           problem_solving_score: compProfile.problem_solving_score,
@@ -103,29 +149,13 @@ async function buildLeaderboardFromData(batchFilter, classFilter, limit) {
       };
     })
     .sort((a, b) => {
-      // Deterministic tie-breaking:
-      // 1. overall score
       if (b.score !== a.score) return b.score - a.score;
-      
-      // 2. competitive programming score
       const cpA = a.competitive_profile?.competitive_programming_score || 0;
       const cpB = b.competitive_profile?.competitive_programming_score || 0;
       if (cpB !== cpA) return cpB - cpA;
-
-      // 3. problem solving score
       const psA = a.competitive_profile?.problem_solving_score || 0;
       const psB = b.competitive_profile?.problem_solving_score || 0;
       if (psB !== psA) return psB - psA;
-
-      // 4. open source score
-      const osA = a.competitive_profile?.open_source_score || 0;
-      const osB = b.competitive_profile?.open_source_score || 0;
-      if (osB !== osA) return osB - osA;
-
-      // 5. achievement count
-      if ((b.achievement_count || 0) !== (a.achievement_count || 0)) return (b.achievement_count || 0) - (a.achievement_count || 0);
-
-      // 6. roll_no / name
       const rollA = a.roll_no || a.name || '';
       const rollB = b.roll_no || b.name || '';
       return rollA.localeCompare(rollB);
@@ -134,32 +164,31 @@ async function buildLeaderboardFromData(batchFilter, classFilter, limit) {
     .map((u, i) => ({ ...u, rank: i + 1 }));
 }
 
-async function buildLeaderboard(batchFilter, classFilter, limit) {
-  return buildLeaderboardFromData(batchFilter, classFilter, limit);
-}
-
 // ─── GET /api/leaderboard/stats ───────────────────────────────────────────────
 router.get('/stats', async (req, res) => {
   res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-  const [
-    { count: totalStudents },
-    { count: totalAchievements },
-    { count: totalWins },
-    { count: totalInternships },
-    { count: activeTeams }
-  ] = await Promise.all([
-    supabase.from('students').select('*', { count: 'exact', head: true }),
-    supabase.from('achievements').select('*', { count: 'exact', head: true }).eq('verified', true),
-    supabase.from('achievements').select('*', { count: 'exact', head: true }).eq('verified', true).eq('type', 'hackathon').eq('position', '1st'),
-    supabase.from('achievements').select('*', { count: 'exact', head: true }).eq('verified', true).eq('type', 'internship'),
-    supabase.from('teams').select('*', { count: 'exact', head: true }),
-  ]);
+
+  const { data: validStudents } = await supabase.from('students').select('user_id');
+  const validStudentIds = new Set((validStudents || []).map(s => s.user_id));
+
+  const { data: achs } = await supabase.from('achievements').select('user_id, type, position, verified, status, description').eq('verified', true);
+  const { count: activeTeams } = await supabase.from('teams').select('*', { count: 'exact', head: true });
+
+  const validAchs = (achs || []).filter(a => 
+    validStudentIds.has(a.user_id) && 
+    a.status !== 'rejected' && 
+    (!a.description || !a.description.trim().toUpperCase().includes('[REJECTED:'))
+  );
+
+  const totalAchievements = validAchs.length;
+  const totalHackathonWins = validAchs.filter(a => a.type === 'hackathon' && a.position === '1st').length;
+  const totalInternships = validAchs.filter(a => a.type === 'internship').length;
 
   res.json({
-    totalStudents: totalStudents || 0,
-    totalAchievements: totalAchievements || 0,
-    totalHackathonWins: totalWins || 0,
-    totalInternships: totalInternships || 0,
+    totalStudents: validStudentIds.size,
+    totalAchievements,
+    totalHackathonWins,
+    totalInternships,
     activeTeams: activeTeams || 0,
   });
 });
@@ -167,15 +196,23 @@ router.get('/stats', async (req, res) => {
 // ─── GET /api/leaderboard/top ─────────────────────────────────────────────────
 router.get('/top', async (req, res) => {
   res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-  const top = await buildLeaderboard(null, null, 5);
+  const top = await buildLegacyLeaderboard(null, null, 5);
   res.json(top);
 });
 
-// ─── GET /api/leaderboard?batch=&class=&limit= ────────────────────────────────
+// ─── GET /api/leaderboard (Legacy Authoritative) ──────────────────────────────
 router.get('/', async (req, res) => {
   res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   const { batch, class: cls, limit, year } = req.query;
-  const board = await buildLeaderboard(batch || year, cls, parseInt(limit) || 100);
+  const board = await buildLegacyLeaderboard(batch || year, cls, parseInt(limit) || 100);
+  res.json(board);
+});
+
+// ─── GET /api/leaderboard/competitive (Dedicated Competitive Index Leaderboard)
+router.get('/competitive', async (req, res) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  const { batch, class: cls, limit, year } = req.query;
+  const board = await buildCompetitiveLeaderboard(batch || year, cls, parseInt(limit) || 100);
   res.json(board);
 });
 

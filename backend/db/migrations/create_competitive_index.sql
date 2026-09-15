@@ -29,6 +29,7 @@ ON CONFLICT (code) DO UPDATE
 SET name = EXCLUDED.name, category = EXCLUDED.category, live_support = EXCLUDED.live_support;
 
 -- 2. Student Platform Connections Table
+-- NOTE: Raw verification_token is NOT stored. Only verification_token_hash is persisted.
 CREATE TABLE IF NOT EXISTS student_platform_connections (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -36,7 +37,6 @@ CREATE TABLE IF NOT EXISTS student_platform_connections (
     username VARCHAR(100) NOT NULL,
     connection_status VARCHAR(50) DEFAULT 'LINKED_UNVERIFIED',
     ownership_status VARCHAR(50) DEFAULT 'UNVERIFIED', -- UNVERIFIED | VERIFIED
-    verification_token VARCHAR(255),
     verification_token_hash VARCHAR(255),
     verification_expires_at TIMESTAMPTZ,
     verified_at TIMESTAMPTZ,
@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS student_platform_connections (
     snapshot_score INT DEFAULT 0,
     sync_status VARCHAR(50) DEFAULT 'IDLE', -- IDLE | SYNCING | SYNC_FAILED | SUCCESS
     last_synced_at TIMESTAMPTZ,
+    last_attempted_at TIMESTAMPTZ,
     last_error_message TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
@@ -52,6 +53,11 @@ CREATE TABLE IF NOT EXISTS student_platform_connections (
 
 CREATE INDEX IF NOT EXISTS idx_student_platform_conn_user ON student_platform_connections(user_id);
 CREATE INDEX IF NOT EXISTS idx_student_platform_conn_status ON student_platform_connections(ownership_status);
+
+-- Cross-user duplicate verified handle protection index
+CREATE UNIQUE INDEX IF NOT EXISTS idx_verified_platform_handle 
+ON student_platform_connections(platform_code, LOWER(username)) 
+WHERE ownership_status = 'VERIFIED';
 
 -- 3. Student Competitive Profiles Table
 CREATE TABLE IF NOT EXISTS student_competitive_profiles (
@@ -87,9 +93,13 @@ CREATE INDEX IF NOT EXISTS idx_sync_audit_user ON sync_audit_logs(user_id);
 -- RLS Policies (Restricted to User Own Data / Authenticated Admins)
 ALTER TABLE student_platform_connections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE student_competitive_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sync_audit_logs ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Students manage own platform connections" ON student_platform_connections
     FOR ALL USING (auth.uid() = user_id);
 
 CREATE POLICY "Public read competitive profiles" ON student_competitive_profiles
     FOR SELECT USING (true);
+
+CREATE POLICY "Users read own audit logs" ON sync_audit_logs
+    FOR SELECT USING (auth.uid() = user_id);
