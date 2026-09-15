@@ -1,9 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { supabase } = require('../db/supabase');
-const { withHttpCache } = require('../services/httpCache');
 
-async function buildLeaderboardFromAchievements(batchFilter, classFilter, limit) {
+async function buildLeaderboardFromData(batchFilter, classFilter, limit) {
   let query = supabase
     .from('students')
     .select('user_id, name, roll_no, reg_no, class, batch, year, github, linkedin, avatar_url');
@@ -17,10 +16,24 @@ async function buildLeaderboardFromAchievements(batchFilter, classFilter, limit)
     return [];
   }
 
+  // 1. Fetch achievements data
   const { data: achievements } = await supabase
     .from('achievements')
     .select('user_id, points, type, title, position, verified, description')
     .eq('verified', true);
+
+  // 2. Fetch competitive profiles if table exists
+  let compProfileMap = new Map();
+  try {
+    const { data: compProfiles } = await supabase
+      .from('student_competitive_profiles')
+      .select('*');
+    if (compProfiles) {
+      compProfiles.forEach(cp => compProfileMap.set(cp.user_id, cp));
+    }
+  } catch (e) {
+    // Non-blocking if table not migrated yet
+  }
 
   const achMap = new Map();
   for (const achievement of achievements || []) {
@@ -55,6 +68,10 @@ async function buildLeaderboardFromAchievements(batchFilter, classFilter, limit)
   return students
     .map((u) => {
       const stats = achMap.get(u.user_id) || { score: 0, count: 0, gold: 0, silver: 0, bronze: 0, topTitle: null };
+      const compProfile = compProfileMap.get(u.user_id);
+
+      const overallScore = compProfile?.overall_score != null ? compProfile.overall_score : (stats.score || 0);
+
       return {
         id: u.user_id,
         name: u.name,
@@ -66,26 +83,59 @@ async function buildLeaderboardFromAchievements(batchFilter, classFilter, limit)
         github: u.github,
         linkedin: u.linkedin,
         avatar_url: u.avatar_url,
-        score: stats.score || 0,
+        score: overallScore,
+        achievement_score: stats.score || 0,
         achievement_count: stats.count || 0,
         gold_wins: stats.gold || 0,
         silver_wins: stats.silver || 0,
         bronze_wins: stats.bronze || 0,
         top_achievement: stats.topTitle || null,
+        competitive_profile: compProfile ? {
+          overall_score: compProfile.overall_score,
+          problem_solving_score: compProfile.problem_solving_score,
+          competitive_programming_score: compProfile.competitive_programming_score,
+          open_source_score: compProfile.open_source_score,
+          certifications_score: compProfile.certifications_score,
+          college_achievements_score: compProfile.college_achievements_score,
+          connected_platform_count: compProfile.connected_platform_count,
+          scoring_version: compProfile.scoring_version || 'v1'
+        } : null
       };
     })
     .sort((a, b) => {
+      // Deterministic tie-breaking:
+      // 1. overall score
       if (b.score !== a.score) return b.score - a.score;
+      
+      // 2. competitive programming score
+      const cpA = a.competitive_profile?.competitive_programming_score || 0;
+      const cpB = b.competitive_profile?.competitive_programming_score || 0;
+      if (cpB !== cpA) return cpB - cpA;
+
+      // 3. problem solving score
+      const psA = a.competitive_profile?.problem_solving_score || 0;
+      const psB = b.competitive_profile?.problem_solving_score || 0;
+      if (psB !== psA) return psB - psA;
+
+      // 4. open source score
+      const osA = a.competitive_profile?.open_source_score || 0;
+      const osB = b.competitive_profile?.open_source_score || 0;
+      if (osB !== osA) return osB - osA;
+
+      // 5. achievement count
       if ((b.achievement_count || 0) !== (a.achievement_count || 0)) return (b.achievement_count || 0) - (a.achievement_count || 0);
-      if ((b.gold_wins || 0) !== (a.gold_wins || 0)) return (b.gold_wins || 0) - (a.gold_wins || 0);
-      return (a.name || '').localeCompare(b.name || '');
+
+      // 6. roll_no / name
+      const rollA = a.roll_no || a.name || '';
+      const rollB = b.roll_no || b.name || '';
+      return rollA.localeCompare(rollB);
     })
     .slice(0, limit || 100)
     .map((u, i) => ({ ...u, rank: i + 1 }));
 }
 
 async function buildLeaderboard(batchFilter, classFilter, limit) {
-  return buildLeaderboardFromAchievements(batchFilter, classFilter, limit);
+  return buildLeaderboardFromData(batchFilter, classFilter, limit);
 }
 
 // ─── GET /api/leaderboard/stats ───────────────────────────────────────────────

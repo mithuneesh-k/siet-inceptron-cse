@@ -58,7 +58,9 @@ export default function Navbar() {
     { to: '/', label: 'Home', icon: <Home size={18} /> },
     { to: '/updates', label: 'Updates', icon: <Zap size={18} />, studentOnly: true },
     { to: '/leaderboard', label: 'Leaderboard', icon: <Trophy size={18} /> },
+    { to: '/platforms', label: 'Platforms', icon: <Shield size={18} /> },
     { to: '/students', label: 'Students', icon: <GraduationCap size={18} /> },
+
     { to: '/teams', label: 'Teams', icon: <Users size={18} /> },
   ];
 
