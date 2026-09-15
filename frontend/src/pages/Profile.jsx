@@ -150,12 +150,20 @@ export default function Profile() {
     const filled = fields.filter(f => !!user[f]).length;
     completionPct = Math.round((filled / fields.length) * 100);
   }
+  const isApprovedAchievement = (a) => {
+    if (!a) return false;
+    const desc = a.description || '';
+    if (desc.trim().toUpperCase().includes('[REJECTED:')) return false;
+    if (a.status === 'rejected') return false;
+    if (a.status === 'approved') return true;
+    return a.verified === true;
+  };
+
   const typeBreakdown = ACH_TYPES.map(t => {
-    const list = achievements.filter(a => a.type === t);
-    const approvedList = list.filter(a => (a.status ? a.status === 'approved' : a.verified === true));
+    const approvedList = achievements.filter(a => a.type === t && isApprovedAchievement(a));
     return {
       type: t,
-      count: list.length,
+      count: approvedList.length,
       pts: approvedList.reduce((s, a) => s + (a.points || 0), 0)
     };
   }).filter(t => t.count > 0);
