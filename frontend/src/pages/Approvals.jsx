@@ -8,6 +8,8 @@ import {
   FileText, Check, X, ArrowLeft, RefreshCw, AlertCircle, Calendar
 } from 'lucide-react';
 
+import { dispatchAchievementEvent, subscribeAchievementEvents } from '../utils/achievementEvents';
+
 const TYPE_CONFIG = {
   hackathon: { icon: <Zap size={14} />, label: 'Hackathon', badgeClass: 'type-hackathon' },
   internship: { icon: <Briefcase size={14} />, label: 'Internship', badgeClass: 'type-internship' },
@@ -103,11 +105,21 @@ export default function Approvals() {
   useEffect(() => {
     fetchPending({ showLoader: true });
 
-    const handlePendingUpdated = () => fetchPending({ showLoader: false });
-    window.addEventListener('pendingUpdated', handlePendingUpdated);
+    const unsubscribe = subscribeAchievementEvents((detail) => {
+      const { action, achievement, achievementId } = detail;
+      if (action === 'created' && achievement && (achievement.status === 'pending' || !achievement.verified)) {
+        setAchievements(prev => {
+          if (prev.some(a => a.id === achievement.id)) return prev;
+          return [achievement, ...prev];
+        });
+      } else if ((action === 'approved' || action === 'rejected' || action === 'deleted') && (achievementId || achievement?.id)) {
+        const targetId = achievementId || achievement?.id;
+        setAchievements(prev => prev.filter(a => a.id !== targetId));
+      }
+    });
 
     return () => {
-      window.removeEventListener('pendingUpdated', handlePendingUpdated);
+      unsubscribe();
     };
   }, []);
 
@@ -119,11 +131,18 @@ export default function Approvals() {
   const handleApprove = async (ach) => {
     setActionInProgress(ach.id);
     try {
-      await client.patch(`/achievements/${ach.id}/approve`);
+      const res = await client.patch(`/achievements/${ach.id}/approve`);
+      const resData = res.data || {};
       setAchievements(prev => prev.filter(a => a.id !== ach.id));
       showToast(`✓ Approved "${ach.title}"! +${ach.points} pts awarded to ${ach.student_name}.`);
-      window.dispatchEvent(new Event('pendingUpdated'));
-      window.dispatchEvent(new Event('scoreUpdated'));
+
+      dispatchAchievementEvent({
+        action: 'approved',
+        userId: resData.userId || ach.user_id,
+        achievement: resData.achievement,
+        score: resData.score,
+        achievement_count: resData.achievement_count
+      });
     } catch (err) {
       showToast(err.response?.data?.error || 'Approval failed. Please try again.', 'error');
     } finally {
@@ -140,11 +159,18 @@ export default function Approvals() {
     setActionInProgress(ach.id);
     setRejectConfirm(null);
     try {
-      await client.patch(`/achievements/${ach.id}/reject`, { rejection_reason: cleanReason });
+      const res = await client.patch(`/achievements/${ach.id}/reject`, { rejection_reason: cleanReason });
+      const resData = res.data || {};
       setAchievements(prev => prev.filter(a => a.id !== ach.id));
       showToast(`✕ Rejected submission for ${ach.student_name}.`, 'error');
-      window.dispatchEvent(new Event('pendingUpdated'));
-      window.dispatchEvent(new Event('scoreUpdated'));
+
+      dispatchAchievementEvent({
+        action: 'rejected',
+        userId: resData.userId || ach.user_id,
+        achievement: resData.achievement,
+        score: resData.score,
+        achievement_count: resData.achievement_count
+      });
     } catch (err) {
       showToast(err.response?.data?.error || 'Rejection failed. Please try again.', 'error');
     } finally {

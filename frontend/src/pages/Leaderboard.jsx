@@ -5,36 +5,41 @@ import ScoreBadge from '../components/ScoreBadge';
 import CustomSelect from '../components/CustomSelect';
 import FilterModal from '../components/FilterModal';
 import { Users, Award, Trophy, Briefcase, Medal, ArrowUp, ArrowDown, Minus } from 'lucide-react';
+import { subscribeAchievementEvents } from '../utils/achievementEvents';
 
 const BATCH_OPTIONS = ['2026-2030', '2025-2029', '2024-2028', '2023-2027', '2022-2026'];
 const CLASS_OPTIONS = ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D', 'CSE-E'];
 
 export default function Leaderboard() {
   const [students, setStudents] = useState([]);
+  const [stats, setStats] = useState({ totalStudents: 0, totalAchievements: 0, totalHackathonWins: 0, totalInternships: 0, activeTeams: 0 });
   const [loading, setLoading] = useState(true);
-  const [batchFilter, setBatchFilter] = useState('');
-  const [classFilter, setClassFilter] = useState('');
-  const [stats, setStats] = useState({});
-  const [showFilters, setShowFilters] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
+  const [batchFilter, setBatchFilter] = useState('all');
+  const [classFilter, setClassFilter] = useState('all');
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
-  const [fetchError, setFetchError] = useState(null);
+  const fetchLeaderboard = (showLoading = true) => {
+    if (showLoading) {
+      setLoading(true);
+      setFetchError(false);
+    }
 
-  const fetchLeaderboard = (showLoading = false) => {
-    if (showLoading) setLoading(true);
     const params = new URLSearchParams();
-    if (batchFilter) params.set('batch', batchFilter);
-    if (classFilter) params.set('class', classFilter);
+    if (batchFilter !== 'all') params.append('batch', batchFilter);
+    if (classFilter !== 'all') params.append('class', classFilter);
+    params.append('limit', '100');
 
     Promise.allSettled([
-      client.get(`/leaderboard?${params.toString()}`),
+      client.get(`/leaderboard?${params}`),
       client.get('/leaderboard/stats'),
     ]).then(([lRes, sRes]) => {
       if (lRes.status === 'fulfilled') {
         setStudents(lRes.value.data || []);
-        setFetchError(null);
+        setFetchError(false);
       } else {
-        console.error('Leaderboard query error:', lRes.reason);
-        setFetchError('Unable to load leaderboard ranking. Please try again.');
+        console.error('Leaderboard fetch error:', lRes.reason);
+        setFetchError(true);
       }
 
       if (sRes.status === 'fulfilled') {
@@ -49,18 +54,16 @@ export default function Leaderboard() {
 
   useEffect(() => {
     fetchLeaderboard(true);
-    const interval = setInterval(() => fetchLeaderboard(false), 5000);
-    const handleFocus = () => fetchLeaderboard(false);
 
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('scoreUpdated', handleFocus);
-    window.addEventListener('pendingUpdated', handleFocus);
+    const unsubscribe = subscribeAchievementEvents((detail) => {
+      const { action } = detail;
+      if (action === 'approved' || action === 'deleted') {
+        fetchLeaderboard(false);
+      }
+    });
 
     return () => {
-      clearInterval(interval);
-      window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('scoreUpdated', handleFocus);
-      window.removeEventListener('pendingUpdated', handleFocus);
+      unsubscribe();
     };
   }, [batchFilter, classFilter]);
 

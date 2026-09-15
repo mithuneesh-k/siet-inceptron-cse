@@ -11,18 +11,21 @@ import {
   Camera, Globe, Phone, Plus, Cake, Edit3, Award, Lightbulb, Hourglass 
 } from 'lucide-react';
 
+import { dispatchAchievementEvent, subscribeAchievementEvents } from '../utils/achievementEvents';
+
 const ACH_TYPES = ['hackathon', 'internship', 'course', 'project', 'certification'];
 const POSITIONS = ['1st', '2nd', '3rd', 'participated'];
 const DURATIONS = ['short', 'medium', 'long'];
 
 export default function Profile() {
   const { id } = useParams();
-  const { user: authUser, refreshUser } = useAuth();
+  const { user: authUser, updateUserStats } = useAuth();
   const [user, setUser] = useState(null);
   const [achievements, setAchievements] = useState([]);
   const [teams, setTeams] = useState([]);
   const [invites, setInvites] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [form, setForm] = useState({ type: 'hackathon', title: '', description: '', position: '', duration: '', proof_url: '' });
   const [toast, setToast] = useState(null);
@@ -34,6 +37,7 @@ export default function Profile() {
   };
 
   const fetchData = async () => {
+    setLoading(true);
     try {
       const [userRes, achRes, teamRes] = await Promise.all([
         client.get(`/users/${id}`).catch(err => { console.error(err); return { data: null }; }),
@@ -41,12 +45,12 @@ export default function Profile() {
         client.get(`/teams/user/${id}`).catch(err => { console.error(err); return { data: [] }; })
       ]);
       setUser(userRes.data);
-      setAchievements(achRes.data);
-      setTeams(teamRes.data);
+      setAchievements(achRes.data || []);
+      setTeams(teamRes.data || []);
 
       if (authUser?.id === id) {
-        const { data: invRes } = await client.get('/teams/my-invites');
-        setInvites(invRes);
+        const { data: invRes } = await client.get('/teams/my-invites').catch(() => ({ data: [] }));
+        setInvites(invRes || []);
       }
     } finally {
       setLoading(false);
@@ -58,7 +62,7 @@ export default function Profile() {
       if (action === 'approve') await client.post(`/teams/invites/${inviteId}/approve`);
       else await client.delete(`/teams/invites/${inviteId}`);
       showToast(action === 'approve' ? 'Joined team! 🎉' : 'Invite declined');
-      fetchData();
+      setInvites(prev => prev.filter(i => i.id !== inviteId));
     } catch (err) {
       showToast('Action failed', 'error');
     }
@@ -66,34 +70,65 @@ export default function Profile() {
 
   useEffect(() => { 
     fetchData();
-    const interval = setInterval(fetchData, 5000);
-    const handleFocus = () => fetchData();
 
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('scoreUpdated', fetchData);
-    window.addEventListener('pendingUpdated', fetchData);
+    const unsubscribe = subscribeAchievementEvents((detail) => {
+      const { action, userId, achievement, achievementId, score, achievement_count } = detail;
+      if (user && userId === user.id) {
+        if (action === 'created' && achievement) {
+          setAchievements(prev => [achievement, ...prev.filter(a => a.id !== achievement.id)]);
+        } else if ((action === 'approved' || action === 'rejected') && achievement) {
+          setAchievements(prev => prev.map(a => a.id === achievement.id ? achievement : a));
+        } else if (action === 'deleted' && achievementId) {
+          setAchievements(prev => prev.filter(a => a.id !== achievementId));
+        }
+
+        if (typeof score === 'number' && typeof achievement_count === 'number') {
+          setUser(prev => prev ? ({ ...prev, score, achievement_count }) : prev);
+          if (isOwn) {
+            updateUserStats({ score, achievement_count });
+          }
+        }
+      }
+    });
 
     return () => {
-      clearInterval(interval);
-      window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('scoreUpdated', fetchData);
-      window.removeEventListener('pendingUpdated', fetchData);
+      unsubscribe();
     };
-  }, [id]);
+  }, [id, authUser?.id]);
 
   const addAchievement = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
     try {
-      const { data } = await client.post('/achievements', form);
-      setAchievements(prev => [data, ...prev]);
+      const res = await client.post('/achievements', form);
+      const resData = res.data;
+      const newAch = resData.achievement || resData;
+      const score = resData.score;
+      const achievement_count = resData.achievement_count;
+
+      setAchievements(prev => [newAch, ...prev.filter(a => a.id !== newAch.id)]);
+      if (typeof score === 'number' && typeof achievement_count === 'number') {
+        setUser(prev => prev ? ({ ...prev, score, achievement_count }) : prev);
+        if (isOwn) {
+          updateUserStats({ score, achievement_count });
+        }
+      }
+
       setShowAddModal(false);
       setForm({ type: 'hackathon', title: '', description: '', position: '', duration: '', proof_url: '' });
       showToast(<span>Achievement submitted for Admin Approval! <Hourglass size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /></span>);
-      window.dispatchEvent(new Event('pendingUpdated'));
-      window.dispatchEvent(new Event('scoreUpdated'));
-      if (isOwn) refreshUser();
+
+      dispatchAchievementEvent({
+        action: 'created',
+        userId: authUser?.id || id,
+        achievement: newAch,
+        score,
+        achievement_count
+      });
     } catch (err) {
       showToast(err.response?.data?.error || 'Failed to add achievement', 'error');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -101,19 +136,25 @@ export default function Profile() {
     const ach = achievements.find(a => a.id === achId);
     if (!ach) return;
     try {
-      const { data } = await client.delete(`/achievements/${achId}`);
+      const res = await client.delete(`/achievements/${achId}`);
+      const resData = res.data || {};
+
       setAchievements(prev => prev.filter(a => a.id !== achId));
-      if (data && typeof data.score === 'number' && typeof data.achievement_count === 'number') {
-        setUser(prev => ({
-          ...prev,
-          score: data.score,
-          achievement_count: data.achievement_count
-        }));
+      if (typeof resData.score === 'number' && typeof resData.achievement_count === 'number') {
+        setUser(prev => prev ? ({ ...prev, score: resData.score, achievement_count: resData.achievement_count }) : prev);
+        if (isOwn) {
+          updateUserStats({ score: resData.score, achievement_count: resData.achievement_count });
+        }
       }
       showToast('Achievement removed');
-      window.dispatchEvent(new Event('pendingUpdated'));
-      window.dispatchEvent(new Event('scoreUpdated'));
-      if (isOwn) refreshUser();
+
+      dispatchAchievementEvent({
+        action: 'deleted',
+        userId: user?.id,
+        achievementId: achId,
+        score: resData.score,
+        achievement_count: resData.achievement_count
+      });
     } catch (err) {
       showToast(err.response?.data?.error || 'Failed to delete achievement', 'error');
     }

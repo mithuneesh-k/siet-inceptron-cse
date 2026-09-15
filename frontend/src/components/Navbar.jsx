@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import client from '../api/client';
 import { Home, Trophy, GraduationCap, Users, Shield, CheckCircle, Zap } from 'lucide-react';
+import { subscribeAchievementEvents } from '../utils/achievementEvents';
 import './Navbar.css';
 
 export default function Navbar() {
@@ -22,29 +23,29 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    const updateCount = () => {
-      if (user?.is_admin) {
-        client.get('/achievements/all/pending')
-          .then(res => setPendingCount(res.data?.length || 0))
-          .catch(() => setPendingCount(0));
-      } else {
-        setPendingCount(0);
-      }
-    };
+    const isAdmin = Boolean(user && (user.is_admin || user.role === 'admin' || user.role === 'faculty'));
+    if (!isAdmin) {
+      setPendingCount(0);
+      return;
+    }
 
-    updateCount();
-    const interval = setInterval(updateCount, 5000);
-    window.addEventListener('pendingUpdated', updateCount);
-    window.addEventListener('scoreUpdated', updateCount);
-    window.addEventListener('focus', updateCount);
+    client.get('/achievements/pending/count')
+      .then(res => setPendingCount(res.data?.count || 0))
+      .catch(() => setPendingCount(0));
+
+    const unsubscribe = subscribeAchievementEvents((detail) => {
+      const { action, achievement } = detail;
+      if (action === 'created' && (achievement?.status === 'pending' || !achievement?.verified)) {
+        setPendingCount(prev => prev + 1);
+      } else if (action === 'approved' || action === 'rejected' || action === 'deleted') {
+        setPendingCount(prev => Math.max(0, prev - 1));
+      }
+    });
 
     return () => {
-      clearInterval(interval);
-      window.removeEventListener('pendingUpdated', updateCount);
-      window.removeEventListener('scoreUpdated', updateCount);
-      window.removeEventListener('focus', updateCount);
+      unsubscribe();
     };
-  }, [user, location.pathname]);
+  }, [user]);
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
 
