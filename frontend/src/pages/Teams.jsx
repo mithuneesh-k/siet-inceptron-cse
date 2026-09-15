@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import client from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import TeamCard from '../components/TeamCard';
+import ConfirmModal from '../components/ConfirmModal';
 
 const TEAM_TYPES = ['hackathon', 'project', 'research'];
 
@@ -116,34 +117,48 @@ export default function Teams() {
     }
   };
 
-  const handleDecline = async (mid) => {
-    if (!confirm('Are you sure?')) return;
-    try {
-      await client.delete(`/teams/invites/${mid}`);
-      showToast('Removed');
-      openTeamDetail(selectedTeam.id);
-      fetchTeams();
-    } catch (err) {
-      showToast('Failed', 'error');
-    }
+  const [confirmConfig, setConfirmConfig] = useState(null);
+
+  const handleDecline = (mid) => {
+    setConfirmConfig({
+      title: 'Remove Member',
+      message: 'Are you sure you want to remove this member/invite?',
+      confirmText: 'Remove',
+      onConfirm: async () => {
+        setConfirmConfig(null);
+        try {
+          await client.delete(`/teams/invites/${mid}`);
+          showToast('Removed');
+          openTeamDetail(selectedTeam.id);
+          fetchTeams();
+        } catch (err) {
+          showToast('Failed', 'error');
+        }
+      }
+    });
   };
 
-  const handleDeleteTeam = async (teamId, e) => {
+  const handleDeleteTeam = (teamId, e, teamName = 'this team') => {
     if (e) e.stopPropagation();
-    if (!window.confirm('Are you sure you want to delete this team? This action cannot be undone.')) return;
-    
-    // Instantly remove from UI
-    setTeams(prev => prev.filter(t => t.id !== teamId));
-    if (selectedTeam?.id === teamId) closeTeamDetail();
-    showToast('Team deleted successfully! 🗑️');
-
-    try {
-      await client.delete(`/teams/${teamId}`);
-      fetchTeams();
-    } catch (err) {
-      showToast(err.response?.data?.error || 'Failed to delete team', 'error');
-      fetchTeams();
-    }
+    setConfirmConfig({
+      title: 'Delete Team',
+      itemName: teamName,
+      message: 'Are you sure you want to delete this team? This action cannot be undone.',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        setConfirmConfig(null);
+        setTeams(prev => prev.filter(t => t.id !== teamId));
+        if (selectedTeam?.id === teamId) closeTeamDetail();
+        showToast('Team deleted successfully! 🗑️');
+        try {
+          await client.delete(`/teams/${teamId}`);
+          fetchTeams();
+        } catch (err) {
+          showToast(err.response?.data?.error || 'Failed to delete team', 'error');
+          fetchTeams();
+        }
+      }
+    });
   };
 
   return (
@@ -379,6 +394,18 @@ export default function Teams() {
         .create-team-form { display: flex; flex-direction: column; gap: 20px; padding: 20px 0; }
         .btn-block { width: 100%; border-radius: 12px; height: 48px; }
       `}</style>
+
+      {confirmConfig && (
+        <ConfirmModal
+          isOpen={Boolean(confirmConfig)}
+          title={confirmConfig.title || 'Confirm Action'}
+          itemName={confirmConfig.itemName}
+          message={confirmConfig.message}
+          confirmText={confirmConfig.confirmText || 'Confirm'}
+          onConfirm={confirmConfig.onConfirm}
+          onCancel={() => setConfirmConfig(null)}
+        />
+      )}
     </div>
   );
 }
