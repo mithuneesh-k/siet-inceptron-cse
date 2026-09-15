@@ -6,4 +6,6 @@ build/
 MOVE/
 backend/db/db_users.csv
 .env
+backend/db/local_competitive_store.json
 scratch/
+

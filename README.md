@@ -69,27 +69,33 @@ To maintain the highest standards of competition, points are only awarded after 
 
 1.  **Clone the repository**:
     ```bash
-    git clone https://github.com/mithuneesh-k/SIET--CSE-.git
-    cd SIET--CSE-
+    git clone https://github.com/mithuneesh-k/siet-inceptron-cse.git
+    cd siet-inceptron-cse
     ```
 
 2.  **Environment Setup**:
-    Create a `.env` file in the `backend/` directory:
+    Create a `.env` file in the `backend/` directory (and optionally in root):
     ```env
+    PORT=5001
     SUPABASE_URL=your_supabase_url
     SUPABASE_ANON_KEY=your_anon_key
     SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
     JWT_SECRET=your_secure_random_string
+    ```
+    Create a `.env` file in the `frontend/` directory (optional if defaulting to port 5001):
+    ```env
+    VITE_API_BASE_URL=http://localhost:5001/api
     ```
 
 3.  **Launch the System**:
     From the root directory, run:
     ```bash
     npm install
+    npm run install:all
     npm run dev
     ```
-    *   **Frontend**: http://localhost:5173
-    *   **Backend API**: http://localhost:5000
+    *   **Frontend Local**: http://localhost:5173
+    *   **Backend Local**: http://localhost:5001 (Production `PORT` may be controlled dynamically by Render or host environment)
 
 ---
 
@@ -97,7 +103,7 @@ To maintain the highest standards of competition, points are only awarded after 
 
 ```text
 ├── backend/
-│   ├── routes/          # API Handlers (Achievments, Admin, Auth, etc.)
+│   ├── routes/          # API Handlers (Achievements, Admin, Auth, etc.)
 │   ├── middleware/      # Auth & Admin Guards
 │   ├── db/              # Supabase Client & Scoping Logic
 │   └── server.js        # Express Entry Point
