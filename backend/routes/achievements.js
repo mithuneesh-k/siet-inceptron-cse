@@ -290,11 +290,20 @@ async function getStudentCanonicalScore(userId) {
 
 // ─── DELETE /api/achievements/:id ────────────────────────────────────────────
 router.delete('/:id', authMiddleware, async (req, res) => {
-  let { data: ach } = await supabase
+  let { data: ach, error: fetchErr } = await supabase
     .from('achievements')
     .select('user_id, status, verified, description')
     .eq('id', req.params.id)
     .maybeSingle();
+
+  if (isMissingColumnError(fetchErr)) {
+    const fallback = await supabase
+      .from('achievements')
+      .select('user_id, verified, description')
+      .eq('id', req.params.id)
+      .maybeSingle();
+    ach = fallback.data;
+  }
 
   if (!ach) return res.status(404).json({ error: 'Achievement not found' });
   
@@ -328,7 +337,21 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 router.patch('/:id/approve', authMiddleware, adminMiddleware, async (req, res) => {
   const scope = await getAdminScope(req.user.id, req.user.role);
 
-  const { data: ach } = await supabase.from('achievements').select('user_id, description').eq('id', req.params.id).maybeSingle();
+  let { data: ach, error: fetchErr } = await supabase
+    .from('achievements')
+    .select('user_id, description, status, verified')
+    .eq('id', req.params.id)
+    .maybeSingle();
+
+  if (isMissingColumnError(fetchErr)) {
+    const fallback = await supabase
+      .from('achievements')
+      .select('user_id, description, verified')
+      .eq('id', req.params.id)
+      .maybeSingle();
+    ach = fallback.data;
+  }
+
   if (!ach) return res.status(404).json({ error: 'Achievement not found' });
 
   if (!scope.hasFullAccess) {
@@ -396,7 +419,21 @@ router.patch('/:id/reject', authMiddleware, adminMiddleware, async (req, res) =>
 
   const scope = await getAdminScope(req.user.id, req.user.role);
 
-  const { data: ach } = await supabase.from('achievements').select('user_id, description, status, verified').eq('id', req.params.id).maybeSingle();
+  let { data: ach, error: fetchErr } = await supabase
+    .from('achievements')
+    .select('user_id, description, status, verified')
+    .eq('id', req.params.id)
+    .maybeSingle();
+
+  if (isMissingColumnError(fetchErr)) {
+    const fallback = await supabase
+      .from('achievements')
+      .select('user_id, description, verified')
+      .eq('id', req.params.id)
+      .maybeSingle();
+    ach = fallback.data;
+  }
+
   if (!ach) return res.status(404).json({ error: 'Achievement not found' });
 
   if (!scope.hasFullAccess) {
