@@ -129,23 +129,37 @@ export default function Approvals() {
   }
 
   const handleApprove = async (ach) => {
-    // 1. Instantly remove locally from UI (0ms delay)
+    // 1. Instantly remove locally from UI & update notification badge (0ms delay)
     setAchievements(prev => prev.filter(a => a.id !== ach.id));
     showToast(`✓ Approved "${ach.title}"! +${ach.points} pts awarded to ${ach.student_name}.`);
+
+    dispatchAchievementEvent({
+      action: 'approved',
+      userId: ach.user_id,
+      achievementId: ach.id,
+      achievement: { ...ach, status: 'approved', verified: true }
+    });
 
     try {
       const res = await client.patch(`/achievements/${ach.id}/approve`);
       const resData = res.data || {};
-      dispatchAchievementEvent({
-        action: 'approved',
-        userId: resData.userId || ach.user_id,
-        achievement: resData.achievement || { ...ach, status: 'approved', verified: true },
-        score: resData.score,
-        achievement_count: resData.achievement_count
-      });
+      if (typeof resData.score === 'number') {
+        dispatchAchievementEvent({
+          action: 'approved',
+          userId: resData.userId || ach.user_id,
+          achievement: resData.achievement || { ...ach, status: 'approved', verified: true },
+          score: resData.score,
+          achievement_count: resData.achievement_count
+        });
+      }
     } catch (err) {
       // Rollback on failure
       setAchievements(prev => [ach, ...prev]);
+      dispatchAchievementEvent({
+        action: 'created',
+        userId: ach.user_id,
+        achievement: ach
+      });
       showToast(err.response?.data?.error || 'Approval failed. Please try again.', 'error');
     }
   };
@@ -158,23 +172,37 @@ export default function Approvals() {
     const cleanReason = reason.trim();
     setRejectConfirm(null);
 
-    // 1. Instantly remove locally from UI (0ms delay)
+    // 1. Instantly remove locally from UI & update notification badge (0ms delay)
     setAchievements(prev => prev.filter(a => a.id !== ach.id));
     showToast(`✕ Rejected submission for ${ach.student_name}.`, 'error');
+
+    dispatchAchievementEvent({
+      action: 'rejected',
+      userId: ach.user_id,
+      achievementId: ach.id,
+      achievement: { ...ach, status: 'rejected', verified: false, rejection_reason: cleanReason }
+    });
 
     try {
       const res = await client.patch(`/achievements/${ach.id}/reject`, { rejection_reason: cleanReason });
       const resData = res.data || {};
-      dispatchAchievementEvent({
-        action: 'rejected',
-        userId: resData.userId || ach.user_id,
-        achievement: resData.achievement || { ...ach, status: 'rejected', verified: false, rejection_reason: cleanReason },
-        score: resData.score,
-        achievement_count: resData.achievement_count
-      });
+      if (typeof resData.score === 'number') {
+        dispatchAchievementEvent({
+          action: 'rejected',
+          userId: resData.userId || ach.user_id,
+          achievement: resData.achievement || { ...ach, status: 'rejected', verified: false, rejection_reason: cleanReason },
+          score: resData.score,
+          achievement_count: resData.achievement_count
+        });
+      }
     } catch (err) {
       // Rollback on failure
       setAchievements(prev => [ach, ...prev]);
+      dispatchAchievementEvent({
+        action: 'created',
+        userId: ach.user_id,
+        achievement: ach
+      });
       showToast(err.response?.data?.error || 'Rejection failed. Please try again.', 'error');
     }
   };

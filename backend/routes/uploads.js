@@ -99,7 +99,15 @@ async function deleteStorageObject(storageRef) {
  * POST /api/uploads/proof
  * Upload private achievement proof document (JPEG, PNG, WEBP, PDF, max 5MB).
  */
-router.post('/proof', authMiddleware, upload.single('file'), async (req, res, next) => {
+router.post('/proof', authMiddleware, (req, res, next) => {
+  upload.single('file')(req, res, (err) => {
+    if (err) {
+      console.error('Multer upload error:', err);
+      return res.status(400).json({ error: err.message || 'File upload error' });
+    }
+    next();
+  });
+}, async (req, res, next) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });

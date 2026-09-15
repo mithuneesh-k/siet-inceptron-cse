@@ -108,15 +108,13 @@ export default function Profile() {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const res = await client.post('/uploads/proof', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const res = await client.post('/uploads/proof', formData);
       const uploadedUrl = res.data.url || res.data.storage_ref;
       setForm(f => ({ ...f, proof_url: uploadedUrl }));
       setUploadedFileName(file.name);
       showToast('Photo/Document uploaded successfully!');
     } catch (err) {
-      console.error(err);
+      console.error('Photo upload error:', err);
       showToast(err.response?.data?.error || 'Failed to upload photo/document', 'error');
     } finally {
       setUploadingFile(false);
