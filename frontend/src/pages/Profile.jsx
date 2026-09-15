@@ -636,7 +636,7 @@ export default function Profile() {
 
                 <input 
                   className="form-input" 
-                  type="url" 
+                  type="text" 
                   value={form.proof_url} 
                   onChange={e => { setForm(f => ({ ...f, proof_url: e.target.value })); if (uploadedFileName) setUploadedFileName(''); }} 
                   placeholder="https://drive.google.com/... or certificate link" 
