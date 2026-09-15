@@ -26,8 +26,10 @@ async function clearAchievementCaches(userId) {
   }
 }
 
-// Parse fallback [REJECTED: reason] in description
-function formatAchievement(a) {
+const { resolveStorageUrl } = require('./uploads');
+
+// Parse fallback [REJECTED: reason] in description & resolve proof storage_ref to signed URL
+async function formatAchievement(a) {
   if (!a) return a;
   let status = a.status;
   let rejection_reason = a.rejection_reason;
@@ -46,12 +48,23 @@ function formatAchievement(a) {
     status = a.verified ? 'approved' : 'pending';
   }
 
+  let resolvedProof = a.proof_url;
+  if (resolvedProof && typeof resolvedProof === 'string' && resolvedProof.startsWith('storage://')) {
+    try {
+      const signed = await resolveStorageUrl(resolvedProof);
+      if (signed) resolvedProof = signed;
+    } catch (err) {
+      console.warn('Storage URL resolution warning:', err.message);
+    }
+  }
+
   return {
     ...a,
     status,
     verified: status === 'approved',
     rejection_reason: status === 'rejected' ? (rejection_reason || 'Rejected by admin') : null,
-    description
+    description,
+    proof_url: resolvedProof || a.proof_url
   };
 }
 
@@ -127,9 +140,8 @@ router.get('/all/pending', authMiddleware, adminMiddleware, async (req, res) => 
   if (error) return res.status(500).json({ error: 'Failed to fetch pending achievements' });
 
   // Filter out any rejected items (marked via [REJECTED: ...]) and format
-  const pending = (pendingRaw || [])
-    .filter(a => a.verified === false && (!a.description || !a.description.trim().toUpperCase().includes('[REJECTED:')))
-    .map(formatAchievement);
+  const pendingFiltered = (pendingRaw || []).filter(a => a.verified === false && (!a.description || !a.description.trim().toUpperCase().includes('[REJECTED:')));
+  const pending = await Promise.all(pendingFiltered.map(formatAchievement));
 
   if (pending.length === 0) return res.json([]);
 
@@ -187,7 +199,7 @@ router.get('/user/:userId', optionalAuthMiddleware, async (req, res) => {
   }
 
   if (error) return res.status(500).json({ error: 'Failed to fetch achievements' });
-  const formatted = (achs || []).map(formatAchievement);
+  const formatted = await Promise.all((achs || []).map(formatAchievement));
   res.json(formatted);
 });
 
@@ -238,7 +250,7 @@ router.post('/', authMiddleware, async (req, res) => {
 
   if (error || !inserted) return res.status(500).json({ error: 'Failed to add achievement' });
 
-  const formatted = formatAchievement(inserted);
+  const formatted = await formatAchievement(inserted);
 
   if (isPrivileged) {
     clearAchievementCaches(req.user.id).catch(() => {});
@@ -396,7 +408,7 @@ router.patch('/:id/approve', authMiddleware, adminMiddleware, async (req, res) =
   if (error || !updatedAch) return res.status(500).json({ error: 'Failed to approve achievement' });
   clearAchievementCaches(updatedAch.user_id).catch(() => {});
 
-  const formatted = formatAchievement(updatedAch);
+  const formatted = await formatAchievement(updatedAch);
   const [enriched, canonical] = await Promise.all([
     enrichAchievementWithStudentProfile(formatted),
     getStudentCanonicalScore(updatedAch.user_id)
@@ -493,7 +505,7 @@ router.patch('/:id/reject', authMiddleware, adminMiddleware, async (req, res) =>
   if (error || !updatedAch) return res.status(500).json({ error: 'Failed to reject achievement' });
   clearAchievementCaches(updatedAch.user_id).catch(() => {});
 
-  const formatted = formatAchievement(updatedAch);
+  const formatted = await formatAchievement(updatedAch);
   const wasApproved = ach.status === 'approved' || ach.verified === true;
 
   const [enriched, canonical] = await Promise.all([

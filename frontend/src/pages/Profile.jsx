@@ -101,63 +101,34 @@ export default function Profile() {
   const handleFileUpload = async (file) => {
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      showToast('File size must be under 5MB', 'error');
+      showToast('File size exceeds maximum limit of 5 MB', 'error');
       return;
     }
+
     setUploadingFile(true);
     try {
       const formData = new FormData();
       formData.append('file', file);
 
-      const token = localStorage.getItem('SIET_token');
-      const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
+      const res = await client.post('/uploads/proof', formData);
+      const resData = res.data || {};
 
-      const response = await fetch(`${apiBase}/uploads/proof`, {
-        method: 'POST',
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-        body: formData
-      });
-
-      const resData = await response.json();
-      if (!response.ok) {
+      if (!resData.storage_ref) {
         throw new Error(resData.error || 'Failed to upload photo/document');
       }
 
-      const uploadedUrl = resData.url || resData.storage_ref;
-      setForm(f => ({ ...f, proof_url: uploadedUrl }));
+      setForm(prev => ({
+        ...prev,
+        proof_url: resData.storage_ref
+      }));
       setUploadedFileName(file.name);
-      showToast('Photo/Document uploaded successfully!');
-      setUploadingFile(false);
+      showToast('Proof document uploaded successfully!');
     } catch (err) {
-      console.warn('Multipart upload fallback to Base64:', err);
-      // Secondary fallback: Convert to Base64 data URL and send via JSON
-      try {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = async () => {
-          try {
-            const res = await client.post('/uploads/proof', {
-              fileData: reader.result,
-              fileName: file.name
-            });
-            const uploadedUrl = res.data.url || res.data.storage_ref;
-            setForm(f => ({ ...f, proof_url: uploadedUrl }));
-            setUploadedFileName(file.name);
-            showToast('Photo/Document uploaded successfully!');
-          } catch (fallbackErr) {
-            showToast(fallbackErr.response?.data?.error || err.message || 'Failed to upload photo/document', 'error');
-          } finally {
-            setUploadingFile(false);
-          }
-        };
-        reader.onerror = () => {
-          showToast(err.message || 'Failed to upload photo/document', 'error');
-          setUploadingFile(false);
-        };
-      } catch (fErr) {
-        showToast(err.message || 'Failed to upload photo/document', 'error');
-        setUploadingFile(false);
-      }
+      const errorMsg = err.response?.data?.error || err.message || 'Proof storage is unavailable';
+      console.error('Upload proof error:', errorMsg);
+      showToast(errorMsg, 'error');
+    } finally {
+      setUploadingFile(false);
     }
   };
 
@@ -653,8 +624,14 @@ export default function Profile() {
               </div>
 
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowAddModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Add Achievement</button>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowAddModal(false)} disabled={submitting}>Cancel</button>
+                <button 
+                  type="submit" 
+                  className="btn btn-primary"
+                  disabled={submitting || uploadingFile}
+                >
+                  {submitting ? 'Adding...' : uploadingFile ? 'Uploading proof...' : 'Add Achievement'}
+                </button>
               </div>
             </form>
           </div>

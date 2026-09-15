@@ -1,51 +1,37 @@
 const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
-const path = require('path');
+const multer = require('multer');
 const { authMiddleware } = require('../middleware/auth');
 const { supabase } = require('../db/supabase');
 
-let upload;
-try {
-  const multer = require('multer');
-  upload = multer({
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB max
-    storage: multer.memoryStorage()
-  });
-} catch (e) {
-  upload = {
-    single: () => (req, res, next) => {
-      if (req.file) return next();
-      if (req.body && req.body.buffer) {
-        req.file = {
-          buffer: Buffer.isBuffer(req.body.buffer) ? req.body.buffer : Buffer.from(req.body.buffer, req.body.encoding || 'base64'),
-          mimetype: req.body.mimetype || 'image/png',
-          originalname: req.body.originalname || 'file.png'
-        };
-      }
-      next();
-    }
-  };
-}
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 } // 5 MB max limit
+});
 
-// Magic-byte signature checker
-function validateMagicBytes(buffer, mimeType) {
-  if (!buffer || buffer.length < 4) return false;
+// Magic-byte signature & MIME validator
+function getSafeExtension(buffer, mimeType) {
+  if (!buffer || buffer.length < 4) return null;
   const hex = buffer.slice(0, 4).toString('hex').toUpperCase();
 
   if (mimeType === 'image/jpeg' || mimeType === 'image/jpg') {
-    return hex.startsWith('FFD8FF');
+    if (hex.startsWith('FFD8FF')) return '.jpg';
   }
   if (mimeType === 'image/png') {
-    return hex.startsWith('89504E47');
+    if (hex.startsWith('89504E47')) return '.png';
   }
   if (mimeType === 'image/webp') {
-    return buffer.slice(0, 4).toString('utf8') === 'RIFF' && buffer.slice(8, 12).toString('utf8') === 'WEBP';
+    if (buffer.slice(0, 4).toString('utf8') === 'RIFF' && buffer.slice(8, 12).toString('utf8') === 'WEBP') return '.webp';
   }
   if (mimeType === 'application/pdf') {
-    return hex.startsWith('25504446'); // %PDF
+    if (hex.startsWith('25504446')) return '.pdf';
   }
-  return false;
+  return null;
+}
+
+function validateMagicBytes(buffer, mimeType) {
+  return getSafeExtension(buffer, mimeType) !== null;
 }
 
 /**
@@ -102,42 +88,31 @@ async function deleteStorageObject(storageRef) {
 router.post('/proof', authMiddleware, (req, res, next) => {
   upload.single('file')(req, res, (err) => {
     if (err) {
-      console.error('Multer upload notice:', err.message);
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ error: 'File size exceeds maximum limit of 5 MB' });
+      }
+      return res.status(400).json({ error: err.message || 'File upload failed' });
     }
     next();
   });
 }, async (req, res, next) => {
   try {
-    let fileObj = req.file;
-
-    // Base64 JSON fallback if multipart was converted or sent as dataUrl
-    if (!fileObj && req.body && req.body.fileData) {
-      const match = req.body.fileData.match(/^data:(image\/\w+|application\/pdf);base64,(.*)$/);
-      if (match) {
-        fileObj = {
-          mimetype: match[1],
-          buffer: Buffer.from(match[2], 'base64'),
-          originalname: req.body.fileName || 'certificate'
-        };
-      }
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    if (!fileObj) {
-      return res.status(400).json({ error: 'No file uploaded. Please select a photo (JPG/PNG/WEBP) or PDF file.' });
-    }
-
-    const { buffer, mimetype, originalname } = fileObj;
+    const { buffer, mimetype } = req.file;
     if (buffer.length > 5 * 1024 * 1024) {
       return res.status(400).json({ error: 'File size exceeds maximum limit of 5 MB' });
     }
 
-    const isValid = validateMagicBytes(buffer, mimetype);
-    if (!isValid) {
+    const ext = getSafeExtension(buffer, mimetype);
+    if (!ext) {
       return res.status(400).json({ error: 'Invalid file format or spoofed mime type. Allowed formats: JPEG, PNG, WEBP, PDF.' });
     }
 
-    const ext = path.extname(originalname) || (mimetype === 'application/pdf' ? '.pdf' : '.png');
-    const safeFilename = `${req.user.id}/${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ext}`;
+    const uuid = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(8).toString('hex');
+    const safeFilename = `${req.user.id}/${Date.now()}-${uuid}${ext}`;
 
     const { data, error } = await supabase.storage
       .from('achievement-proofs')
@@ -157,9 +132,10 @@ router.post('/proof', authMiddleware, (req, res, next) => {
     res.json({
       success: true,
       storage_ref: storageRef,
-      url: signedUrl
+      preview_url: signedUrl
     });
   } catch (err) {
+    console.error('Upload proof catch error:', err);
     next(err);
   }
 });
@@ -168,24 +144,34 @@ router.post('/proof', authMiddleware, (req, res, next) => {
  * POST /api/uploads/announcement
  * Upload public announcement/post image (JPEG, PNG, WEBP, max 5MB).
  */
-router.post('/announcement', authMiddleware, upload.single('file'), async (req, res, next) => {
+router.post('/announcement', authMiddleware, (req, res, next) => {
+  upload.single('file')(req, res, (err) => {
+    if (err) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ error: 'File size exceeds maximum limit of 5 MB' });
+      }
+      return res.status(400).json({ error: err.message || 'File upload failed' });
+    }
+    next();
+  });
+}, async (req, res, next) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    const { buffer, mimetype, originalname } = req.file;
+    const { buffer, mimetype } = req.file;
     if (buffer.length > 5 * 1024 * 1024) {
       return res.status(400).json({ error: 'File size exceeds maximum limit of 5 MB' });
     }
 
-    const isValid = validateMagicBytes(buffer, mimetype);
-    if (!isValid || mimetype === 'application/pdf') {
+    const ext = getSafeExtension(buffer, mimetype);
+    if (!ext || mimetype === 'application/pdf') {
       return res.status(400).json({ error: 'Invalid image format. Allowed formats: JPEG, PNG, WEBP.' });
     }
 
-    const ext = path.extname(originalname) || '.png';
-    const safeFilename = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ext}`;
+    const uuid = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(8).toString('hex');
+    const safeFilename = `${Date.now()}-${uuid}${ext}`;
 
     const { data, error } = await supabase.storage
       .from('department-posts')
