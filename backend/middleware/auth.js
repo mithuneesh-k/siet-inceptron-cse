@@ -40,10 +40,12 @@ const optionalAuthMiddleware = (req, res, next) => {
 };
 
 const adminMiddleware = (req, res, next) => {
-  if (req.user?.role === 'student') {
-    return res.status(403).json({ error: 'Admin access required' });
+  const role = req.user?.role;
+  const isAdminFlag = req.user?.is_admin === true;
+  if (isAdminFlag || ['admin', 'faculty'].includes(role)) {
+    return next();
   }
-  next();
+  return res.status(403).json({ error: 'Admin access required' });
 };
 
 const hodMiddleware = (req, res, next) => {

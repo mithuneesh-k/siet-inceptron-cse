@@ -10,11 +10,14 @@ const PORT = process.env.PORT || 5000;
 // require('./db/index'); // Removed, now using Supabase
 
 
+const allowedOrigins = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',').map(s => s.trim()) : [];
+
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow any origin for testing/development. 
-    // In strict production, you'd replace this with your Vercel frontend URL.
-    callback(null, true);
+    if (!origin || process.env.NODE_ENV !== 'production' || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    callback(new Error('Not allowed by CORS'));
   },
   credentials: true
 }));
@@ -28,6 +31,7 @@ app.use('/api/leaderboard', require('./routes/leaderboard'));
 app.use('/api/teams', require('./routes/teams'));
 app.use('/api/updates', require('./routes/updates'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/uploads', require('./routes/uploads').router);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'SIET CSE Portal API is running 🚀', timestamp: new Date().toISOString() });

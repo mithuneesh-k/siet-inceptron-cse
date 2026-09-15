@@ -98,7 +98,8 @@ export default function Admin() {
     if (tab === 'faculty') loadFaculties();
   }, [tab, loadManagedStudents, loadFaculties]);
 
-  if (!user?.is_admin) return <Navigate to="/" replace />;
+  const isAdmin = Boolean(user && (user.is_admin || user.role === 'admin' || user.role === 'faculty'));
+  if (!isAdmin) return <Navigate to="/" replace />;
 
   const totalScore = students.reduce((s, u) => s + u.score, 0);
   const avgScore = students.length ? Math.round(totalScore / students.length) : 0;

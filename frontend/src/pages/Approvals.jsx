@@ -73,7 +73,8 @@ export default function Approvals() {
     };
   }, []);
 
-  if (!user?.is_admin) {
+  const isAdmin = Boolean(user && (user.is_admin || user.role === 'admin' || user.role === 'faculty'));
+  if (!isAdmin) {
     return <Navigate to="/" replace />;
   }
 

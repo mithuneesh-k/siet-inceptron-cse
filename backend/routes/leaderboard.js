@@ -17,13 +17,21 @@ async function buildLeaderboardFromAchievements(batchFilter, classFilter, limit)
     return [];
   }
 
+  const validUserIds = new Set(students.map(s => s.user_id));
+
   const { data: achievements } = await supabase
     .from('achievements')
-    .select('user_id, points, type, title, position, verified, description')
+    .select('user_id, points, type, title, position, status, verified, description')
     .eq('verified', true);
 
+  const validAchs = (achievements || []).filter(a =>
+    validUserIds.has(a.user_id) &&
+    a.status !== 'rejected' &&
+    (!a.description || !a.description.trim().toUpperCase().includes('[REJECTED:'))
+  );
+
   const achMap = new Map();
-  for (const achievement of achievements || []) {
+  for (const achievement of validAchs) {
     const current = achMap.get(achievement.user_id) || {
       score: 0,
       count: 0,
@@ -91,27 +99,36 @@ async function buildLeaderboard(batchFilter, classFilter, limit) {
 // ─── GET /api/leaderboard/stats ───────────────────────────────────────────────
 router.get('/stats', async (req, res) => {
   res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-  const [
-    { count: totalStudents },
-    { count: totalAchievements },
-    { count: totalWins },
-    { count: totalInternships },
-    { count: activeTeams }
-  ] = await Promise.all([
-    supabase.from('students').select('*', { count: 'exact', head: true }),
-    supabase.from('achievements').select('*', { count: 'exact', head: true }).eq('verified', true),
-    supabase.from('achievements').select('*', { count: 'exact', head: true }).eq('verified', true).eq('type', 'hackathon').eq('position', '1st'),
-    supabase.from('achievements').select('*', { count: 'exact', head: true }).eq('verified', true).eq('type', 'internship'),
-    supabase.from('teams').select('*', { count: 'exact', head: true }),
-  ]);
 
-  res.json({
-    totalStudents: totalStudents || 0,
-    totalAchievements: totalAchievements || 0,
-    totalHackathonWins: totalWins || 0,
-    totalInternships: totalInternships || 0,
-    activeTeams: activeTeams || 0,
-  });
+  try {
+    const [
+      { data: studentsRaw },
+      { data: achsRaw },
+      { count: activeTeamsCount }
+    ] = await Promise.all([
+      supabase.from('students').select('user_id'),
+      supabase.from('achievements').select('user_id, type, position, status, verified, description').eq('verified', true),
+      supabase.from('teams').select('*', { count: 'exact', head: true })
+    ]);
+
+    const validUserIds = new Set((studentsRaw || []).map(s => s.user_id));
+
+    const validAchs = (achsRaw || []).filter(a =>
+      validUserIds.has(a.user_id) &&
+      a.status !== 'rejected' &&
+      (!a.description || !a.description.trim().toUpperCase().includes('[REJECTED:'))
+    );
+
+    res.json({
+      totalStudents: validUserIds.size,
+      totalAchievements: validAchs.length,
+      totalHackathonWins: validAchs.filter(a => a.type === 'hackathon' && a.position === '1st').length,
+      totalInternships: validAchs.filter(a => a.type === 'internship').length,
+      activeTeams: activeTeamsCount || 0,
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to compute leaderboard stats' });
+  }
 });
 
 // ─── GET /api/leaderboard/top ─────────────────────────────────────────────────
