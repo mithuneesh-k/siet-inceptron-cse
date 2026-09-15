@@ -8,7 +8,7 @@ import CustomSelect from '../components/CustomSelect';
 import TruncatedText from '../components/TruncatedText';
 import { 
   Shield, Book, GraduationCap, Terminal, Briefcase, AtSign, 
-  Camera, Globe, Phone, Plus, Cake, Edit3, Award, Lightbulb, Hourglass 
+  Camera, Globe, Phone, Plus, Cake, Edit3, Award, Lightbulb, Hourglass, Upload, CheckCircle 
 } from 'lucide-react';
 
 import { dispatchAchievementEvent, subscribeAchievementEvents } from '../utils/achievementEvents';
@@ -27,6 +27,8 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [uploadedFileName, setUploadedFileName] = useState('');
   const [form, setForm] = useState({ type: 'hackathon', title: '', description: '', position: '', duration: '', proof_url: '' });
   const [toast, setToast] = useState(null);
   const isOwn = authUser?.id === id;
@@ -95,6 +97,31 @@ export default function Profile() {
       unsubscribe();
     };
   }, [id, authUser?.id]);
+
+  const handleFileUpload = async (file) => {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('File size must be under 5MB', 'error');
+      return;
+    }
+    setUploadingFile(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await client.post('/uploads/proof', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      const uploadedUrl = res.data.url || res.data.storage_ref;
+      setForm(f => ({ ...f, proof_url: uploadedUrl }));
+      setUploadedFileName(file.name);
+      showToast('Photo/Document uploaded successfully!');
+    } catch (err) {
+      console.error(err);
+      showToast(err.response?.data?.error || 'Failed to upload photo/document', 'error');
+    } finally {
+      setUploadingFile(false);
+    }
+  };
 
   const addAchievement = async (e) => {
     e.preventDefault();
@@ -510,11 +537,72 @@ export default function Profile() {
               )}
 
               <div className="form-group">
-                <label className="form-label">Verification Document / Certificate URL</label>
-                <input className="form-input" type="url" value={form.proof_url} onChange={e => setForm(f => ({ ...f, proof_url: e.target.value }))} placeholder="https://drive.google.com/... or certificate link" />
-                <span style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4, display: 'block' }}>
-                  Provide a Google Drive, certificate link, or verification URL for the admin to inspect before approving.
-                </span>
+                <label className="form-label" style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Upload size={16} /> Certificate Photo / Verification Proof
+                </label>
+
+                <div style={{
+                  border: '2px dashed var(--color-border)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '16px',
+                  textAlign: 'center',
+                  background: 'var(--bg-hover)',
+                  marginBottom: '10px'
+                }}>
+                  {uploadingFile ? (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 13, color: 'var(--color-green)' }}>
+                      <Hourglass size={16} className="spin" /> Uploading photo to storage...
+                    </div>
+                  ) : uploadedFileName ? (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(34, 197, 94, 0.1)', padding: '8px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--color-green)', fontWeight: 600 }}>
+                        <CheckCircle size={16} /> {uploadedFileName}
+                      </div>
+                      <button 
+                        type="button" 
+                        className="btn btn-ghost btn-xs" 
+                        onClick={() => { setUploadedFileName(''); setForm(f => ({ ...f, proof_url: '' })); }}
+                        style={{ color: '#DC2626', padding: '2px 6px' }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <input 
+                        type="file" 
+                        id="proof-file-input"
+                        accept="image/jpeg,image/png,image/webp,application/pdf"
+                        onChange={e => e.target.files?.[0] && handleFileUpload(e.target.files[0])}
+                        style={{ display: 'none' }}
+                      />
+                      <label 
+                        htmlFor="proof-file-input" 
+                        className="btn btn-secondary btn-sm" 
+                        style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                      >
+                        <Camera size={15} /> Upload Photo / PDF Certificate (Max 5MB)
+                      </label>
+                      <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 6 }}>
+                        Upload JPG, PNG photo, or PDF document
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '10px 0 6px', fontSize: 10, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <div style={{ flex: 1, height: 1, background: 'var(--color-border)' }} />
+                  <span>OR PASTE CERTIFICATE URL</span>
+                  <div style={{ flex: 1, height: 1, background: 'var(--color-border)' }} />
+                </div>
+
+                <input 
+                  className="form-input" 
+                  type="url" 
+                  value={form.proof_url} 
+                  onChange={e => { setForm(f => ({ ...f, proof_url: e.target.value })); if (uploadedFileName) setUploadedFileName(''); }} 
+                  placeholder="https://drive.google.com/... or certificate link" 
+                />
               </div>
 
               <div className="alert alert-info" style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
