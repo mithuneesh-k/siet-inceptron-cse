@@ -33,6 +33,7 @@ export default function Approvals() {
   const { user } = useAuth();
   const [achievements, setAchievements] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [classFilter, setClassFilter] = useState('all');
@@ -46,30 +47,67 @@ export default function Approvals() {
     setTimeout(() => setToast(null), 3500);
   };
 
-  const fetchPending = async () => {
-    setLoading(true);
+  const areAchievementsEqual = (listA, listB) => {
+    if (listA === listB) return true;
+    if (!listA || !listB) return false;
+    if (listA.length !== listB.length) return false;
+
+    for (let i = 0; i < listA.length; i++) {
+      const a = listA[i];
+      const b = listB[i];
+      if (
+        a.id !== b.id ||
+        a.user_id !== b.user_id ||
+        a.status !== b.status ||
+        a.verified !== b.verified ||
+        a.title !== b.title ||
+        a.description !== b.description ||
+        a.position !== b.position ||
+        a.duration !== b.duration ||
+        a.points !== b.points ||
+        a.student_name !== b.student_name ||
+        a.roll_no !== b.roll_no ||
+        a.class !== b.class ||
+        a.batch !== b.batch ||
+        a.created_at !== b.created_at
+      ) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const fetchPending = async ({ showLoader = false, isManualRefresh = false } = {}) => {
+    if (showLoader) setLoading(true);
+    if (isManualRefresh) setRefreshing(true);
+
     try {
       const res = await client.get('/achievements/all/pending');
-      setAchievements(res.data);
+      const newData = res.data || [];
+      setAchievements(prev => {
+        if (areAchievementsEqual(prev, newData)) {
+          return prev;
+        }
+        return newData;
+      });
     } catch {
-      showToast('Failed to load pending achievements.', 'error');
+      if (showLoader || isManualRefresh) {
+        showToast('Failed to load pending achievements.', 'error');
+      }
     } finally {
-      setLoading(false);
+      if (showLoader) setLoading(false);
+      if (isManualRefresh) setRefreshing(false);
     }
   };
 
   useEffect(() => {
-    fetchPending();
-    const interval = setInterval(fetchPending, 5000);
-    const handleFocus = () => fetchPending();
+    fetchPending({ showLoader: true });
 
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('pendingUpdated', fetchPending);
+    const handlePendingUpdated = () => fetchPending({ showLoader: false });
+    window.addEventListener('pendingUpdated', handlePendingUpdated);
 
     return () => {
-      clearInterval(interval);
-      window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('pendingUpdated', fetchPending);
+      window.removeEventListener('pendingUpdated', handlePendingUpdated);
     };
   }, []);
 
@@ -154,8 +192,8 @@ export default function Approvals() {
           </div>
 
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <button className="btn btn-secondary btn-sm" onClick={fetchPending} disabled={loading} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <RefreshCw size={14} className={loading ? 'anim-spin' : ''} /> Refresh
+            <button className="btn btn-secondary btn-sm" onClick={() => fetchPending({ isManualRefresh: true })} disabled={loading || refreshing} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <RefreshCw size={14} className={refreshing ? 'anim-spin' : ''} /> Refresh
             </button>
           </div>
         </div>
