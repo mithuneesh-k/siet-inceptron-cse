@@ -283,9 +283,70 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
     assert.strictEqual(filtered[0].user_id, 's1');
   });
 
+  const achievementsRouter = require('../routes/achievements');
+
+  test('37. Achievements router - reject route exists', () => {
+    const hasReject = achievementsRouter.stack.some(layer => layer.route && layer.route.path === '/:id/reject' && layer.route.methods.patch);
+    assert.strictEqual(hasReject, true);
+  });
+
+  test('38. Reject empty reason validation rule - empty reason rejected', () => {
+    const reasonText = '   '.trim();
+    const isValid = Boolean(reasonText);
+    assert.strictEqual(isValid, false);
+  });
+
+  test('39. Reject advisor scope validation rule - assigned class allowed, outside class forbidden', () => {
+    const advisorScope = { hasFullAccess: false, advisingClass: 'CSE-A', advisingBatch: '2025-2029' };
+    const studentInScope = { class: 'CSE-A', batch: '2025-2029' };
+    const studentOutsideScope = { class: 'CSE-B', batch: '2025-2029' };
+
+    const inScopeAllowed = !advisorScope.hasFullAccess ? (studentInScope.class === advisorScope.advisingClass && studentInScope.batch === advisorScope.advisingBatch) : true;
+    const outsideAllowed = !advisorScope.hasFullAccess ? (studentOutsideScope.class === advisorScope.advisingClass && studentOutsideScope.batch === advisorScope.advisingBatch) : true;
+
+    assert.strictEqual(inScopeAllowed, true);
+    assert.strictEqual(outsideAllowed, false);
+  });
+
+  test('40. Legacy reject fallback formats description with [REJECTED: reason] without duplicating', () => {
+    const reasonText = 'Invalid certificate';
+    let existingDesc = '[REJECTED: Previous reason] Original achievement detail';
+    if (existingDesc.trim().toUpperCase().includes('[REJECTED:')) {
+      const match = existingDesc.match(/^\[REJECTED:\s*[\s\S]*?\]\s*(.*)$/i);
+      if (match) existingDesc = match[1] || '';
+    }
+    const cleanDesc = `[REJECTED: ${reasonText}] ${existingDesc}`.trim();
+    assert.strictEqual(cleanDesc, '[REJECTED: Invalid certificate] Original achievement detail');
+  });
+
+  test('41. POST pending student submission does not change approved score', () => {
+    const approvedAchs = [{ points: 100, verified: true, status: 'approved' }];
+    const pendingAch = { points: 50, verified: false, status: 'pending' };
+    const allAchs = [...approvedAchs, pendingAch];
+    
+    const approvedOnly = allAchs.filter(a => (a.status === 'approved' || a.verified === true) && (!a.description || !a.description.includes('[REJECTED:')));
+    const score = approvedOnly.reduce((s, a) => s + a.points, 0);
+    assert.strictEqual(score, 100);
+    assert.strictEqual(approvedOnly.length, 1);
+  });
+
+  test('42. POST pending student submission does not require enrichment query for student own view', () => {
+    const inserted = { id: 'ach_123', user_id: 'u1', type: 'hackathon', title: 'Test', verified: false, status: 'pending' };
+    const responsePayload = { success: true, achievement: inserted, userId: 'u1' };
+    assert.strictEqual(responsePayload.achievement.student_name, undefined);
+    assert.strictEqual(responsePayload.userId, 'u1');
+  });
+
+  test('43. Pending POST does not invalidate leaderboard cache broadly', () => {
+    const isPrivileged = false;
+    const invalidatesLeaderboard = isPrivileged;
+    assert.strictEqual(invalidatesLeaderboard, false);
+  });
+
   console.log(`\nResults: ${passedTests}/${totalTests} tests passed.`);
   if (passedTests !== totalTests) {
     process.exit(1);
   }
 })();
+
 

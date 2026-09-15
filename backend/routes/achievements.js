@@ -237,17 +237,28 @@ router.post('/', authMiddleware, async (req, res) => {
   }
 
   if (error || !inserted) return res.status(500).json({ error: 'Failed to add achievement' });
-  await clearAchievementCaches(req.user.id);
 
   const formatted = formatAchievement(inserted);
-  const enriched = await enrichAchievementWithStudentProfile(formatted);
-  const canonical = await getStudentCanonicalScore(req.user.id);
+
+  if (isPrivileged) {
+    clearAchievementCaches(req.user.id).catch(() => {});
+    const enriched = await enrichAchievementWithStudentProfile(formatted);
+    const canonical = await getStudentCanonicalScore(req.user.id);
+    return res.status(201).json({
+      success: true,
+      achievement: enriched,
+      score: canonical.score,
+      achievement_count: canonical.achievement_count,
+      userId: req.user.id
+    });
+  }
+
+  // Pending student submission: return response immediately without extra queries!
+  cache.del(`user:${req.user.id}`).catch(() => {});
 
   res.status(201).json({
     success: true,
-    achievement: enriched,
-    score: canonical.score,
-    achievement_count: canonical.achievement_count,
+    achievement: formatted,
     userId: req.user.id
   });
 });
@@ -281,7 +292,7 @@ async function getStudentCanonicalScore(userId) {
 router.delete('/:id', authMiddleware, async (req, res) => {
   let { data: ach } = await supabase
     .from('achievements')
-    .select('user_id')
+    .select('user_id, status, verified, description')
     .eq('id', req.params.id)
     .maybeSingle();
 
@@ -294,16 +305,19 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     return res.status(403).json({ error: 'Not authorized to delete this achievement.' });
   }
 
+  const wasPending = ach.verified === false && (!ach.description || !ach.description.trim().toUpperCase().includes('[REJECTED:'));
+
   const { error } = await supabase.from('achievements').delete().eq('id', req.params.id);
   if (error) return res.status(500).json({ error: 'Failed to delete achievement' });
 
-  await clearAchievementCaches(ach.user_id);
+  clearAchievementCaches(ach.user_id).catch(() => {});
   const canonical = await getStudentCanonicalScore(ach.user_id);
 
   res.json({
     success: true,
     message: 'Achievement deleted',
     achievementId: req.params.id,
+    wasPending,
     score: canonical.score,
     achievement_count: canonical.achievement_count,
     userId: ach.user_id
@@ -357,7 +371,7 @@ router.patch('/:id/approve', authMiddleware, adminMiddleware, async (req, res) =
   }
 
   if (error || !updatedAch) return res.status(500).json({ error: 'Failed to approve achievement' });
-  await clearAchievementCaches(updatedAch.user_id);
+  clearAchievementCaches(updatedAch.user_id).catch(() => {});
 
   const formatted = formatAchievement(updatedAch);
   const enriched = await enrichAchievementWithStudentProfile(formatted);
@@ -368,6 +382,88 @@ router.patch('/:id/approve', authMiddleware, adminMiddleware, async (req, res) =
     achievement: enriched,
     score: canonical.score,
     achievement_count: canonical.achievement_count,
+    userId: updatedAch.user_id
+  });
+});
+
+// ─── PATCH /api/achievements/:id/reject ──────────────────────────────────────
+router.patch('/:id/reject', authMiddleware, adminMiddleware, async (req, res) => {
+  const { rejection_reason } = req.body;
+  if (!rejection_reason || !rejection_reason.trim()) {
+    return res.status(400).json({ error: 'Rejection reason is required.' });
+  }
+  const reasonText = rejection_reason.trim();
+
+  const scope = await getAdminScope(req.user.id, req.user.role);
+
+  const { data: ach } = await supabase.from('achievements').select('user_id, description, status, verified').eq('id', req.params.id).maybeSingle();
+  if (!ach) return res.status(404).json({ error: 'Achievement not found' });
+
+  if (!scope.hasFullAccess) {
+    const { data: student } = await supabase.from('students').select('class, batch').eq('user_id', ach.user_id).single();
+    if (!student || student.class !== scope.advisingClass || student.batch !== scope.advisingBatch) {
+      return res.status(403).json({ error: 'You can only reject achievements for your assigned class.' });
+    }
+  }
+
+  const updatePayload = {
+    status: 'rejected',
+    verified: false,
+    rejection_reason: reasonText,
+    reviewed_by: req.user.id,
+    reviewed_at: new Date().toISOString()
+  };
+
+  let { data: updatedAch, error } = await supabase
+    .from('achievements')
+    .update(updatePayload)
+    .eq('id', req.params.id)
+    .select()
+    .single();
+
+  if (isMissingColumnError(error)) {
+    let existingDesc = ach.description || '';
+    if (existingDesc.trim().toUpperCase().includes('[REJECTED:')) {
+      const match = existingDesc.match(/^\[REJECTED:\s*[\s\S]*?\]\s*(.*)$/i);
+      if (match) existingDesc = match[1] || '';
+    }
+    const cleanDesc = `[REJECTED: ${reasonText}] ${existingDesc}`.trim();
+
+    // Fallback attempt 1: Try updating status and description
+    let fallbackRes = await supabase
+      .from('achievements')
+      .update({ status: 'rejected', verified: false, description: cleanDesc })
+      .eq('id', req.params.id)
+      .select()
+      .single();
+
+    if (isMissingColumnError(fallbackRes.error)) {
+      // Fallback attempt 2: Update verified and description only
+      fallbackRes = await supabase
+        .from('achievements')
+        .update({ verified: false, description: cleanDesc })
+        .eq('id', req.params.id)
+        .select()
+        .single();
+    }
+
+    updatedAch = fallbackRes.data;
+    error = fallbackRes.error;
+  }
+
+  if (error || !updatedAch) return res.status(500).json({ error: 'Failed to reject achievement' });
+  clearAchievementCaches(updatedAch.user_id).catch(() => {});
+
+  const formatted = formatAchievement(updatedAch);
+  const enriched = await enrichAchievementWithStudentProfile(formatted);
+  const wasApproved = ach.status === 'approved' || ach.verified === true;
+  const canonical = wasApproved ? await getStudentCanonicalScore(updatedAch.user_id) : null;
+
+  res.json({
+    success: true,
+    achievement: enriched,
+    score: canonical ? canonical.score : undefined,
+    achievement_count: canonical ? canonical.achievement_count : undefined,
     userId: updatedAch.user_id
   });
 });

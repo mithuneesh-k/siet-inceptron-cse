@@ -73,7 +73,7 @@ export default function Profile() {
 
     const unsubscribe = subscribeAchievementEvents((detail) => {
       const { action, userId, achievement, achievementId, score, achievement_count } = detail;
-      if (user && userId === user.id) {
+      if (userId === id) {
         if (action === 'created' && achievement) {
           setAchievements(prev => [achievement, ...prev.filter(a => a.id !== achievement.id)]);
         } else if ((action === 'approved' || action === 'rejected') && achievement) {
@@ -98,10 +98,11 @@ export default function Profile() {
 
   const addAchievement = async (e) => {
     e.preventDefault();
+    if (submitting) return;
     setSubmitting(true);
     try {
       const res = await client.post('/achievements', form);
-      const resData = res.data;
+      const resData = res.data || {};
       const newAch = resData.achievement || resData;
       const score = resData.score;
       const achievement_count = resData.achievement_count;
@@ -135,6 +136,7 @@ export default function Profile() {
   const deleteAchievement = async (achId) => {
     const ach = achievements.find(a => a.id === achId);
     if (!ach) return;
+    const wasPending = ach.status === 'pending' || !ach.verified;
     try {
       const res = await client.delete(`/achievements/${achId}`);
       const resData = res.data || {};
@@ -150,8 +152,9 @@ export default function Profile() {
 
       dispatchAchievementEvent({
         action: 'deleted',
-        userId: user?.id,
+        userId: id,
         achievementId: achId,
+        wasPending: resData.wasPending !== undefined ? resData.wasPending : wasPending,
         score: resData.score,
         achievement_count: resData.achievement_count
       });

@@ -34,10 +34,12 @@ export default function Navbar() {
       .catch(() => setPendingCount(0));
 
     const unsubscribe = subscribeAchievementEvents((detail) => {
-      const { action, achievement } = detail;
+      const { action, achievement, wasPending } = detail;
       if (action === 'created' && (achievement?.status === 'pending' || !achievement?.verified)) {
         setPendingCount(prev => prev + 1);
-      } else if (action === 'approved' || action === 'rejected' || action === 'deleted') {
+      } else if (action === 'approved' || action === 'rejected') {
+        setPendingCount(prev => Math.max(0, prev - 1));
+      } else if (action === 'deleted' && (wasPending || achievement?.status === 'pending' || achievement?.verified === false)) {
         setPendingCount(prev => Math.max(0, prev - 1));
       }
     });
