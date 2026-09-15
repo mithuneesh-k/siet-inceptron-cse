@@ -246,8 +246,46 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
     assert.strictEqual(resolved, legacyUrl);
   });
 
+  const leaderboardRouter = require('../routes/leaderboard');
+
+  test('31. Leaderboard helper - new schema approved counts', () => {
+    assert.strictEqual(leaderboardRouter.isApprovedAchievement({ status: 'approved', verified: true }), true);
+  });
+
+  test('32. Leaderboard helper - status rejected excluded', () => {
+    assert.strictEqual(leaderboardRouter.isApprovedAchievement({ status: 'rejected', verified: true }), false);
+  });
+
+  test('33. Leaderboard helper - legacy schema verified counts', () => {
+    assert.strictEqual(leaderboardRouter.isApprovedAchievement({ verified: true }), true);
+  });
+
+  test('34. Leaderboard helper - legacy rejected prefix excluded', () => {
+    assert.strictEqual(leaderboardRouter.isApprovedAchievement({ verified: true, description: '[REJECTED: Fake proof]' }), false);
+  });
+
+  test('35. Leaderboard helper - missing column error detector recognizes 42703, PGRST204, Could not find', () => {
+    assert.strictEqual(leaderboardRouter.isMissingColumnError({ code: '42703' }), true);
+    assert.strictEqual(leaderboardRouter.isMissingColumnError({ code: 'PGRST204' }), true);
+    assert.strictEqual(leaderboardRouter.isMissingColumnError({ message: 'Could not find column status' }), true);
+    assert.strictEqual(leaderboardRouter.isMissingColumnError({ code: '23505' }), false);
+  });
+
+  test('36. Leaderboard helper - orphan achievements excluded from valid student scoring', () => {
+    const validStudents = [{ user_id: 's1', name: 'Alice' }];
+    const validUserIds = new Set(validStudents.map(s => s.user_id));
+    const achievements = [
+      { user_id: 's1', points: 50, verified: true },
+      { user_id: 'orphan_99', points: 100, verified: true }
+    ];
+    const filtered = achievements.filter(a => validUserIds.has(a.user_id) && leaderboardRouter.isApprovedAchievement(a));
+    assert.strictEqual(filtered.length, 1);
+    assert.strictEqual(filtered[0].user_id, 's1');
+  });
+
   console.log(`\nResults: ${passedTests}/${totalTests} tests passed.`);
   if (passedTests !== totalTests) {
     process.exit(1);
   }
 })();
+

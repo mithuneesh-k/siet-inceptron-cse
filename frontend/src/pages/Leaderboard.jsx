@@ -17,22 +17,30 @@ export default function Leaderboard() {
   const [stats, setStats] = useState({});
   const [showFilters, setShowFilters] = useState(false);
 
+  const [fetchError, setFetchError] = useState(null);
+
   const fetchLeaderboard = (showLoading = false) => {
     if (showLoading) setLoading(true);
     const params = new URLSearchParams();
     if (batchFilter) params.set('batch', batchFilter);
     if (classFilter) params.set('class', classFilter);
-    Promise.all([
+
+    Promise.allSettled([
       client.get(`/leaderboard?${params.toString()}`),
       client.get('/leaderboard/stats'),
     ]).then(([lRes, sRes]) => {
-      setStudents(lRes.data || []);
-      setStats(sRes.data || {});
-    }).catch(err => {
-      console.error('Failed to load leaderboard data:', err);
-      if (showLoading) {
-        setStudents([]);
-        setStats({});
+      if (lRes.status === 'fulfilled') {
+        setStudents(lRes.value.data || []);
+        setFetchError(null);
+      } else {
+        console.error('Leaderboard query error:', lRes.reason);
+        setFetchError('Unable to load leaderboard ranking. Please try again.');
+      }
+
+      if (sRes.status === 'fulfilled') {
+        setStats(sRes.value.data || {});
+      } else {
+        console.error('Leaderboard stats error:', sRes.reason);
       }
     }).finally(() => {
       if (showLoading) setLoading(false);
@@ -77,7 +85,7 @@ export default function Leaderboard() {
           ].map((s, i) => (
             <div key={i} className="lb-stat card">
               <span className="lb-stat-i">{s.i}</span>
-              <span className="lb-stat-n">{s.n}</span>
+              <span className="lb-stat-n">{s.n || 0}</span>
               <span className="lb-stat-l">{s.l}</span>
             </div>
           ))}
@@ -147,13 +155,18 @@ export default function Leaderboard() {
               </div>
             ))}
           </div>
+        ) : fetchError && students.length === 0 ? (
+          <div className="card" style={{ padding: '40px 20px', textAlign: 'center' }}>
+            <p style={{ color: '#DC2626', fontWeight: 600, fontSize: 15, marginBottom: 12 }}>{fetchError}</p>
+            <button className="btn btn-secondary btn-sm" onClick={() => fetchLeaderboard(true)}>Retry</button>
+          </div>
         ) : students.length === 0 ? (
           <div className="empty-state"><div className="empty-icon" style={{ marginBottom: '16px' }}><Trophy size={48} color="var(--color-green)" strokeWidth={1.5} opacity={0.6} /></div><h3>No students found</h3></div>
         ) : (
           <>
             {/* Top 3 Podium */}
             {(() => {
-              const showPodium = !batchFilter && !classFilter && top3.length === 3;
+              const showPodium = !batchFilter && !classFilter && top3.length === 3 && top3[0].score > 0;
               return (
                 <>
                 {showPodium && (

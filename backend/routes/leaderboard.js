@@ -1,7 +1,49 @@
 const express = require('express');
 const router = express.Router();
 const { supabase } = require('../db/supabase');
-const { withHttpCache } = require('../services/httpCache');
+
+function isMissingColumnError(error) {
+  if (!error) return false;
+  return Boolean(error.code === '42703' || error.code === 'PGRST204' || (error.message && error.message.includes('Could not find')));
+}
+
+function isApprovedAchievement(a) {
+  if (!a) return false;
+  const description = a.description || '';
+  if (description.trim().toUpperCase().includes('[REJECTED:')) {
+    return false;
+  }
+  if (a.status === 'rejected') {
+    return false;
+  }
+  if (a.status === 'approved') {
+    return true;
+  }
+  return a.verified === true;
+}
+
+async function fetchVerifiedAchievements() {
+  let { data, error } = await supabase
+    .from('achievements')
+    .select('user_id, points, type, title, position, status, verified, description')
+    .eq('verified', true);
+
+  if (isMissingColumnError(error)) {
+    const fallbackRes = await supabase
+      .from('achievements')
+      .select('user_id, points, type, title, position, verified, description')
+      .eq('verified', true);
+    data = fallbackRes.data;
+    error = fallbackRes.error;
+  }
+
+  if (error) {
+    console.error('Leaderboard achievements query error:', error);
+    throw error;
+  }
+
+  return data || [];
+}
 
 async function buildLeaderboardFromAchievements(batchFilter, classFilter, limit) {
   let query = supabase
@@ -11,23 +53,24 @@ async function buildLeaderboardFromAchievements(batchFilter, classFilter, limit)
   if (batchFilter && batchFilter !== 'all') query = query.eq('batch', batchFilter);
   if (classFilter && classFilter !== 'all') query = query.eq('class', classFilter);
 
-  const { data: students, error } = await query;
-  if (error || !students?.length) {
-    if (error) console.error('Leaderboard fallback student query error:', error);
+  const { data: students, error: studentError } = await query;
+  if (studentError || !students?.length) {
+    if (studentError) console.error('Leaderboard student query error:', studentError);
     return [];
   }
 
   const validUserIds = new Set(students.map(s => s.user_id));
 
-  const { data: achievements } = await supabase
-    .from('achievements')
-    .select('user_id, points, type, title, position, status, verified, description')
-    .eq('verified', true);
+  let achievements = [];
+  try {
+    achievements = await fetchVerifiedAchievements();
+  } catch (err) {
+    console.error('Failed to fetch achievements for leaderboard:', err);
+    throw err;
+  }
 
   const validAchs = (achievements || []).filter(a =>
-    validUserIds.has(a.user_id) &&
-    a.status !== 'rejected' &&
-    (!a.description || !a.description.trim().toUpperCase().includes('[REJECTED:'))
+    validUserIds.has(a.user_id) && isApprovedAchievement(a)
   );
 
   const achMap = new Map();
@@ -102,21 +145,25 @@ router.get('/stats', async (req, res) => {
 
   try {
     const [
-      { data: studentsRaw },
-      { data: achsRaw },
-      { count: activeTeamsCount }
+      { data: studentsRaw, error: studentErr },
+      achievementsResult,
+      { count: activeTeamsCount, error: teamsErr }
     ] = await Promise.all([
       supabase.from('students').select('user_id'),
-      supabase.from('achievements').select('user_id, type, position, status, verified, description').eq('verified', true),
+      fetchVerifiedAchievements().catch(err => {
+        console.error('Stats fetchVerifiedAchievements error:', err);
+        throw err;
+      }),
       supabase.from('teams').select('*', { count: 'exact', head: true })
     ]);
 
+    if (studentErr) console.error('Stats student query error:', studentErr);
+    if (teamsErr) console.error('Stats teams query error:', teamsErr);
+
     const validUserIds = new Set((studentsRaw || []).map(s => s.user_id));
 
-    const validAchs = (achsRaw || []).filter(a =>
-      validUserIds.has(a.user_id) &&
-      a.status !== 'rejected' &&
-      (!a.description || !a.description.trim().toUpperCase().includes('[REJECTED:'))
+    const validAchs = (achievementsResult || []).filter(a =>
+      validUserIds.has(a.user_id) && isApprovedAchievement(a)
     );
 
     res.json({
@@ -127,6 +174,7 @@ router.get('/stats', async (req, res) => {
       activeTeams: activeTeamsCount || 0,
     });
   } catch (err) {
+    console.error('Failed to compute leaderboard stats:', err);
     res.status(500).json({ error: 'Failed to compute leaderboard stats' });
   }
 });
@@ -134,16 +182,28 @@ router.get('/stats', async (req, res) => {
 // ─── GET /api/leaderboard/top ─────────────────────────────────────────────────
 router.get('/top', async (req, res) => {
   res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-  const top = await buildLeaderboard(null, null, 5);
-  res.json(top);
+  try {
+    const top = await buildLeaderboard(null, null, 5);
+    res.json(top);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch top leaderboard' });
+  }
 });
 
 // ─── GET /api/leaderboard?batch=&class=&limit= ────────────────────────────────
 router.get('/', async (req, res) => {
   res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-  const { batch, class: cls, limit, year } = req.query;
-  const board = await buildLeaderboard(batch || year, cls, parseInt(limit) || 100);
-  res.json(board);
+  try {
+    const { batch, class: cls, limit, year } = req.query;
+    const board = await buildLeaderboard(batch || year, cls, parseInt(limit) || 100);
+    res.json(board);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch leaderboard' });
+  }
 });
+
+router.isMissingColumnError = isMissingColumnError;
+router.isApprovedAchievement = isApprovedAchievement;
+router.fetchVerifiedAchievements = fetchVerifiedAchievements;
 
 module.exports = router;
