@@ -2,7 +2,7 @@ const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
 const rawUrl = process.env.SUPABASE_URL;
-const rawKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+const rawKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
 
 const supabaseUrl = (rawUrl && rawUrl.startsWith('http')) ? rawUrl : 'https://placeholder.supabase.co';
 const supabaseKey = (rawKey && !rawKey.startsWith('your_')) ? rawKey : 'placeholder_key';

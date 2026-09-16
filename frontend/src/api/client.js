@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const client = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5002/api',
   timeout: 60000, 
 });
 
@@ -14,7 +14,7 @@ client.interceptors.request.use((config) => {
 client.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401) {
+    if (err.response?.status === 401 && !err.config?.url?.includes('/auth/login')) {
       localStorage.removeItem('SIET_token');
       localStorage.removeItem('SIET_user');
       window.location.href = '/login';

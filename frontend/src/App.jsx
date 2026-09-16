@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -54,13 +54,19 @@ function StudentOnlyRoute({ children }) {
 }
 
 function AppContent() {
+  const { user } = useAuth();
+  const location = useLocation();
+
+  const isLoginPage = location.pathname === '/login';
+  const showHeaderFooter = Boolean(user) && !isLoginPage;
+
   return (
     <>
-      <Navbar />
+      {showHeaderFooter && <Navbar />}
       <Suspense fallback={<div className="p-4 text-center">Loading...</div>}>
         <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<Login />} />
+          <Route path="/" element={<ProtectedRoute><Landing /></ProtectedRoute>} />
+          <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
           <Route path="/updates" element={<StudentOnlyRoute><Updates /></StudentOnlyRoute>} />
           <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
           <Route path="/competitive-leaderboard" element={<ProtectedRoute><CompetitiveLeaderboard /></ProtectedRoute>} />
@@ -71,10 +77,10 @@ function AppContent() {
           <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
           <Route path="/approvals" element={<ProtectedRoute adminOnly><Approvals /></ProtectedRoute>} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to={user ? "/" : "/login"} replace />} />
         </Routes>
       </Suspense>
-      <Footer />
+      {showHeaderFooter && <Footer />}
     </>
   );
 }

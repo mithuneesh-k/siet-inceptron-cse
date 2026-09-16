@@ -40,8 +40,8 @@ export default function Login() {
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
           <div className="form-group">
-            <label className="form-label">Email / Roll No / Register No</label>
-            <input id="login-email" type="text" className="form-input" placeholder="e.g. 24CS001, 714024104001 or email" value={form.email}
+            <label className="form-label">REGISTER NO</label>
+            <input id="login-email" type="text" className="form-input" placeholder="e.g. 714025104173" value={form.email}
               onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
           </div>
           <div className="form-group">
@@ -58,8 +58,8 @@ export default function Login() {
         <div className="auth-demo">
           <p style={{ fontSize: 12, color: 'var(--color-text-muted)', textAlign: 'center', margin: '20px 0 8px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>Test Credentials</p>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
-            <button className="demo-btn" onClick={() => setForm({ email: 'admin@siet.ac.in', password: 'password123' })}>👨‍🏫 Admin</button>
-            <button className="demo-btn" onClick={() => setForm({ email: 'mithuneeshk25cs@srishakthi.ac.in', password: 'mithunINCEPTRON9+' })}>💻 Mithuneesh</button>
+            <button type="button" className="demo-btn" onClick={() => setForm({ email: 'admin@siet.ac.in', password: 'password123' })}>👨‍🏫 Admin</button>
+            <button type="button" className="demo-btn" onClick={() => setForm({ email: '714025104144', password: '25CS144' })}>💻 Mithuneesh (714025104144)</button>
           </div>
         </div>
 
