@@ -23,6 +23,9 @@ function isMissingTableError(error) {
 }
 
 async function getConnection(userId, platformCode) {
+  if (!platformSupabase) {
+    return { connection: null, missingTable: true, error: null };
+  }
   try {
     const { data, error } = await platformSupabase
       .from('student_platform_connections')
@@ -48,6 +51,9 @@ async function getConnection(userId, platformCode) {
 }
 
 async function getAllConnectionsForUser(userId) {
+  if (!platformSupabase) {
+    return { connections: [], missingTable: true, error: null };
+  }
   try {
     const { data, error } = await platformSupabase
       .from('student_platform_connections')
@@ -71,6 +77,9 @@ async function getAllConnectionsForUser(userId) {
 }
 
 async function getConnectionByHandle(platformCode, normalizedHandle) {
+  if (!platformSupabase) {
+    return { connection: null, missingTable: true, error: null };
+  }
   try {
     const { data, error } = await platformSupabase
       .from('student_platform_connections')
@@ -103,6 +112,9 @@ function isDuplicateKeyError(error) {
 }
 
 async function saveConnection(payload) {
+  if (!platformSupabase) {
+    return { connection: null, missingTable: true, duplicate: false, error: null };
+  }
   const {
     userId,
     platformCode,
@@ -164,6 +176,9 @@ async function saveConnection(payload) {
 }
 
 async function updateConnectionStatus(userId, platformCode, updateFields) {
+  if (!platformSupabase) {
+    return { connection: null, missingTable: true, error: null };
+  }
   try {
     const { data, error } = await platformSupabase
       .from('student_platform_connections')
@@ -193,6 +208,9 @@ async function updateConnectionStatus(userId, platformCode, updateFields) {
 }
 
 async function deleteConnection(userId, platformCode) {
+  if (!platformSupabase) {
+    return { success: true, missingTable: true, error: null };
+  }
   try {
     const { error } = await platformSupabase
       .from('student_platform_connections')
@@ -217,6 +235,9 @@ async function deleteConnection(userId, platformCode) {
 }
 
 async function getAllPlatformConnections() {
+  if (!platformSupabase) {
+    return { connections: [], missingTable: true, error: null };
+  }
   try {
     const { data, error } = await platformSupabase
       .from('student_platform_connections')

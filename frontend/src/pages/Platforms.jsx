@@ -739,6 +739,10 @@ export default function Platforms() {
                     <span className="badge" style={{ background: 'var(--bg-hover)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)', fontSize: 10.5, fontWeight: 700 }}>
                       NOT CONNECTED
                     </span>
+                  ) : (!lcConn?.ownershipVerified && !lcConn?.ownership_verified) ? (
+                    <span className="badge" style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#D97706', border: '1px solid rgba(234, 179, 8, 0.3)', fontSize: 10.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <AlertTriangle size={11} /> PENDING VERIFICATION
+                    </span>
                   ) : lcStatus === 'sync_error' ? (
                     <span className="badge" style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#D97706', border: '1px solid rgba(234, 179, 8, 0.3)', fontSize: 10.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                       <AlertTriangle size={11} /> SYNC ERROR
@@ -761,9 +765,15 @@ export default function Platforms() {
                           <ExternalLink size={13} />
                         </a>
                       </div>
-                      <div style={{ fontSize: 10.5, color: '#10B981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: 10, border: '1px solid rgba(16, 185, 129, 0.25)', display: 'inline-flex', alignItems: 'center', gap: 3, fontWeight: 700 }}>
-                        <CheckCircle2 size={11} /> Points count
-                      </div>
+                      {(!lcConn?.ownershipVerified && !lcConn?.ownership_verified) ? (
+                        <div style={{ fontSize: 10.5, color: '#D97706', background: 'rgba(234, 179, 8, 0.1)', padding: '2px 8px', borderRadius: 10, border: '1px solid rgba(234, 179, 8, 0.25)', display: 'inline-flex', alignItems: 'center', gap: 3, fontWeight: 700 }}>
+                          Pending verification
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: 10.5, color: '#10B981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: 10, border: '1px solid rgba(16, 185, 129, 0.25)', display: 'inline-flex', alignItems: 'center', gap: 3, fontWeight: 700 }}>
+                          <CheckCircle2 size={11} /> Points count
+                        </div>
+                      )}
                     </div>
 
                     <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 6 }}>
@@ -878,6 +888,10 @@ export default function Platforms() {
                     <span className="badge" style={{ background: 'var(--bg-hover)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)', fontSize: 10.5, fontWeight: 700 }}>
                       NOT CONNECTED
                     </span>
+                  ) : (!gfgConn?.ownershipVerified && !gfgConn?.ownership_verified) ? (
+                    <span className="badge" style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#D97706', border: '1px solid rgba(234, 179, 8, 0.3)', fontSize: 10.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <AlertTriangle size={11} /> PENDING VERIFICATION
+                    </span>
                   ) : gfgStatus === 'sync_error' ? (
                     <span className="badge" style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#D97706', border: '1px solid rgba(234, 179, 8, 0.3)', fontSize: 10.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                       <AlertTriangle size={11} /> SYNC ERROR
@@ -901,7 +915,7 @@ export default function Platforms() {
                         </a>
                       </div>
                       <div style={{ fontSize: 10, color: 'var(--color-text-muted)', background: 'var(--bg-hover)', padding: '2px 8px', borderRadius: 10, border: '1px solid var(--color-border)', display: 'inline-flex', alignItems: 'center', gap: 3, fontWeight: 600 }}>
-                        0 pts contribution
+                        {(!gfgConn?.ownershipVerified && !gfgConn?.ownership_verified) ? 'Pending verification (0 pts)' : '0 pts contribution'}
                       </div>
                     </div>
 
@@ -1017,6 +1031,10 @@ export default function Platforms() {
                     <span className="badge" style={{ background: 'var(--bg-hover)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)', fontSize: 10.5, fontWeight: 700 }}>
                       NOT CONNECTED
                     </span>
+                  ) : (!hrConn?.ownershipVerified && !hrConn?.ownership_verified) ? (
+                    <span className="badge" style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#D97706', border: '1px solid rgba(234, 179, 8, 0.3)', fontSize: 10.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <AlertTriangle size={11} /> PENDING VERIFICATION
+                    </span>
                   ) : hrStatus === 'sync_error' ? (
                     <span className="badge" style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#D97706', border: '1px solid rgba(234, 179, 8, 0.3)', fontSize: 10.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                       <AlertTriangle size={11} /> SYNC ERROR
@@ -1040,7 +1058,7 @@ export default function Platforms() {
                         </a>
                       </div>
                       <div style={{ fontSize: 10, color: 'var(--color-text-muted)', background: 'var(--bg-hover)', padding: '2px 8px', borderRadius: 10, border: '1px solid var(--color-border)', display: 'inline-flex', alignItems: 'center', gap: 3, fontWeight: 600 }}>
-                        0 pts contribution
+                        {(!hrConn?.ownershipVerified && !hrConn?.ownership_verified) ? 'Pending verification (0 pts)' : '0 pts contribution'}
                       </div>
                     </div>
 

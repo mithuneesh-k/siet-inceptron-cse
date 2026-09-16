@@ -127,11 +127,8 @@ function calculateUserCompetitiveScore(connections) {
   for (const conn of connections) {
     const pCode = (conn.platform_code || conn.platformCode || '').toLowerCase();
 
-    // LeetCode, GFG, HackerRank use first-claim connection model (status === 'connected' or ownership_verified = true).
-    // Codeforces requires explicit self-service or admin ownership_verified = true.
-    const isEligible = (pCode === 'leetcode' || pCode === 'geeksforgeeks' || pCode === 'hackerrank')
-      ? Boolean(conn.ownership_verified ?? conn.ownershipVerified ?? (conn.status === 'connected' || conn.status === 'verified'))
-      : Boolean(conn.ownership_verified ?? conn.ownershipVerified);
+    // Strictly require ownership_verified === true across ALL platforms for score eligibility
+    const isEligible = Boolean(conn.ownership_verified ?? conn.ownershipVerified);
 
     const metrics = conn.metrics || {};
     const pScore = calculatePlatformScore(metrics, isEligible);

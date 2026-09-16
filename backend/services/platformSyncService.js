@@ -212,6 +212,9 @@ async function connectPlatform(userId, platformCode, rawHandle) {
       return { status: 400, error: 'LeetCode handle not found.' };
     }
 
+    const verificationToken = generateVerificationToken();
+    const verificationExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
     const savePayload = {
       userId,
       platformCode: 'leetcode',
@@ -219,9 +222,9 @@ async function connectPlatform(userId, platformCode, rawHandle) {
       normalizedHandle: adapterResult.normalizedHandle,
       metrics: adapterResult.metrics,
       status: 'connected',
-      ownershipVerified: true,
-      verificationToken: null,
-      verificationExpiresAt: null,
+      ownershipVerified: isChangingHandle ? false : Boolean(studentCurrentConn?.ownership_verified),
+      verificationToken: isChangingHandle || !studentCurrentConn?.ownership_verified ? verificationToken : null,
+      verificationExpiresAt: isChangingHandle || !studentCurrentConn?.ownership_verified ? verificationExpiresAt : null,
       lastSyncedAt: null,
       lastAttemptedAt: now,
       lastErrorCode: null
@@ -261,7 +264,7 @@ async function connectPlatform(userId, platformCode, rawHandle) {
       normalizedHandle: adapterResult.normalizedHandle,
       metrics: adapterResult.metrics,
       status: 'connected',
-      ownershipVerified: true,
+      ownershipVerified: isChangingHandle ? false : Boolean(studentCurrentConn?.ownership_verified),
       verificationToken: null,
       verificationExpiresAt: null,
       lastSyncedAt: null,
@@ -303,7 +306,7 @@ async function connectPlatform(userId, platformCode, rawHandle) {
       normalizedHandle: adapterResult.normalizedHandle,
       metrics: adapterResult.metrics,
       status: 'connected',
-      ownershipVerified: true,
+      ownershipVerified: isChangingHandle ? false : Boolean(studentCurrentConn?.ownership_verified),
       verificationToken: null,
       verificationExpiresAt: null,
       lastSyncedAt: null,
