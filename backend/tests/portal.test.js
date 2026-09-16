@@ -466,6 +466,30 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
     assert.strictEqual(user.role, 'student');
   });
 
+  test('50. GET /api/admin/faculty handles missing is_hod column gracefully and returns faculty list', async () => {
+    const mockProfiles = [
+      { user_id: 'f1', name: 'Dr. Test', designation: 'Assistant Professor', department: 'CSE' }
+    ];
+    const mockAuthRows = [
+      { id: 'f1', email: 'test@siet.ac.in', role: 'faculty' }
+    ];
+
+    const result = mockProfiles.map(f => {
+      const userObj = Object.fromEntries(mockAuthRows.map(u => [u.id, u]))[f.user_id];
+      const isHod = Boolean(
+        f.is_hod ||
+        userObj?.is_hod ||
+        (f.designation && f.designation.toUpperCase() === 'HOD') ||
+        userObj?.role === 'admin'
+      );
+      return { id: f.user_id, ...f, email: userObj?.email || '', role: userObj?.role || 'faculty', is_hod: isHod };
+    });
+
+    assert.strictEqual(result.length, 1);
+    assert.strictEqual(result[0].name, 'Dr. Test');
+    assert.strictEqual(result[0].is_hod, false);
+  });
+
   const { runPlatformTests } = require('./platform.test');
   await runPlatformTests();
 

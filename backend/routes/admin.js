@@ -450,24 +450,49 @@ router.get('/faculty', hodMiddleware, async (req, res) => {
   let cached = await cache.get(cacheKey);
   if (cached) return res.json(cached);
 
-  const { data: profiles, error } = await supabase
+  let { data: profiles, error } = await supabase
     .from('faculty')
     .select('user_id, name, designation, department, avatar_url, advising_class, advising_batch, is_hod')
     .order('name');
 
-  if (error) return res.status(500).json({ error: 'Failed to fetch faculty.' });
+  if (error && (error.code === '42703' || error.code === 'PGRST204' || error.message?.includes('is_hod'))) {
+    const fallback = await supabase
+      .from('faculty')
+      .select('user_id, name, designation, department, avatar_url, advising_class, advising_batch')
+      .order('name');
+    profiles = fallback.data;
+    error = fallback.error;
+  }
+
+  if (error || !profiles) return res.status(500).json({ error: 'Failed to fetch faculty.', details: error?.message });
 
   const userIds = profiles.map(f => f.user_id);
-  const { data: authRows } = await supabase.from('users').select('id, email, role, is_hod').in('id', userIds);
-  const authMap = Object.fromEntries((authRows || []).map(u => [u.id, u]));
+  let authMap = {};
+  if (userIds.length > 0) {
+    let { data: authRows, error: aErr } = await supabase.from('users').select('id, email, role, is_hod').in('id', userIds);
+    if (aErr && (aErr.code === '42703' || aErr.code === 'PGRST204' || aErr.message?.includes('is_hod'))) {
+      const fallback = await supabase.from('users').select('id, email, role').in('id', userIds);
+      authRows = fallback.data;
+    }
+    authMap = Object.fromEntries((authRows || []).map(u => [u.id, u]));
+  }
 
-  const result = profiles.map(f => ({ 
-    id: f.user_id, 
-    ...f, 
-    email: authMap[f.user_id]?.email || '',
-    role: authMap[f.user_id]?.role || 'faculty',
-    is_hod: authMap[f.user_id]?.is_hod || false
-  }));
+  const result = profiles.map(f => {
+    const userObj = authMap[f.user_id];
+    const isHod = Boolean(
+      f.is_hod ||
+      userObj?.is_hod ||
+      (f.designation && f.designation.toUpperCase() === 'HOD') ||
+      userObj?.role === 'admin'
+    );
+    return {
+      id: f.user_id,
+      ...f,
+      email: userObj?.email || '',
+      role: userObj?.role || 'faculty',
+      is_hod: isHod
+    };
+  });
 
   await cache.set(cacheKey, result, 1800);
   res.json(result);
@@ -481,32 +506,54 @@ router.post('/faculty', hodMiddleware, async (req, res) => {
   const tempPassword = generateTemporaryPassword();
   const password_hash = await bcrypt.hash(tempPassword, 10);
 
-  // 1. Create user with must_change_password = true
-  const { data: newUser, error: uErr } = await supabase
+  // 1. Create user
+  let userPayload = { email: email.trim().toLowerCase(), password_hash, role: 'faculty' };
+  let { data: newUser, error: uErr } = await supabase
     .from('users')
-    .insert({ email: email.trim().toLowerCase(), password_hash, role: 'faculty', is_hod: !!is_hod, must_change_password: true })
+    .insert({ ...userPayload, is_hod: !!is_hod, must_change_password: true })
     .select('id')
     .single();
 
-  if (uErr) {
-    if (uErr.code === '23505') return res.status(409).json({ error: 'A user with this email already exists.' });
-    return res.status(500).json({ error: 'Failed to create user.', details: uErr.message });
+  if (uErr && (uErr.code === '42703' || uErr.code === 'PGRST204' || uErr.message?.includes('is_hod') || uErr.message?.includes('must_change_password'))) {
+    const fallback = await supabase
+      .from('users')
+      .insert(userPayload)
+      .select('id')
+      .single();
+    newUser = fallback.data;
+    uErr = fallback.error;
+  }
+
+  if (uErr || !newUser) {
+    if (uErr?.code === '23505') return res.status(409).json({ error: 'A user with this email already exists.' });
+    return res.status(500).json({ error: 'Failed to create user.', details: uErr?.message });
   }
 
   // 2. Create faculty profile
-  const { data: profile, error: pErr } = await supabase
+  let facultyPayload = {
+    user_id: newUser.id,
+    name: name.trim().toUpperCase(),
+    designation: designation?.trim() || 'Faculty',
+    department: department?.trim() || 'CSE',
+    advising_class: advising_class || null,
+    advising_batch: advising_batch || null
+  };
+
+  let { data: profile, error: pErr } = await supabase
     .from('faculty')
-    .insert({
-      user_id: newUser.id,
-      name: name.trim().toUpperCase(),
-      designation: designation?.trim() || 'Faculty',
-      department: department?.trim() || 'CSE',
-      advising_class: advising_class || null,
-      advising_batch: advising_batch || null,
-      is_hod: !!is_hod
-    })
+    .insert({ ...facultyPayload, is_hod: !!is_hod })
     .select()
     .single();
+
+  if (pErr && (pErr.code === '42703' || pErr.code === 'PGRST204' || pErr.message?.includes('is_hod'))) {
+    const fallback = await supabase
+      .from('faculty')
+      .insert(facultyPayload)
+      .select()
+      .single();
+    profile = fallback.data;
+    pErr = fallback.error;
+  }
 
   if (pErr) {
     await supabase.from('users').delete().eq('id', newUser.id);
@@ -529,18 +576,22 @@ router.patch('/faculty/:id', hodMiddleware, async (req, res) => {
   if (department !== undefined) updates.department = department;
   if (advising_class !== undefined) updates.advising_class = advising_class || null;
   if (advising_batch !== undefined) updates.advising_batch = advising_batch || null;
-  if (is_hod !== undefined) updates.is_hod = !!is_hod;
 
-  if (Object.keys(updates).length === 0) {
-    return res.status(400).json({ error: 'No valid fields to update' });
+  if (Object.keys(updates).length > 0) {
+    let { error } = await supabase.from('faculty').update(updates).eq('user_id', id);
+    if (error) return res.status(500).json({ error: 'Failed to update faculty.', details: error.message });
   }
-
-  const { error } = await supabase.from('faculty').update(updates).eq('user_id', id);
-  if (error) return res.status(500).json({ error: 'Failed to update faculty.', details: error.message });
 
   // Also update is_hod in users table if provided
   if (is_hod !== undefined) {
-    await supabase.from('users').update({ is_hod: !!is_hod }).eq('id', id);
+    const { error: fErr } = await supabase.from('faculty').update({ is_hod: !!is_hod }).eq('user_id', id);
+    if (fErr && (fErr.code === '42703' || fErr.code === 'PGRST204')) {
+      // Ignore if is_hod column does not exist on faculty table
+    }
+    const { error: uErr } = await supabase.from('users').update({ is_hod: !!is_hod }).eq('id', id);
+    if (uErr && (uErr.code === '42703' || uErr.code === 'PGRST204')) {
+      // Ignore if is_hod column does not exist on users table
+    }
   }
 
   // Clear cache
