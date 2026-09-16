@@ -319,11 +319,19 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 
   if (!ach) return res.status(404).json({ error: 'Achievement not found' });
   
-  // Allow if owner OR if non-student (faculty/admin)
+  // Allow if owner OR if authorized faculty advisor / admin with proper scope
   const isOwner = ach.user_id === req.user.id;
-  const isTeacher = req.user.role !== 'student';
-  if (!isOwner && !isTeacher) {
-    return res.status(403).json({ error: 'Not authorized to delete this achievement.' });
+  if (!isOwner) {
+    if (req.user.role === 'student') {
+      return res.status(403).json({ error: 'Not authorized to delete this achievement.' });
+    }
+    const scope = await getAdminScope(req.user.id, req.user.role);
+    if (!scope.hasFullAccess) {
+      const { data: student } = await supabase.from('students').select('class, batch').eq('user_id', ach.user_id).single();
+      if (!student || student.class !== scope.advisingClass || student.batch !== scope.advisingBatch) {
+        return res.status(403).json({ error: 'Not authorized to delete this achievement.' });
+      }
+    }
   }
 
   const wasPending = ach.verified === false && (!ach.description || !ach.description.trim().toUpperCase().includes('[REJECTED:'));

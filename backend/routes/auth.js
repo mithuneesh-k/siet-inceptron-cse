@@ -83,7 +83,7 @@ router.post('/login', async (req, res) => {
   // 1. Try to find by email directly in 'users' table
   const { data: byEmail } = await supabase
     .from('users')
-    .select('id, email, password_hash, role')
+    .select('id, email, password_hash, role, must_change_password')
     .ilike('email', identifier.toLowerCase())
     .maybeSingle();
 
@@ -103,7 +103,7 @@ router.post('/login', async (req, res) => {
       console.log(`✅ Found user by roll_no, user_id: ${byRollNo.user_id}`);
       const { data: userById } = await supabase
         .from('users')
-        .select('id, email, password_hash, role')
+        .select('id, email, password_hash, role, must_change_password')
         .eq('id', byRollNo.user_id)
         .maybeSingle();
       authUser = userById;
@@ -120,7 +120,7 @@ router.post('/login', async (req, res) => {
         console.log(`✅ Found user by reg_no, user_id: ${byRegNo.user_id}`);
         const { data: userById } = await supabase
           .from('users')
-          .select('id, email, password_hash, role')
+          .select('id, email, password_hash, role, must_change_password')
           .eq('id', byRegNo.user_id)
           .maybeSingle();
         authUser = userById;
@@ -166,6 +166,7 @@ router.post('/login', async (req, res) => {
       email: authUser.email,
       role: authUser.role,
       is_admin: authUser.role !== 'student',
+      must_change_password: Boolean(authUser.must_change_password),
       ...profile,
     },
   });
