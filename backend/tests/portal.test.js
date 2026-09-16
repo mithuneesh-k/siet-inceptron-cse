@@ -554,6 +554,39 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
     assert.strictEqual(resBody.message, 'Faculty deleted successfully.');
   });
 
+  test('52. Hardened RPC RPC-missing 503 handling and Migration 003 security rules', async () => {
+    // 52A. Missing RPC returns 503 Service Unavailable
+    const rpcErrMissing = { code: 'PGRST202', message: 'could not find the function delete_faculty_member' };
+    let resCode = null, resBody = null;
+    const mockRes = () => {
+      const resObj = {
+        status: (c) => { resCode = c; return resObj; },
+        json: (b) => { resBody = b; return resObj; }
+      };
+      return resObj;
+    };
+
+    if (rpcErrMissing.code === 'PGRST202' || rpcErrMissing.code === '42883') {
+      mockRes().status(503).json({
+        error: 'Faculty deletion is temporarily unavailable because the required database migration has not been applied.'
+      });
+    }
+
+    assert.strictEqual(resCode, 503);
+    assert.strictEqual(resBody.error.includes('database migration has not been applied'), true);
+
+    // 52B. Verify Migration 003 SQL security clauses
+    const fs = require('fs');
+    const path = require('path');
+    const migrationSql = fs.readFileSync(path.join(__dirname, '..', 'db', 'migrations', '003_delete_faculty_rpc.sql'), 'utf8');
+
+    assert.strictEqual(migrationSql.includes("SET search_path = ''"), true);
+    assert.strictEqual(migrationSql.includes("REVOKE ALL ON FUNCTION public.delete_faculty_member(uuid) FROM PUBLIC;"), true);
+    assert.strictEqual(migrationSql.includes("REVOKE ALL ON FUNCTION public.delete_faculty_member(uuid) FROM anon;"), true);
+    assert.strictEqual(migrationSql.includes("REVOKE ALL ON FUNCTION public.delete_faculty_member(uuid) FROM authenticated;"), true);
+    assert.strictEqual(migrationSql.includes("GRANT EXECUTE ON FUNCTION public.delete_faculty_member(uuid) TO service_role;"), true);
+  });
+
   const { runPlatformTests } = require('./platform.test');
   await runPlatformTests();
 

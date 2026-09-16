@@ -1,5 +1,5 @@
 -- ╔════════════════════════════════════════════════════════════════════════╗
--- ║  Migration 003: Idempotent Atomic Faculty Deletion RPC                ║
+-- ║  Migration 003: Idempotent Atomic Faculty Deletion RPC (Hardened)     ║
 -- ║  Run this in your Supabase SQL Editor (Dashboard)                      ║
 -- ╚════════════════════════════════════════════════════════════════════════╝
 
@@ -7,11 +7,12 @@ CREATE OR REPLACE FUNCTION public.delete_faculty_member(p_target_user_id uuid)
 RETURNS json
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = ''
 AS $$
 DECLARE
   v_role text;
 BEGIN
-  -- 1. Check target user exists and get role
+  -- 1. Check target user exists and get role from public.users
   SELECT role INTO v_role FROM public.users WHERE id = p_target_user_id;
   IF NOT FOUND THEN
     RETURN json_build_object('success', false, 'code', 'NOT_FOUND', 'message', 'Faculty user not found.');
@@ -38,5 +39,10 @@ BEGIN
 END;
 $$;
 
--- Grant execution permissions to service_role
+-- Revoke execution from untrusted client roles
+REVOKE ALL ON FUNCTION public.delete_faculty_member(uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.delete_faculty_member(uuid) FROM anon;
+REVOKE ALL ON FUNCTION public.delete_faculty_member(uuid) FROM authenticated;
+
+-- Grant execution ONLY to server-side service_role
 GRANT EXECUTE ON FUNCTION public.delete_faculty_member(uuid) TO service_role;

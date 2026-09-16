@@ -609,10 +609,20 @@ router.delete('/faculty/:id', strictAdminMiddleware, async (req, res) => {
     return res.status(400).json({ error: 'Cannot delete your own account' });
   }
 
-  // 2. Attempt atomic PostgreSQL RPC function execution first
+  // 2. Execute atomic PostgreSQL RPC function (delete_faculty_member)
   const { data: rpcRes, error: rpcErr } = await supabase.rpc('delete_faculty_member', { p_target_user_id: id });
 
-  if (!rpcErr && rpcRes) {
+  // If RPC is missing on unmigrated database (code PGRST202 or 42883), return HTTP 503 Service Unavailable
+  if (rpcErr) {
+    if (rpcErr.code === 'PGRST202' || rpcErr.code === '42883' || rpcErr.message?.includes('could not find the function')) {
+      return res.status(503).json({
+        error: 'Faculty deletion is temporarily unavailable because the required database migration has not been applied.'
+      });
+    }
+    return res.status(500).json({ error: 'Failed to delete faculty member.', details: rpcErr.message });
+  }
+
+  if (rpcRes) {
     if (rpcRes.success) {
       await cache.del('admin:faculty');
       return res.json({ message: rpcRes.message || 'Faculty deleted successfully.' });
@@ -621,44 +631,7 @@ router.delete('/faculty/:id', strictAdminMiddleware, async (req, res) => {
     return res.status(statusCode).json({ error: rpcRes.message });
   }
 
-  // 3. Application-level fallback if RPC is not present on live DB (code 42883 or PGRST202)
-  const { data: targetUser, error: targetErr } = await supabase
-    .from('users')
-    .select('id, email, role')
-    .eq('id', id)
-    .maybeSingle();
-
-  if (targetErr || !targetUser) {
-    return res.status(404).json({ error: 'Faculty user not found.' });
-  }
-
-  if (targetUser.role === 'admin') {
-    return res.status(403).json({ error: 'Admin accounts cannot be deleted via the faculty endpoint.' });
-  }
-  if (targetUser.role !== 'faculty') {
-    return res.status(403).json({ error: 'Only faculty accounts can be deleted via this endpoint.' });
-  }
-
-  // Safely null out approved_by references in achievements
-  await supabase.from('achievements').update({ approved_by: null }).eq('approved_by', id);
-
-  // Delete faculty profile first
-  const { error: fErr } = await supabase.from('faculty').delete().eq('user_id', id);
-  if (fErr) {
-    return res.status(500).json({ error: 'Failed to delete faculty profile.', details: fErr.message });
-  }
-
-  // Delete user account
-  const { error: uErr } = await supabase.from('users').delete().eq('id', id);
-  if (uErr) {
-    if (uErr.code === '23503') {
-      return res.status(409).json({ error: 'Cannot delete faculty due to existing dependencies.', details: uErr.message });
-    }
-    return res.status(500).json({ error: 'Failed to delete faculty user account.', details: uErr.message });
-  }
-
-  await cache.del('admin:faculty');
-  res.json({ message: 'Faculty deleted successfully.' });
+  return res.status(500).json({ error: 'Unexpected error during faculty deletion.' });
 });
 
 // ─── Admin Overview ────────────────────────────────────────────────────────
