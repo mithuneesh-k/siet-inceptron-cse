@@ -78,14 +78,19 @@ router.post('/login', async (req, res) => {
   const identifier = email.trim();
   console.log(`🔍 Attempting login for identifier: ${identifier}`);
 
+  const findUserWithFallback = async (queryFn) => {
+    let { data, error } = await queryFn(supabase.from('users').select('id, email, password_hash, role, must_change_password')).maybeSingle();
+    if (error && (error.code === '42703' || error.code === 'PGRST204' || error.message?.includes('must_change_password'))) {
+      const fallback = await queryFn(supabase.from('users').select('id, email, password_hash, role')).maybeSingle();
+      data = fallback.data;
+    }
+    return data;
+  };
+
   let authUser = null;
 
   // 1. Try to find by email directly in 'users' table
-  const { data: byEmail } = await supabase
-    .from('users')
-    .select('id, email, password_hash, role, must_change_password')
-    .ilike('email', identifier.toLowerCase())
-    .maybeSingle();
+  const byEmail = await findUserWithFallback(q => q.ilike('email', identifier.toLowerCase()));
 
   if (byEmail) {
     console.log(`✅ Found user by email: ${byEmail.email}`);
@@ -101,29 +106,19 @@ router.post('/login', async (req, res) => {
 
     if (byRollNo) {
       console.log(`✅ Found user by roll_no, user_id: ${byRollNo.user_id}`);
-      const { data: userById } = await supabase
-        .from('users')
-        .select('id, email, password_hash, role, must_change_password')
-        .eq('id', byRollNo.user_id)
-        .maybeSingle();
-      authUser = userById;
+      authUser = await findUserWithFallback(q => q.eq('id', byRollNo.user_id));
     } else {
       // 3. Try to find by reg_no in 'students' table
       console.log(`Searching for reg_no: ${identifier}`);
       const { data: byRegNo } = await supabase
         .from('students')
         .select('user_id')
-        .eq('reg_no', identifier)
+        .ilike('reg_no', identifier)
         .maybeSingle();
 
       if (byRegNo) {
         console.log(`✅ Found user by reg_no, user_id: ${byRegNo.user_id}`);
-        const { data: userById } = await supabase
-          .from('users')
-          .select('id, email, password_hash, role, must_change_password')
-          .eq('id', byRegNo.user_id)
-          .maybeSingle();
-        authUser = userById;
+        authUser = await findUserWithFallback(q => q.eq('id', byRegNo.user_id));
       }
     }
   }

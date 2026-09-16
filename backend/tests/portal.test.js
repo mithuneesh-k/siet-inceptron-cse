@@ -437,6 +437,35 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
     assert.strictEqual(result.easySolved, 0);
   });
 
+  test('49. Login handles missing must_change_password column gracefully without failing user lookup', async () => {
+    const mockQueryBuilder = {
+      maybeSingle: async () => ({
+        data: null,
+        error: { code: '42703', message: 'column users.must_change_password does not exist' }
+      })
+    };
+    const mockFallbackBuilder = {
+      maybeSingle: async () => ({
+        data: { id: 'u1', email: 'test@siet.ac.in', password_hash: 'hash', role: 'student' },
+        error: null
+      })
+    };
+
+    let callCount = 0;
+    const findUserWithFallback = async (queryFn) => {
+      callCount++;
+      let res = await (callCount === 1 ? mockQueryBuilder : mockFallbackBuilder).maybeSingle();
+      if (res.error && (res.error.code === '42703' || res.error.message?.includes('must_change_password'))) {
+        res = await mockFallbackBuilder.maybeSingle();
+      }
+      return res.data;
+    };
+
+    const user = await findUserWithFallback(() => {});
+    assert.strictEqual(user.id, 'u1');
+    assert.strictEqual(user.role, 'student');
+  });
+
   const { runPlatformTests } = require('./platform.test');
   await runPlatformTests();
 

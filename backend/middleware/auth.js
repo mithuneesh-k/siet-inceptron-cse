@@ -13,11 +13,21 @@ const authMiddleware = async (req, res, next) => {
     if (!decoded || !decoded.id) return res.status(401).json({ error: 'Invalid token payload' });
 
     // Load current authorization state from database (prevents stale JWT scope vulnerabilities)
-    const { data: userRow, error: uErr } = await supabase
+    let { data: userRow, error: uErr } = await supabase
       .from('users')
       .select('id, email, role, must_change_password')
       .eq('id', decoded.id)
       .maybeSingle();
+
+    if (uErr && (uErr.code === '42703' || uErr.code === 'PGRST204' || uErr.message?.includes('must_change_password'))) {
+      const fallback = await supabase
+        .from('users')
+        .select('id, email, role')
+        .eq('id', decoded.id)
+        .maybeSingle();
+      userRow = fallback.data;
+      uErr = fallback.error;
+    }
 
     if (uErr || !userRow) {
       return res.status(401).json({ error: 'Account no longer exists or authorization revoked' });
@@ -74,11 +84,20 @@ const optionalAuthMiddleware = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     if (!decoded || !decoded.id) return next();
 
-    const { data: userRow } = await supabase
+    let { data: userRow, error: uErr } = await supabase
       .from('users')
       .select('id, email, role, must_change_password')
       .eq('id', decoded.id)
       .maybeSingle();
+
+    if (uErr && (uErr.code === '42703' || uErr.code === 'PGRST204' || uErr.message?.includes('must_change_password'))) {
+      const fallback = await supabase
+        .from('users')
+        .select('id, email, role')
+        .eq('id', decoded.id)
+        .maybeSingle();
+      userRow = fallback.data;
+    }
 
     if (!userRow) return next();
 
