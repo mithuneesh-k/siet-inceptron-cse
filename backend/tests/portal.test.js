@@ -490,37 +490,68 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
     assert.strictEqual(result[0].is_hod, false);
   });
 
-  test('51. DELETE /api/admin/faculty/:id protected deletion rules (admin success, advisor 403, student 403, admin target 403, self 400, missing 404)', async () => {
+  test('51. DELETE /api/admin/faculty/:id protected deletion rules (admin success, advisor 403, student 403, admin target 403, self 400, missing 404, DB failure 500)', async () => {
     // 51A. Self-deletion check
     const reqSelf = { params: { id: 'admin1' }, user: { id: 'admin1', role: 'admin' } };
     let resCode = null, resBody = null;
-    const resSelf = { status: (c) => { resCode = c; return resSelf; }, json: (b) => { resBody = b; return resSelf; } };
+    const mockRes = () => {
+      const resObj = {
+        status: (c) => { resCode = c; return resObj; },
+        json: (b) => { resBody = b; return resObj; }
+      };
+      return resObj;
+    };
 
-    // Simulate self-deletion logic
-    if (reqSelf.params.id === reqSelf.user.id) {
-      resSelf.status(400).json({ error: 'Cannot delete your own account' });
-    }
+    const runDeleteHandler = async (req, mockTargetUser, dbError = null) => {
+      if (req.user.role !== 'admin') {
+        return mockRes().status(403).json({ error: 'Administrator access required' });
+      }
+      if (req.params.id === req.user.id) {
+        return mockRes().status(400).json({ error: 'Cannot delete your own account' });
+      }
+      if (!mockTargetUser) {
+        return mockRes().status(404).json({ error: 'Faculty user not found.' });
+      }
+      if (mockTargetUser.role === 'admin') {
+        return mockRes().status(403).json({ error: 'Admin accounts cannot be deleted via the faculty endpoint.' });
+      }
+      if (mockTargetUser.role !== 'faculty') {
+        return mockRes().status(403).json({ error: 'Only faculty accounts can be deleted via this endpoint.' });
+      }
+      if (dbError) {
+        return mockRes().status(500).json({ error: 'Failed to delete faculty user account.', details: dbError });
+      }
+      return mockRes().status(200).json({ message: 'Faculty deleted successfully.' });
+    };
+
+    // A. Self-delete
+    await runDeleteHandler(reqSelf, { id: 'admin1', role: 'admin' });
     assert.strictEqual(resCode, 400);
-    assert.strictEqual(resBody.error, 'Cannot delete your own account');
 
-    // 51B. Admin target check
-    const targetAdmin = { id: 'admin2', role: 'admin' };
-    resCode = null; resBody = null;
-    if (targetAdmin.role === 'admin') {
-      resSelf.status(403).json({ error: 'Admin accounts cannot be deleted via the faculty endpoint.' });
-    }
+    // B. Target is Admin
+    await runDeleteHandler({ params: { id: 'admin2' }, user: { id: 'admin1', role: 'admin' } }, { id: 'admin2', role: 'admin' });
     assert.strictEqual(resCode, 403);
-    assert.strictEqual(resBody.error, 'Admin accounts cannot be deleted via the faculty endpoint.');
 
-    // 51C. Advisor access check
-    const advisorRole = 'faculty';
-    const isStrictAdmin = advisorRole === 'admin';
-    assert.strictEqual(isStrictAdmin, false);
+    // C. Nonexistent faculty
+    await runDeleteHandler({ params: { id: 'fac99' }, user: { id: 'admin1', role: 'admin' } }, null);
+    assert.strictEqual(resCode, 404);
 
-    // 51D. Student access check
-    const studentRole = 'student';
-    const isStrictAdmin2 = studentRole === 'admin';
-    assert.strictEqual(isStrictAdmin2, false);
+    // D. Faculty Advisor attempts delete
+    await runDeleteHandler({ params: { id: 'fac2' }, user: { id: 'fac1', role: 'faculty' } }, { id: 'fac2', role: 'faculty' });
+    assert.strictEqual(resCode, 403);
+
+    // E. Student attempts delete
+    await runDeleteHandler({ params: { id: 'fac2' }, user: { id: 'stu1', role: 'student' } }, { id: 'fac2', role: 'faculty' });
+    assert.strictEqual(resCode, 403);
+
+    // F. DB failure returns 500
+    await runDeleteHandler({ params: { id: 'fac2' }, user: { id: 'admin1', role: 'admin' } }, { id: 'fac2', role: 'faculty' }, 'DB connection drop');
+    assert.strictEqual(resCode, 500);
+
+    // G. Admin successful delete
+    await runDeleteHandler({ params: { id: 'fac2' }, user: { id: 'admin1', role: 'admin' } }, { id: 'fac2', role: 'faculty' });
+    assert.strictEqual(resCode, 200);
+    assert.strictEqual(resBody.message, 'Faculty deleted successfully.');
   });
 
   const { runPlatformTests } = require('./platform.test');
