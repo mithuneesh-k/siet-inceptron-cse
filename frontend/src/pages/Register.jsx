@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import CustomSelect from '../components/CustomSelect';
 
-const CLASSES = ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D'];
+const CLASSES = ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D', 'CSE-E'];
 const YEARS = [1, 2, 3, 4];
 
 const getBatchString = (year) => {
