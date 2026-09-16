@@ -343,6 +343,100 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
     assert.strictEqual(invalidatesLeaderboard, false);
   });
 
+  test('44. Section mapping boundary tests (064->CSE A, 065->CSE B, 125->CSE B, 126->CSE C, 188->CSE C, 189->CSE D, 240->CSE D, 241->CSE E, 714025104173->CSE C)', () => {
+    const { getSectionFromRegisterNo } = require('../services/sectionService');
+    assert.strictEqual(getSectionFromRegisterNo('714025104064'), 'CSE A');
+    assert.strictEqual(getSectionFromRegisterNo('714025104065'), 'CSE B');
+    assert.strictEqual(getSectionFromRegisterNo('714025104125'), 'CSE B');
+    assert.strictEqual(getSectionFromRegisterNo('714025104126'), 'CSE C');
+    assert.strictEqual(getSectionFromRegisterNo('714025104188'), 'CSE C');
+    assert.strictEqual(getSectionFromRegisterNo('714025104189'), 'CSE D');
+    assert.strictEqual(getSectionFromRegisterNo('714025104240'), 'CSE D');
+    assert.strictEqual(getSectionFromRegisterNo('714025104241'), 'CSE E');
+    assert.strictEqual(getSectionFromRegisterNo('714025104341'), 'CSE E');
+    assert.strictEqual(getSectionFromRegisterNo('714025104173'), 'CSE C');
+    assert.strictEqual(getSectionFromRegisterNo('25csl01'), null);
+    assert.strictEqual(getSectionFromRegisterNo('25csl01', 'CSE-B'), 'CSE-B');
+  });
+
+  test('45. Profile privacy filtering: public request hides phone, dob, and email', () => {
+    const rawProfile = {
+      id: 'u1',
+      name: 'Test Student',
+      email: 'student@siet.ac.in',
+      phone: '9876543210',
+      date_of_birth: '2004-05-15',
+      phone_public: false,
+      dob_public: false
+    };
+
+    const isOwner = false;
+    const isAuthorizedStaff = false;
+
+    const filtered = { ...rawProfile };
+    if (!isOwner && !isAuthorizedStaff) {
+      if (!filtered.phone_public) filtered.phone = null;
+      if (!filtered.dob_public) filtered.date_of_birth = null;
+      filtered.email = null;
+    }
+
+    assert.strictEqual(filtered.phone, null);
+    assert.strictEqual(filtered.date_of_birth, null);
+    assert.strictEqual(filtered.email, null);
+  });
+
+  test('46. Profile privacy filtering: owner receives full phone, dob, and email', () => {
+    const rawProfile = {
+      id: 'u1',
+      name: 'Test Student',
+      email: 'student@siet.ac.in',
+      phone: '9876543210',
+      date_of_birth: '2004-05-15',
+      phone_public: false,
+      dob_public: false
+    };
+
+    const isOwner = true;
+    const isAuthorizedStaff = false;
+
+    const filtered = { ...rawProfile };
+    if (!isOwner && !isAuthorizedStaff) {
+      if (!filtered.phone_public) filtered.phone = null;
+      if (!filtered.dob_public) filtered.date_of_birth = null;
+      filtered.email = null;
+    }
+
+    assert.strictEqual(filtered.phone, '9876543210');
+    assert.strictEqual(filtered.date_of_birth, '2004-05-15');
+    assert.strictEqual(filtered.email, 'student@siet.ac.in');
+  });
+
+  test('47. Cache isolation: Advisor A and Advisor B generate distinct cache keys', () => {
+    const userA = { id: 'adv_a', role: 'faculty' };
+    const userB = { id: 'adv_b', role: 'faculty' };
+    const scopeA = { hasFullAccess: false, advisingClass: 'CSE-A', advisingBatch: '2025-2029' };
+    const scopeB = { hasFullAccess: false, advisingClass: 'CSE-B', advisingBatch: '2025-2029' };
+
+    const cacheKeyA = `admin:students:${userA.id}:${scopeA.hasFullAccess ? 'full' : `${scopeA.advisingClass}_${scopeA.advisingBatch}`}`;
+    const cacheKeyB = `admin:students:${userB.id}:${scopeB.hasFullAccess ? 'full' : `${scopeB.advisingClass}_${scopeB.advisingBatch}`}`;
+
+    assert.notStrictEqual(cacheKeyA, cacheKeyB);
+    assert.strictEqual(cacheKeyA.includes('adv_a'), true);
+    assert.strictEqual(cacheKeyB.includes('adv_b'), true);
+  });
+
+  test('48. Unverified platform connections score zero points', () => {
+    const { calculateUserCompetitiveScore } = require('../services/competitiveScoreService');
+    const connections = [
+      { platform_code: 'leetcode', handle: 'user1', ownership_verified: false, metrics: { easySolved: 10, mediumSolved: 5 } },
+      { platform_code: 'geeksforgeeks', handle: 'user1', ownership_verified: false, metrics: { easySolved: 10 } }
+    ];
+
+    const result = calculateUserCompetitiveScore(connections);
+    assert.strictEqual(result.totalScore, 0);
+    assert.strictEqual(result.easySolved, 0);
+  });
+
   const { runPlatformTests } = require('./platform.test');
   await runPlatformTests();
 

@@ -73,21 +73,29 @@ To maintain the highest standards of competition, points are only awarded after 
     cd siet-inceptron-cse
     ```
 
-2.  **Environment Setup**:
+3.  **Environment Setup**:
     Create a `.env` file in the `backend/` directory (and optionally in root):
     ```env
-    PORT=5001
-    SUPABASE_URL=your_supabase_url
-    SUPABASE_ANON_KEY=your_anon_key
-    SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+    PORT=5000
     JWT_SECRET=your_secure_random_string
+    SUPABASE_URL=your_primary_supabase_url
+    SUPABASE_SERVICE_ROLE_KEY=your_primary_service_role_key
+    
+    # Optional Platform Integration Database:
+    PLATFORM_SUPABASE_URL=your_platform_supabase_url
+    PLATFORM_SUPABASE_SERVICE_ROLE_KEY=your_platform_service_role_key
     ```
-    Create a `.env` file in the `frontend/` directory (optional if defaulting to port 5001):
+    Create a `.env` file in the `frontend/` directory (optional if defaulting to port 5000):
     ```env
-    VITE_API_BASE_URL=http://localhost:5001/api
+    VITE_API_BASE_URL=http://localhost:5000/api
     ```
 
-3.  **Launch the System**:
+4.  **Database Migrations**:
+    For existing database setups, run the idempotent SQL migration scripts located under [`backend/db/migrations/`](file:///c:/Users/nijju/csmin/siet-inceptron-cse/backend/db/migrations/):
+    - `001_create_platform_connections.sql`
+    - `002_secure_supabase_rls_and_policies.sql`
+
+5.  **Launch the System**:
     From the root directory, run:
     ```bash
     npm install
@@ -95,7 +103,7 @@ To maintain the highest standards of competition, points are only awarded after 
     npm run dev
     ```
     *   **Frontend Local**: http://localhost:5173
-    *   **Backend Local**: http://localhost:5001 (Production `PORT` may be controlled dynamically by Render or host environment)
+    *   **Backend Local**: http://localhost:5000 (Production `PORT` may be controlled dynamically by Render or host environment)
 
 ---
 
