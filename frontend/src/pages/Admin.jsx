@@ -8,6 +8,7 @@ import CustomSelect from '../components/CustomSelect';
 import FilterModal from '../components/FilterModal';
 import FacultyAdvisorModal from '../components/FacultyAdvisorModal';
 import FacultyActionModal from '../components/FacultyActionModal';
+import ConfirmModal from '../components/ConfirmModal';
 import { 
   Shield, BarChart2, Users, Settings, GraduationCap, Hourglass, 
   Award, TrendingUp, List, RefreshCw, Trash2, Download, Plus, 
@@ -43,6 +44,7 @@ export default function Admin() {
   const [facLoading, setFacLoading] = useState(false);
   const [editFaculty, setEditFaculty] = useState(null);
   const [showAddFacModal, setShowAddFacModal] = useState(false);
+  const [deleteFacultyTarget, setDeleteFacultyTarget] = useState(null);
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
@@ -92,6 +94,19 @@ export default function Admin() {
       setFacLoading(false);
     }
   }, []);
+
+  const handleDeleteFacultyConfirm = async () => {
+    if (!deleteFacultyTarget) return;
+    const targetId = deleteFacultyTarget.id;
+    setDeleteFacultyTarget(null);
+    try {
+      await client.delete(`/admin/faculty/${targetId}`);
+      setFaculties(prev => prev.filter(f => f.id !== targetId));
+      showToast('Faculty member deleted successfully.');
+    } catch (err) {
+      showToast(err.response?.data?.error || 'Failed to delete faculty.', 'error');
+    }
+  };
 
   useEffect(() => {
     if (tab === 'manage') loadManagedStudents();
@@ -519,7 +534,7 @@ export default function Admin() {
                   </div>
                 ) : (
                   <div className="card" style={{ overflow: 'hidden' }}>
-                    <div className="manage-table-header" style={{ gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr 80px' }}>
+                    <div className="manage-table-header" style={{ gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr 140px' }}>
                       <span>Faculty Name</span>
                       <span>Designation</span>
                       <span>Department</span>
@@ -528,14 +543,17 @@ export default function Admin() {
                       <span>Manage</span>
                     </div>
                     {faculties.map((f, i) => (
-                      <div key={f.id} className="manage-table-row" style={{ gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr 80px', animation: `fadeInUp 0.3s ease ${i * 0.02}s both` }}>
+                      <div key={f.id} className="manage-table-row" style={{ gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr 140px', animation: `fadeInUp 0.3s ease ${i * 0.02}s both` }}>
                         <div style={{ fontWeight: 600 }}>{f.name}</div>
                         <div style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{f.designation || '—'}</div>
                         <div style={{ fontSize: 13 }}>{f.department || 'CSE'}</div>
                         <div>{f.advising_class ? <span className="badge badge-green">{f.advising_class}</span> : <span style={{ color: 'var(--color-text-faint)' }}>—</span>}</div>
                         <div>{f.advising_batch ? <span className="badge badge-violet">{f.advising_batch}</span> : <span style={{ color: 'var(--color-text-faint)' }}>—</span>}</div>
-                        <div>
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                           <button className="btn btn-primary btn-sm" onClick={() => setEditFaculty(f)}>Adjust</button>
+                          {user?.role === 'admin' && f.role !== 'admin' && f.id !== user?.id && (
+                            <button className="btn btn-danger btn-sm" onClick={() => setDeleteFacultyTarget(f)} style={{ padding: '4px 10px', fontSize: 12 }}>Delete</button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -651,6 +669,19 @@ export default function Admin() {
           onClose={() => setShowImportModal(false)}
           onImported={loadManagedStudents}
           showToast={showToast}
+        />
+      )}
+
+      {/* ── Confirm Faculty Delete Modal ── */}
+      {deleteFacultyTarget && (
+        <ConfirmModal
+          isOpen={Boolean(deleteFacultyTarget)}
+          title={`Delete faculty member "${deleteFacultyTarget.name}"?`}
+          message="This action will remove their faculty login account."
+          confirmText="Delete Faculty"
+          confirmVariant="danger"
+          onConfirm={handleDeleteFacultyConfirm}
+          onCancel={() => setDeleteFacultyTarget(null)}
         />
       )}
 

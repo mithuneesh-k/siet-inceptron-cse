@@ -3,7 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { supabase, getAdminScope } = require('../db/supabase');
-const { authMiddleware, adminMiddleware, hodMiddleware, facultyAdvisorMiddleware } = require('../middleware/auth');
+const { authMiddleware, adminMiddleware, strictAdminMiddleware, hodMiddleware, facultyAdvisorMiddleware } = require('../middleware/auth');
 const cache = require('../services/cache');
 const { getSectionFromRegisterNo } = require('../services/sectionService');
 
@@ -600,19 +600,70 @@ router.patch('/faculty/:id', hodMiddleware, async (req, res) => {
   res.json({ success: true });
 });
 
-// DELETE /api/admin/faculty/:id - Delete faculty (HOD / Admin only)
-router.delete('/faculty/:id', hodMiddleware, async (req, res) => {
+// DELETE /api/admin/faculty/:id - Delete faculty (Admin only)
+router.delete('/faculty/:id', strictAdminMiddleware, async (req, res) => {
   const { id } = req.params;
-  
-  // Prevent self-deletion
+
+  // 1. Prevent self-deletion
   if (id === req.user.id) {
-    return res.status(400).json({ error: 'Cannot delete yourself' });
+    return res.status(400).json({ error: 'Cannot delete your own account' });
   }
 
-  const { error } = await supabase.from('users').delete().eq('id', id);
-  if (error) return res.status(500).json({ error: 'Failed to delete faculty.', details: error.message });
-  
+  // 2. Fetch target user
+  const { data: targetUser, error: targetErr } = await supabase
+    .from('users')
+    .select('id, email, role')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (targetErr || !targetUser) {
+    return res.status(404).json({ error: 'Faculty user not found.' });
+  }
+
+  // 3. Reject if target is an admin account or non-faculty account
+  if (targetUser.role === 'admin') {
+    return res.status(403).json({ error: 'Admin accounts cannot be deleted via the faculty endpoint.' });
+  }
+  if (targetUser.role !== 'faculty') {
+    return res.status(403).json({ error: 'Only faculty accounts can be deleted via this endpoint.' });
+  }
+
+  // 4. Safely null out references in achievements table
+  const { error: patchErr } = await supabase
+    .from('achievements')
+    .update({ approved_by: null })
+    .eq('approved_by', id);
+
+  if (patchErr) {
+    console.warn('Warning: Failed to null approved_by references:', patchErr.message);
+  }
+
+  // 5. Delete faculty profile record
+  const { error: fErr } = await supabase
+    .from('faculty')
+    .delete()
+    .eq('user_id', id);
+
+  if (fErr) {
+    return res.status(500).json({ error: 'Failed to delete faculty profile.', details: fErr.message });
+  }
+
+  // 6. Delete user account record
+  const { error: uErr } = await supabase
+    .from('users')
+    .delete()
+    .eq('id', id);
+
+  if (uErr) {
+    if (uErr.code === '23503') {
+      return res.status(409).json({ error: 'Cannot delete faculty due to existing dependencies.', details: uErr.message });
+    }
+    return res.status(500).json({ error: 'Failed to delete faculty user account.', details: uErr.message });
+  }
+
+  // 7. Clear cache
   await cache.del('admin:faculty');
+
   res.json({ message: 'Faculty deleted successfully.' });
 });
 

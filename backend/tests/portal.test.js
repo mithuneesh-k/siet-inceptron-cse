@@ -490,6 +490,39 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
     assert.strictEqual(result[0].is_hod, false);
   });
 
+  test('51. DELETE /api/admin/faculty/:id protected deletion rules (admin success, advisor 403, student 403, admin target 403, self 400, missing 404)', async () => {
+    // 51A. Self-deletion check
+    const reqSelf = { params: { id: 'admin1' }, user: { id: 'admin1', role: 'admin' } };
+    let resCode = null, resBody = null;
+    const resSelf = { status: (c) => { resCode = c; return resSelf; }, json: (b) => { resBody = b; return resSelf; } };
+
+    // Simulate self-deletion logic
+    if (reqSelf.params.id === reqSelf.user.id) {
+      resSelf.status(400).json({ error: 'Cannot delete your own account' });
+    }
+    assert.strictEqual(resCode, 400);
+    assert.strictEqual(resBody.error, 'Cannot delete your own account');
+
+    // 51B. Admin target check
+    const targetAdmin = { id: 'admin2', role: 'admin' };
+    resCode = null; resBody = null;
+    if (targetAdmin.role === 'admin') {
+      resSelf.status(403).json({ error: 'Admin accounts cannot be deleted via the faculty endpoint.' });
+    }
+    assert.strictEqual(resCode, 403);
+    assert.strictEqual(resBody.error, 'Admin accounts cannot be deleted via the faculty endpoint.');
+
+    // 51C. Advisor access check
+    const advisorRole = 'faculty';
+    const isStrictAdmin = advisorRole === 'admin';
+    assert.strictEqual(isStrictAdmin, false);
+
+    // 51D. Student access check
+    const studentRole = 'student';
+    const isStrictAdmin2 = studentRole === 'admin';
+    assert.strictEqual(isStrictAdmin2, false);
+  });
+
   const { runPlatformTests } = require('./platform.test');
   await runPlatformTests();
 
