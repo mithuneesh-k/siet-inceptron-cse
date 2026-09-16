@@ -11,11 +11,12 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- 1. USERS — Authentication / login table
 -- ═══════════════════════════════════════════════════════════════════════
 CREATE TABLE IF NOT EXISTS public.users (
-  id            uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-  email         text UNIQUE NOT NULL,
-  password_hash text NOT NULL,
-  role          text NOT NULL DEFAULT 'student' CHECK (role IN ('student', 'faculty', 'admin')),
-  created_at    timestamptz DEFAULT now()
+  id                   uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email                text UNIQUE NOT NULL,
+  password_hash        text NOT NULL,
+  role                 text NOT NULL DEFAULT 'student' CHECK (role IN ('student', 'faculty', 'admin')),
+  must_change_password boolean DEFAULT false,
+  created_at           timestamptz DEFAULT now()
 );
 
 -- ═══════════════════════════════════════════════════════════════════════
@@ -126,7 +127,7 @@ CREATE TABLE IF NOT EXISTS public.team_members (
 -- 7. STUDENT_LEADERBOARD — Materialized View for fast leaderboard queries
 --    (Used by /api/leaderboard routes)
 -- ═══════════════════════════════════════════════════════════════════════
-CREATE OR REPLACE VIEW public.student_leaderboard AS
+CREATE OR REPLACE VIEW public.student_leaderboard WITH (security_invoker = true) AS
 SELECT
   s.user_id,
   s.name,
@@ -171,8 +172,7 @@ CREATE INDEX IF NOT EXISTS idx_team_members_user_id   ON public.team_members(use
 CREATE INDEX IF NOT EXISTS idx_team_members_status    ON public.team_members(status);
 
 -- ═══════════════════════════════════════════════════════════════════════
--- 9. ROW LEVEL SECURITY — Disable for now (service role key bypasses RLS)
---    Enable these later for production with proper policies
+-- 9. ROW LEVEL SECURITY & REVOKED PUBLIC GRANTS
 -- ═══════════════════════════════════════════════════════════════════════
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;
@@ -181,13 +181,14 @@ ALTER TABLE public.achievements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.teams ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.team_members ENABLE ROW LEVEL SECURITY;
 
--- Allow service_role full access (your backend uses service_role key)
-CREATE POLICY "Service role full access on users"        ON public.users        FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access on students"     ON public.students     FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access on faculty"      ON public.faculty      FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access on achievements" ON public.achievements FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access on teams"        ON public.teams        FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access on team_members" ON public.team_members FOR ALL USING (true) WITH CHECK (true);
+-- Revoke direct anon/authenticated access to tables and view (Express backend uses service_role key)
+REVOKE ALL ON public.users FROM anon, authenticated;
+REVOKE ALL ON public.students FROM anon, authenticated;
+REVOKE ALL ON public.faculty FROM anon, authenticated;
+REVOKE ALL ON public.achievements FROM anon, authenticated;
+REVOKE ALL ON public.teams FROM anon, authenticated;
+REVOKE ALL ON public.team_members FROM anon, authenticated;
+REVOKE ALL ON public.student_leaderboard FROM anon, authenticated;
 
 -- ═══════════════════════════════════════════════════════════════════════
 -- DONE! Your database is ready.

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { supabase, getUserWithScore } = require('../db/supabase');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware, optionalAuthMiddleware } = require('../middleware/auth');
 const cache = require('../services/cache');
 const { withHttpCache } = require('../services/httpCache');
 
@@ -87,12 +87,39 @@ router.get('/', withHttpCache('users:list', 300), async (req, res) => {
 });
 
 // ─── GET /api/users/:id ───────────────────────────────────────────────────────
-router.get('/:id', async (req, res) => {
+router.get('/:id', optionalAuthMiddleware, async (req, res) => {
   res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.set('Pragma', 'no-cache');
   res.set('Expires', '0');
   const user = await getUserWithScore(req.params.id);
   if (!user) return res.status(404).json({ error: 'User not found' });
+
+  const targetId = req.params.id;
+  const requester = req.user;
+
+  const isOwner = requester && requester.id === targetId;
+  let isAuthorizedStaff = false;
+
+  if (requester && (requester.role === 'admin' || requester.role === 'faculty')) {
+    if (requester.role === 'admin' || requester.is_hod) {
+      isAuthorizedStaff = true;
+    } else if (requester.advising_class && requester.advising_batch) {
+      if (user.class === requester.advising_class && user.batch === requester.advising_batch) {
+        isAuthorizedStaff = true;
+      }
+    }
+  }
+
+  if (!isOwner && !isAuthorizedStaff) {
+    if (!user.phone_public) {
+      user.phone = null;
+    }
+    if (!user.dob_public) {
+      user.date_of_birth = null;
+    }
+    user.email = null;
+  }
+
   res.json(user);
 });
 
@@ -193,6 +220,7 @@ router.post('/:id/change-password', authMiddleware, async (req, res) => {
 
   const { currentPassword, newPassword } = req.body;
   if (!currentPassword || !newPassword) return res.status(400).json({ error: 'Both passwords required' });
+  if (newPassword.length < 8) return res.status(400).json({ error: 'New password must be at least 8 characters long.' });
 
   const { data: user, error: fetchErr } = await supabase
     .from('users')
@@ -206,7 +234,10 @@ router.post('/:id/change-password', authMiddleware, async (req, res) => {
   if (!isValid) return res.status(401).json({ error: 'Current password is incorrect' });
 
   const newHash = await require('bcryptjs').hash(newPassword, 10);
-  const { error: patchErr } = await supabase.from('users').update({ password_hash: newHash }).eq('id', uid);
+  const { error: patchErr } = await supabase
+    .from('users')
+    .update({ password_hash: newHash, must_change_password: false })
+    .eq('id', uid);
 
   if (patchErr) return res.status(500).json({ error: 'Failed to update password' });
   res.json({ message: 'Password updated successfully' });
