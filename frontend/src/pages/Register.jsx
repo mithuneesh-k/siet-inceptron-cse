@@ -75,8 +75,8 @@ export default function Register() {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div className="form-group">
-              <label className="form-label">Roll Number *</label>
-              <input id="reg-roll" type="text" className="form-input" placeholder="CSE2022001" value={form.roll_no} onChange={set('roll_no')} required />
+              <label className="form-label">REGISTER NO *</label>
+              <input id="reg-roll" type="text" className="form-input" placeholder="714025104173" value={form.roll_no} onChange={set('roll_no')} required />
             </div>
             <div className="form-group">
               <label className="form-label">Email *</label>
