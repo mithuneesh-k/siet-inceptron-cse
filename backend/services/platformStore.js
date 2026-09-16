@@ -1,4 +1,4 @@
-const { supabase } = require('../db/supabase');
+const { platformSupabase } = require('../db/platformSupabase');
 
 function isMissingTableError(error) {
   if (!error) return false;
@@ -24,7 +24,7 @@ function isMissingTableError(error) {
 
 async function getConnection(userId, platformCode) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await platformSupabase
       .from('student_platform_connections')
       .select('*')
       .eq('user_id', userId)
@@ -49,7 +49,7 @@ async function getConnection(userId, platformCode) {
 
 async function getAllConnectionsForUser(userId) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await platformSupabase
       .from('student_platform_connections')
       .select('*')
       .eq('user_id', userId);
@@ -70,6 +70,38 @@ async function getAllConnectionsForUser(userId) {
   }
 }
 
+async function getConnectionByHandle(platformCode, normalizedHandle) {
+  try {
+    const { data, error } = await platformSupabase
+      .from('student_platform_connections')
+      .select('*')
+      .eq('platform_code', platformCode)
+      .eq('normalized_handle', normalizedHandle)
+      .maybeSingle();
+
+    if (error) {
+      if (isMissingTableError(error)) {
+        return { connection: null, missingTable: true, error: null };
+      }
+      return { connection: null, missingTable: false, error };
+    }
+
+    return { connection: data || null, missingTable: false, error: null };
+  } catch (err) {
+    if (isMissingTableError(err)) {
+      return { connection: null, missingTable: true, error: null };
+    }
+    return { connection: null, missingTable: false, error: err };
+  }
+}
+
+function isDuplicateKeyError(error) {
+  if (!error) return false;
+  const code = error.code || '';
+  const message = (error.message || '').toLowerCase();
+  return code === '23505' || message.includes('duplicate key') || message.includes('unique constraint');
+}
+
 async function saveConnection(payload) {
   const {
     userId,
@@ -81,7 +113,9 @@ async function saveConnection(payload) {
     ownershipVerified = false,
     lastSyncedAt = null,
     lastAttemptedAt = new Date().toISOString(),
-    lastErrorCode = null
+    lastErrorCode = null,
+    verificationToken = null,
+    verificationExpiresAt = null
   } = payload;
 
   const row = {
@@ -95,11 +129,13 @@ async function saveConnection(payload) {
     last_synced_at: lastSyncedAt,
     last_attempted_at: lastAttemptedAt,
     last_error_code: lastErrorCode,
+    verification_token: verificationToken,
+    verification_expires_at: verificationExpiresAt,
     updated_at: new Date().toISOString()
   };
 
   try {
-    const { data, error } = await supabase
+    const { data, error } = await platformSupabase
       .from('student_platform_connections')
       .upsert(row, { onConflict: 'user_id,platform_code' })
       .select()
@@ -107,23 +143,29 @@ async function saveConnection(payload) {
 
     if (error) {
       if (isMissingTableError(error)) {
-        return { connection: null, missingTable: true, error: null };
+        return { connection: null, missingTable: true, duplicate: false, error: null };
       }
-      return { connection: null, missingTable: false, error };
+      if (isDuplicateKeyError(error)) {
+        return { connection: null, missingTable: false, duplicate: true, error };
+      }
+      return { connection: null, missingTable: false, duplicate: false, error };
     }
 
-    return { connection: data, missingTable: false, error: null };
+    return { connection: data, missingTable: false, duplicate: false, error: null };
   } catch (err) {
     if (isMissingTableError(err)) {
-      return { connection: null, missingTable: true, error: null };
+      return { connection: null, missingTable: true, duplicate: false, error: null };
     }
-    return { connection: null, missingTable: false, error: err };
+    if (isDuplicateKeyError(err)) {
+      return { connection: null, missingTable: false, duplicate: true, error: err };
+    }
+    return { connection: null, missingTable: false, duplicate: false, error: err };
   }
 }
 
 async function updateConnectionStatus(userId, platformCode, updateFields) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await platformSupabase
       .from('student_platform_connections')
       .update({
         ...updateFields,
@@ -152,7 +194,7 @@ async function updateConnectionStatus(userId, platformCode, updateFields) {
 
 async function deleteConnection(userId, platformCode) {
   try {
-    const { error } = await supabase
+    const { error } = await platformSupabase
       .from('student_platform_connections')
       .delete()
       .eq('user_id', userId)
@@ -174,10 +216,35 @@ async function deleteConnection(userId, platformCode) {
   }
 }
 
+async function getAllPlatformConnections() {
+  try {
+    const { data, error } = await platformSupabase
+      .from('student_platform_connections')
+      .select('*');
+
+    if (error) {
+      if (isMissingTableError(error)) {
+        return { connections: [], missingTable: true, error: null };
+      }
+      return { connections: [], missingTable: false, error };
+    }
+
+    return { connections: data || [], missingTable: false, error: null };
+  } catch (err) {
+    if (isMissingTableError(err)) {
+      return { connections: [], missingTable: true, error: null };
+    }
+    return { connections: [], missingTable: false, error: err };
+  }
+}
+
 module.exports = {
   isMissingTableError,
+  isDuplicateKeyError,
   getConnection,
+  getConnectionByHandle,
   getAllConnectionsForUser,
+  getAllPlatformConnections,
   saveConnection,
   updateConnectionStatus,
   deleteConnection

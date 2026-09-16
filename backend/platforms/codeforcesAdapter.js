@@ -50,16 +50,26 @@ async function fetchCodeforcesUser(handleInput) {
   const handle = normalizeHandle(handleInput);
   const userInfoUrl = `https://codeforces.com/api/user.info?handles=${encodeURIComponent(handle)}`;
 
-  let userRes;
+  let res;
   try {
-    const res = await fetch(userInfoUrl, { headers: { 'User-Agent': 'SIET-Portal/1.0' } });
-    if (res.status === 503 || res.status === 502 || res.status === 500) {
-      return { found: false, error: 'Codeforces is temporarily unavailable.', isOutage: true };
-    }
-    userRes = await res.json();
+    res = await fetch(userInfoUrl, { headers: { 'User-Agent': 'SIET-Portal/1.0' } });
   } catch (err) {
     console.error('Codeforces API fetch error:', err.message);
     return { found: false, error: 'Codeforces is temporarily unavailable.', isOutage: true };
+  }
+
+  if (!res.ok) {
+    if (res.status === 429) {
+      return { found: false, error: 'Codeforces rate limit exceeded. Temporarily unavailable.', isOutage: true };
+    }
+    return { found: false, error: 'Codeforces is temporarily unavailable.', isOutage: true };
+  }
+
+  let userRes;
+  try {
+    userRes = await res.json();
+  } catch (err) {
+    return { found: false, error: 'Codeforces response invalid. Temporarily unavailable.', isOutage: true };
   }
 
   if (!userRes || userRes.status !== 'OK' || !Array.isArray(userRes.result) || userRes.result.length === 0) {
@@ -67,23 +77,28 @@ async function fetchCodeforcesUser(handleInput) {
     if (errorComment.toLowerCase().includes('not found')) {
       return { found: false, error: 'Codeforces handle not found.', isOutage: false };
     }
-    return { found: false, error: 'Codeforces handle not found.', isOutage: false };
+    return { found: false, error: `Codeforces API issue: ${errorComment || 'Temporary API failure'}`, isOutage: true };
   }
 
   const u = userRes.result[0];
   const canonicalHandle = u.handle || handle;
   const rating = u.rating !== undefined && u.rating !== null ? u.rating : null;
   const maxRating = u.maxRating !== undefined && u.maxRating !== null ? u.maxRating : null;
-  const rank = u.rank || 'unrated';
-  const maxRank = u.maxRank || 'unrated';
+  const rank = u.rank ?? null;
+  const maxRank = u.maxRank ?? null;
 
   // Fetch unique solved problems with complete bounded pagination
   let solvedProblems = null;
-  const solvedSet = new Set();
+  let easySolved = null;
+  let mediumSolved = null;
+  let hardSolved = null;
+
+  const solvedProblemsMap = new Map();
   const PAGE_SIZE = 10000;
   const MAX_PAGES = 10; // Bounded protection: up to 100,000 submissions
   let from = 1;
   let paginationFailed = false;
+  let paginationComplete = false;
 
   for (let page = 0; page < MAX_PAGES; page++) {
     try {
@@ -103,12 +118,16 @@ async function fetchCodeforcesUser(handleInput) {
       for (const sub of submissions) {
         if (sub.verdict === 'OK' && sub.problem) {
           const probKey = `${sub.problem.contestId || ''}_${sub.problem.index || ''}`;
-          solvedSet.add(probKey);
+          if (!solvedProblemsMap.has(probKey)) {
+            const rating = typeof sub.problem.rating === 'number' ? sub.problem.rating : null;
+            solvedProblemsMap.set(probKey, rating);
+          }
         }
       }
 
       if (submissions.length < PAGE_SIZE) {
-        break; // All submissions fetched
+        paginationComplete = true; // All submissions fetched
+        break;
       }
       from += PAGE_SIZE;
     } catch (err) {
@@ -118,10 +137,28 @@ async function fetchCodeforcesUser(handleInput) {
     }
   }
 
-  if (!paginationFailed) {
-    solvedProblems = solvedSet.size;
+  if (!paginationFailed && paginationComplete) {
+    solvedProblems = solvedProblemsMap.size;
+    easySolved = 0;
+    mediumSolved = 0;
+    hardSolved = 0;
+
+    for (const rating of solvedProblemsMap.values()) {
+      if (rating !== null && rating !== undefined) {
+        if (rating >= 800 && rating <= 1200) {
+          easySolved++;
+        } else if (rating >= 1300 && rating <= 1900) {
+          mediumSolved++;
+        } else if (rating >= 2000) {
+          hardSolved++;
+        }
+      }
+    }
   } else {
     solvedProblems = null;
+    easySolved = null;
+    mediumSolved = null;
+    hardSolved = null;
   }
 
   // Fetch contests count
@@ -150,7 +187,10 @@ async function fetchCodeforcesUser(handleInput) {
       rank,
       maxRank,
       solvedProblems,
-      contestCount
+      contestCount,
+      easySolved,
+      mediumSolved,
+      hardSolved
     }
   };
 }
