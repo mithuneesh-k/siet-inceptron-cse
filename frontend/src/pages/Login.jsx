@@ -31,7 +31,7 @@ export default function Login() {
       {/* LEFT PANEL: Black-and-White Interactive Halftone Artwork */}
       <div className="auth-07-left-panel">
         <div className="auth-07-artwork-box">
-          <HalftoneInteractiveHero src="/real inceptron clean.png" scale={0.88} />
+          <HalftoneInteractiveHero src="/real inceptron.png" scale={0.88} />
         </div>
       </div>
 
@@ -40,7 +40,7 @@ export default function Login() {
         <div className="auth-07-card">
           {/* Mobile Header */}
           <div className="auth-07-mobile-header">
-            <img src="/real inceptron clean.png" alt="SIET Inceptron Logo" className="auth-07-mobile-logo" />
+            <img src="/real inceptron.png" alt="SIET Inceptron Logo" className="auth-07-mobile-logo" />
             <span className="auth-07-mobile-brand">SIET INCEPTRON</span>
           </div>
 

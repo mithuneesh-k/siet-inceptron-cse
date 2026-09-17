@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-export default function HalftoneInteractiveHero({ src = '/real inceptron clean.png', scale = 0.88 }) {
+export default function HalftoneInteractiveHero({ src = '/real inceptron.png', scale = 0.88 }) {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const animationFrameRef = useRef(null);
