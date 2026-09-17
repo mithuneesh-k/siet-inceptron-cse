@@ -29,14 +29,14 @@ export default function Login() {
   return (
     <div className="auth-07-container">
       {/* LEFT PANEL: Black-and-White Interactive Halftone Artwork */}
-      <HalftoneInteractiveHero src="/real inceptron.png" />
+      <HalftoneInteractiveHero src="/real inceptron widescreen light.png" scale={0.85} />
 
       {/* RIGHT PANEL: Authentication Form */}
       <div className="auth-07-form-wrapper">
         <div className="auth-07-card">
           {/* Mobile Header */}
           <div className="auth-07-mobile-header">
-            <img src="/real inceptron.png" alt="SIET Inceptron Logo" className="auth-07-mobile-logo" />
+            <img src="/real inceptron widescreen light.png" alt="SIET Inceptron Logo" className="auth-07-mobile-logo" />
             <span className="auth-07-mobile-brand">SIET INCEPTRON</span>
           </div>
 
@@ -156,10 +156,10 @@ export default function Login() {
           display: flex;
           min-height: 100vh;
           width: 100%;
-          background-color: #f5f5f3;
-          background-image: url('/real inceptron.png');
+          background-color: #eef0f2;
+          background-image: url('/real inceptron widescreen light.png');
           background-size: cover;
-          background-position: left center;
+          background-position: center center;
           background-repeat: no-repeat;
           font-family: 'Inter', system-ui, -apple-system, sans-serif;
           color: #111111;
@@ -184,22 +184,22 @@ export default function Login() {
           display: flex;
           align-items: center;
           justify-content: flex-end;
-          padding: 40px 10vw 40px 24px;
+          padding: 40px 8vw 40px 24px;
           min-height: 100vh;
         }
 
         .auth-07-card {
           width: 100%;
-          max-width: 450px;
-          background: rgba(255, 255, 255, 0.94);
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
-          padding: 48px 40px;
+          max-width: 440px;
+          background: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          padding: 44px 38px;
           border-radius: 24px;
-          border: 1px solid rgba(255, 255, 255, 0.8);
+          border: 1px solid rgba(255, 255, 255, 0.9);
           box-shadow:
-            0 20px 45px rgba(0, 0, 0, 0.1),
-            0 2px 10px rgba(0, 0, 0, 0.04);
+            0 25px 50px -12px rgba(0, 0, 0, 0.25),
+            0 4px 16px rgba(0, 0, 0, 0.1);
         }
 
         .auth-07-mobile-header {
@@ -319,6 +319,14 @@ export default function Login() {
           color: #111111;
           background: #ffffff;
           transition: all 0.2s ease;
+        }
+
+        .auth-07-input:-webkit-autofill,
+        .auth-07-input:-webkit-autofill:hover,
+        .auth-07-input:-webkit-autofill:focus,
+        .auth-07-input:-webkit-autofill:active {
+          -webkit-box-shadow: 0 0 0 30px #ffffff inset !important;
+          -webkit-text-fill-color: #111111 !important;
         }
 
         .auth-07-input-password {

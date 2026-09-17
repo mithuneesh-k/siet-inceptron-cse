@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-export default function HalftoneInteractiveHero({ src = '/real inceptron.png' }) {
+export default function HalftoneInteractiveHero({ src = '/real inceptron widescreen light.png', scale = 0.85 }) {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const animationFrameRef = useRef(null);
@@ -47,7 +47,7 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron.png' })
 
       // Create offscreen canvas to sample image pixels
       const offscreen = document.createElement('canvas');
-      const sampleW = 360;
+      const sampleW = 480;
       const sampleH = Math.round((sampleW / img.naturalWidth) * img.naturalHeight);
       offscreen.width = sampleW;
       offscreen.height = sampleH;
@@ -56,35 +56,57 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron.png' })
 
       const imgData = offCtx.getImageData(0, 0, sampleW, sampleH).data;
 
-      // Grid step for particle count (~3,000 particles)
-      const gridStep = width > 1200 ? 9 : 8;
+      // Full-bleed cover object-fit calculation with scale factor to make artwork slightly smaller
+      const containerAspect = width / height;
+      const imgAspect = img.naturalWidth / img.naturalHeight;
+      let fullW = width;
+      let fullH = height;
+
+      if (containerAspect > imgAspect) {
+        fullW = width;
+        fullH = width / imgAspect;
+      } else {
+        fullH = height;
+        fullW = height * imgAspect;
+      }
+
+      const imgW = fullW * scale;
+      const imgH = fullH * scale;
+      const imgX = (width - imgW) * 0.35; // slightly offset towards left
+      const imgY = (height - imgH) / 2;
+
+      // Grid step for particle sampling across background
+      const gridStep = width > 1200 ? 8 : 7;
       const particles = [];
 
       for (let y = 0; y < height; y += gridStep) {
         for (let x = 0; x < width; x += gridStep) {
-          const sampleX = Math.floor((x / width) * sampleW);
-          const sampleY = Math.floor((y / height) * sampleH);
-          const idx = (sampleY * sampleW + sampleX) * 4;
+          const sampleX = Math.floor(((x - imgX) / imgW) * sampleW);
+          const sampleY = Math.floor(((y - imgY) / imgH) * sampleH);
 
-          const r = imgData[idx];
-          const g = imgData[idx + 1];
-          const b = imgData[idx + 2];
-          const brightness = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
+          if (sampleX >= 0 && sampleX < sampleW && sampleY >= 0 && sampleY < sampleH) {
+            const idx = (sampleY * sampleW + sampleX) * 4;
 
-          const maxRadius = gridStep * 0.46;
-          const radius = (1 - brightness) * maxRadius;
+            const r = imgData[idx];
+            const g = imgData[idx + 1];
+            const b = imgData[idx + 2];
+            const brightness = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
 
-          if (radius > 0.4) {
-            particles.push({
-              baseX: x,
-              baseY: y,
-              x: x,
-              y: y,
-              vx: 0,
-              vy: 0,
-              radius: radius,
-              brightness: brightness
-            });
+            const maxRadius = gridStep * 0.38; // slightly smaller dots for reduced darkness
+            const radius = (1 - brightness) * maxRadius;
+
+            if (radius > 0.45) {
+              particles.push({
+                baseX: x,
+                baseY: y,
+                x: x,
+                y: y,
+                vx: 0,
+                vy: 0,
+                radius: radius,
+                brightness: brightness
+              });
+            }
           }
         }
       }
@@ -138,10 +160,10 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron.png' })
         p.x += p.vx;
         p.y += p.vy;
 
-        // Render dot
+        // Render dot with soft charcoal tone (reduced darkness)
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = '#111111';
+        ctx.fillStyle = 'rgba(28, 28, 30, 0.82)';
         ctx.fill();
       }
 
@@ -150,7 +172,7 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron.png' })
 
     animationFrameRef.current = requestAnimationFrame(animate);
 
-    // Global Window Event Handlers so floating form does not break pointer tracking
+    // Global Window Event Handlers
     const handleMouseMove = (e) => {
       if (!container) return;
       const rect = container.getBoundingClientRect();
