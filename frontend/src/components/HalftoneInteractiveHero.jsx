@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-export default function HalftoneInteractiveHero({ src = '/real inceptron.png', scale = 0.88 }) {
+export default function HalftoneInteractiveHero({ src = '/real inceptron.png', scale = 1.0 }) {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const animationFrameRef = useRef(null);
@@ -56,18 +56,18 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron.png', s
 
       const imgData = offCtx.getImageData(0, 0, sampleW, sampleH).data;
 
-      // Fit contained in artwork container area with controlled scale factor
+      // Full-bleed cover object-fit calculation
       const containerAspect = width / height;
       const imgAspect = img.naturalWidth / img.naturalHeight;
       let fullW = width;
       let fullH = height;
 
       if (containerAspect > imgAspect) {
-        fullH = height;
-        fullW = height * imgAspect;
-      } else {
         fullW = width;
         fullH = width / imgAspect;
+      } else {
+        fullH = height;
+        fullW = height * imgAspect;
       }
 
       const imgW = fullW * scale;

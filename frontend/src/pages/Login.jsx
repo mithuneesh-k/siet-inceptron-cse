@@ -30,7 +30,7 @@ export default function Login() {
     <div className="auth-07-container">
       {/* LEFT PANEL: Black-and-White Halftone Artwork Section */}
       <div className="auth-07-left-panel">
-        {/* LAYER 1: Primary High-Resolution Static Artwork Image */}
+        {/* LAYER 1: Primary High-Resolution Static Artwork Image (Full Bleed Option A) */}
         <img
           src="/real inceptron.png"
           alt="SIET Inceptron Halftone Artwork"
@@ -38,7 +38,7 @@ export default function Login() {
         />
 
         {/* LAYER 2: Optional Transparent Interactive Canvas Particle Overlay */}
-        <HalftoneInteractiveHero src="/real inceptron.png" scale={0.88} />
+        <HalftoneInteractiveHero src="/real inceptron.png" scale={1.0} />
       </div>
 
       {/* RIGHT PANEL: Authentication Form */}
@@ -173,30 +173,30 @@ export default function Login() {
           overflow: hidden;
         }
 
-        /* LEFT PANEL: Halftone Artwork Container (55-60% width) */
+        /* LEFT PANEL: Halftone Artwork Container (55-60% width) - Full Bleed */
         .auth-07-left-panel {
           position: relative;
           flex: 1.15;
           height: 100vh;
           background-color: #edeef0;
           overflow: hidden;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 40px 32px;
+          padding: 0;
+          margin: 0;
           border-right: 1px solid #e2e4e8;
         }
 
-        /* LAYER 1: Primary Static Image (Always Visible, Sharp, Unbroken) */
+        /* LAYER 1: Primary Static Image (Option A: Full Bleed Cover) */
         .auth-07-art-image {
-          width: min(88%, 760px);
-          height: min(82vh, 640px);
-          object-fit: contain;
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: center center;
           display: block;
           opacity: 1;
           visibility: visible;
           z-index: 1;
-          position: relative;
           filter: contrast(1.05);
         }
 
