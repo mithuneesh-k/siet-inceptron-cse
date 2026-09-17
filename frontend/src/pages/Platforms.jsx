@@ -168,9 +168,9 @@ function DifficultyBarChart({ platforms }) {
   const maxVal = Math.max(easySolved, mediumSolved, hardSolved, 1);
 
   const bars = [
-    { label: 'Easy', count: easySolved, points: easySolved * 10, color: '#10B981' },
-    { label: 'Medium', count: mediumSolved, points: mediumSolved * 20, color: '#F59E0B' },
-    { label: 'Hard', count: hardSolved, points: hardSolved * 30, color: '#EF4444' }
+    { label: 'Easy', count: easySolved, color: '#10B981' },
+    { label: 'Medium', count: mediumSolved, color: '#F59E0B' },
+    { label: 'Hard', count: hardSolved, color: '#EF4444' }
   ];
 
   return (
@@ -195,11 +195,11 @@ function DifficultyBarChart({ platforms }) {
             return (
               <div key={i}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11.5, marginBottom: 4 }}>
-                  <span style={{ fontWeight: 700, color: bar.color, display: 'flex', alignItems: 'center', gap: 4 }}>
-                    {bar.label} <span style={{ fontSize: 10, color: 'var(--color-text-muted)', fontWeight: 600 }}>({bar.points} pts)</span>
+                  <span style={{ fontWeight: 700, color: bar.color }}>
+                    {bar.label} — {bar.count} solved
                   </span>
                   <span style={{ fontWeight: 800, color: 'var(--color-text)' }}>
-                    {bar.count} <span style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>solved</span>
+                    {bar.count}
                   </span>
                 </div>
                 <div style={{ height: 8, borderRadius: 4, background: 'var(--bg-hover)', overflow: 'hidden', display: 'flex' }}>
@@ -217,7 +217,7 @@ function DifficultyBarChart({ platforms }) {
             );
           })}
           <div style={{ fontSize: 10.5, color: 'var(--color-text-muted)', marginTop: 4, fontStyle: 'italic', textAlign: 'center' }}>
-            Aggregated Easy (10p) + Medium (20p) + Hard (30p)
+            Problem counts fetched across connected platform profiles
           </div>
         </div>
       )}
@@ -774,14 +774,10 @@ export default function Platforms() {
                         className="btn btn-secondary btn-xs"
                         onClick={() => handleSync('codeforces')}
                         disabled={syncingMap.codeforces || (cooldownRemainingMap.codeforces > 0)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, opacity: (cooldownRemainingMap.codeforces > 0) ? 0.75 : 1 }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, opacity: (cooldownRemainingMap.codeforces > 0) ? 0.65 : 1 }}
                       >
                         <RefreshCw size={13} className={syncingMap.codeforces ? 'spin' : ''} />
-                        {syncingMap.codeforces
-                          ? 'Syncing...'
-                          : (cooldownRemainingMap.codeforces > 0)
-                            ? `Sync in ${Math.floor(cooldownRemainingMap.codeforces / 60)}:${String(cooldownRemainingMap.codeforces % 60).padStart(2, '0')}`
-                            : 'Sync'}
+                        {syncingMap.codeforces ? 'Syncing...' : 'Sync'}
                       </button>
                       <button
                         type="button"
@@ -969,14 +965,10 @@ export default function Platforms() {
                         className="btn btn-secondary btn-xs"
                         onClick={() => handleSync('leetcode')}
                         disabled={syncingMap.leetcode || (cooldownRemainingMap.leetcode > 0)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, opacity: (cooldownRemainingMap.leetcode > 0) ? 0.75 : 1 }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, opacity: (cooldownRemainingMap.leetcode > 0) ? 0.65 : 1 }}
                       >
                         <RefreshCw size={13} className={syncingMap.leetcode ? 'spin' : ''} />
-                        {syncingMap.leetcode
-                          ? 'Syncing...'
-                          : (cooldownRemainingMap.leetcode > 0)
-                            ? `Sync in ${Math.floor(cooldownRemainingMap.leetcode / 60)}:${String(cooldownRemainingMap.leetcode % 60).padStart(2, '0')}`
-                            : 'Sync'}
+                        {syncingMap.leetcode ? 'Syncing...' : 'Sync'}
                       </button>
                       <button
                         type="button"
@@ -1140,14 +1132,10 @@ export default function Platforms() {
                         className="btn btn-secondary btn-xs"
                         onClick={() => handleSync('geeksforgeeks')}
                         disabled={syncingMap.geeksforgeeks || (cooldownRemainingMap.geeksforgeeks > 0)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, opacity: (cooldownRemainingMap.geeksforgeeks > 0) ? 0.75 : 1 }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, opacity: (cooldownRemainingMap.geeksforgeeks > 0) ? 0.65 : 1 }}
                       >
                         <RefreshCw size={13} className={syncingMap.geeksforgeeks ? 'spin' : ''} />
-                        {syncingMap.geeksforgeeks
-                          ? 'Syncing...'
-                          : (cooldownRemainingMap.geeksforgeeks > 0)
-                            ? `Sync in ${Math.floor(cooldownRemainingMap.geeksforgeeks / 60)}:${String(cooldownRemainingMap.geeksforgeeks % 60).padStart(2, '0')}`
-                            : 'Sync'}
+                        {syncingMap.geeksforgeeks ? 'Syncing...' : 'Sync'}
                       </button>
                       <button
                         type="button"
@@ -1307,14 +1295,10 @@ export default function Platforms() {
                         className="btn btn-secondary btn-xs"
                         onClick={() => handleSync('hackerrank')}
                         disabled={syncingMap.hackerrank || (cooldownRemainingMap.hackerrank > 0)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, opacity: (cooldownRemainingMap.hackerrank > 0) ? 0.75 : 1 }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, opacity: (cooldownRemainingMap.hackerrank > 0) ? 0.65 : 1 }}
                       >
                         <RefreshCw size={13} className={syncingMap.hackerrank ? 'spin' : ''} />
-                        {syncingMap.hackerrank
-                          ? 'Syncing...'
-                          : (cooldownRemainingMap.hackerrank > 0)
-                            ? `Sync in ${Math.floor(cooldownRemainingMap.hackerrank / 60)}:${String(cooldownRemainingMap.hackerrank % 60).padStart(2, '0')}`
-                            : 'Sync'}
+                        {syncingMap.hackerrank ? 'Syncing...' : 'Sync'}
                       </button>
                       <button
                         type="button"
