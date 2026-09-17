@@ -1307,6 +1307,70 @@ async function runPlatformTests() {
     assert.strictEqual(result.platformBreakdown.hackerrank.connected, true);
   });
 
+  test('38. Regression fixture: unverified LeetCode metrics (33 easy, 17 med, 2 hard) -> 0 pts, verified -> 730 pts', () => {
+    const unverifiedConn = {
+      platform_code: 'leetcode',
+      ownership_verified: false,
+      metrics: { easySolved: 33, mediumSolved: 17, hardSolved: 2, totalSolved: 52 }
+    };
+
+    const unverifiedResult = calculateUserCompetitiveScore([unverifiedConn]);
+    assert.strictEqual(unverifiedResult.totalScore, 0);
+    assert.strictEqual(unverifiedResult.easySolved, 0);
+    assert.strictEqual(unverifiedResult.mediumSolved, 0);
+    assert.strictEqual(unverifiedResult.hardSolved, 0);
+
+    const verifiedConn = {
+      ...unverifiedConn,
+      ownership_verified: true
+    };
+
+    const verifiedResult = calculateUserCompetitiveScore([verifiedConn]);
+    assert.strictEqual(verifiedResult.totalScore, 730); // 33*10 + 17*20 + 2*30 = 730
+    assert.strictEqual(verifiedResult.easySolved, 33);
+    assert.strictEqual(verifiedResult.mediumSolved, 17);
+    assert.strictEqual(verifiedResult.hardSolved, 2);
+  });
+
+  test('39. Unified competitive score: Platforms score equals Leaderboard score', () => {
+    const connList = [
+      { platform_code: 'codeforces', ownership_verified: true, metrics: { easySolved: 15, mediumSolved: 5, hardSolved: 1 } },
+      { platform_code: 'leetcode', ownership_verified: false, metrics: { easySolved: 50, mediumSolved: 20 } }
+    ];
+
+    const scoreObj = calculateUserCompetitiveScore(connList);
+    assert.strictEqual(scoreObj.totalScore, 280);
+    assert.strictEqual(scoreObj.platformBreakdown.codeforces.totalScore, 280);
+    assert.strictEqual(scoreObj.platformBreakdown.leetcode.totalScore, 0);
+  });
+
+  test('40. Zero verified profiles result in topScore = 0 and no positive competitive scores', () => {
+    const students = [
+      { user_id: 'u1', name: 'Alice' },
+      { user_id: 'u2', name: 'Bob' }
+    ];
+    const unverifiedConns = [
+      { user_id: 'u1', platform_code: 'leetcode', ownership_verified: false, metrics: { easySolved: 10 } }
+    ];
+
+    const scored = students.map(s => {
+      const uConns = unverifiedConns.filter(c => c.user_id === s.user_id);
+      return calculateUserCompetitiveScore(uConns);
+    });
+
+    const topScore = scored.length > 0 && scored[0].totalScore > 0 ? scored[0].totalScore : 0;
+    assert.strictEqual(topScore, 0);
+    assert.strictEqual(scored.every(s => s.totalScore === 0), true);
+  });
+
+  test('41. Single verified student (730 pts) aggregates correctly as top score', () => {
+    const verifiedConn = { platform_code: 'leetcode', ownership_verified: true, metrics: { easySolved: 33, mediumSolved: 17, hardSolved: 2 } };
+    const scoreObj = calculateUserCompetitiveScore([verifiedConn]);
+
+    assert.strictEqual(scoreObj.totalScore, 730);
+    assert.strictEqual(scoreObj.easySolved + scoreObj.mediumSolved + scoreObj.hardSolved, 52);
+  });
+
   console.log(`\nPlatform Test Results: ${passedTests}/${totalTests} tests passed.\n`);
   if (passedTests !== totalTests) {
     process.exit(1);

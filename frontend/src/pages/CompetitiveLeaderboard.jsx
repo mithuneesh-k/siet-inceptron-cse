@@ -165,7 +165,9 @@ export default function CompetitiveLeaderboard() {
   // Summary metrics
   const summaryMetrics = useMemo(() => {
     const totalStudents = leaderboard.length;
-    const verifiedProfiles = leaderboard.filter(s => s.totalScore > 0 || Object.values(s.platformBreakdown || {}).some(p => p.ownershipVerified)).length;
+    const verifiedProfiles = leaderboard.filter(s =>
+      Object.values(s.platformBreakdown || {}).some(p => p.ownershipVerified)
+    ).length;
     const totalProblemsSolved = leaderboard.reduce((acc, s) => acc + (s.totalProblems || 0), 0);
     const topScore = leaderboard.length > 0 && leaderboard[0].totalScore > 0 ? leaderboard[0].totalScore : 0;
 
@@ -177,9 +179,13 @@ export default function CompetitiveLeaderboard() {
     };
   }, [leaderboard]);
 
-  const top3 = useMemo(() => {
-    return leaderboard.slice(0, 3);
+  const scoredStudents = useMemo(() => {
+    return leaderboard.filter(s => s.totalScore > 0);
   }, [leaderboard]);
+
+  const top3 = useMemo(() => {
+    return scoredStudents.slice(0, 3);
+  }, [scoredStudents]);
 
   if (loading) {
     return (
@@ -283,13 +289,25 @@ export default function CompetitiveLeaderboard() {
 
         </div>
 
-        {/* TOP 3 PODIUM SECTION */}
-        {top3.length > 0 && (
-          <div style={{ marginBottom: 36 }}>
-            <h2 style={{ fontSize: 15, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-muted)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Award size={18} style={{ color: '#F59E0B' }} /> Top Performers Podium
-            </h2>
+        {/* TOP PERFORMERS PODIUM SECTION */}
+        <div style={{ marginBottom: 36 }}>
+          <h2 style={{ fontSize: 15, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-muted)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Award size={18} style={{ color: '#F59E0B' }} /> Top Performers Podium
+          </h2>
 
+          {top3.length === 0 ? (
+            <div className="card" style={{ padding: '32px 24px', textAlign: 'center', background: 'var(--color-card)', border: '1px dashed var(--color-border)', borderRadius: 'var(--radius-lg)' }}>
+              <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(245, 158, 11, 0.12)', color: '#F59E0B', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+                <Trophy size={24} />
+              </div>
+              <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--color-text)', margin: '0 0 4px 0' }}>
+                No verified competitive scores yet
+              </h3>
+              <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: 0, maxWidth: 460, marginLeft: 'auto', marginRight: 'auto' }}>
+                Connect and verify a programming profile on Codeforces or LeetCode to claim your spot on the podium!
+              </p>
+            </div>
+          ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
               {top3.map((student, idx) => {
                 const rankNum = idx + 1;
@@ -399,8 +417,8 @@ export default function CompetitiveLeaderboard() {
                 );
               })}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* FULL RANKINGS TABLE */}
         <div className="card" style={{ padding: '24px', borderRadius: 'var(--radius-lg)', background: 'var(--color-card)', border: '1px solid var(--color-border)' }}>
@@ -470,9 +488,9 @@ export default function CompetitiveLeaderboard() {
                 </thead>
                 <tbody>
                   {filteredLeaderboard.map((item) => {
-                    const isTop1 = item.rank === 1;
-                    const isTop2 = item.rank === 2;
-                    const isTop3 = item.rank === 3;
+                    const isTop1 = item.rank === 1 && item.totalScore > 0;
+                    const isTop2 = item.rank === 2 && item.totalScore > 0;
+                    const isTop3 = item.rank === 3 && item.totalScore > 0;
                     const hasNoVerifiedPlatform = item.totalScore === 0;
 
                     return (
@@ -500,7 +518,7 @@ export default function CompetitiveLeaderboard() {
                             </span>
                           ) : (
                             <span style={{ display: 'inline-flex', alignItems: 'center', padding: '3px 9px', borderRadius: 12, background: 'var(--bg-hover)', color: 'var(--color-text-muted)', fontSize: 11, fontWeight: 700 }}>
-                              #{item.rank}
+                              {item.totalScore > 0 ? `#${item.rank}` : '—'}
                             </span>
                           )}
                         </td>
