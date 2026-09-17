@@ -104,11 +104,15 @@ export default function CompetitiveLeaderboard() {
       }
     } catch (err) {
       const isCooldown = err.response?.status === 429 || err.response?.data?.cooldown;
-      const msg = err.response?.data?.error || `Failed to sync ${platformCode} data.`;
-      setModalSyncFeedback({
-        type: isCooldown ? 'cooldown' : 'error',
-        message: msg
-      });
+      if (!isCooldown) {
+        const msg = err.response?.data?.error || `Failed to sync ${platformCode} data.`;
+        setModalSyncFeedback({
+          type: 'error',
+          message: msg
+        });
+      } else {
+        setModalSyncFeedback(null);
+      }
     } finally {
       setModalSyncingMap(prev => ({ ...prev, [platformCode]: false }));
     }
