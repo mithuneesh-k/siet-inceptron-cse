@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Eye, EyeOff, Lock, User, ArrowRight, Shield, Award, Zap, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, Lock, User, ArrowRight, AlertCircle } from 'lucide-react';
 
 export default function Login() {
   const { login } = useAuth();
@@ -27,64 +27,8 @@ export default function Login() {
 
   return (
     <div className="auth-07-container">
-      {/* LEFT PANEL: Modern Hero & Visual Branding (auth-07 style) */}
-      <div className="auth-07-hero">
-        <div className="auth-07-hero-bg">
-          <div className="auth-07-hero-glow-1" />
-          <div className="auth-07-hero-glow-2" />
-          <div className="auth-07-hero-grid" />
-        </div>
-
-        <div className="auth-07-hero-header">
-          <div className="auth-07-brand">
-            <img src="/real inceptron.png" alt="SIET Inceptron Logo" className="auth-07-brand-logo" />
-            <div className="auth-07-brand-text">
-              <span className="auth-07-brand-name">SIET INCEPTRON</span>
-              <span className="auth-07-brand-badge">CSE PORTAL</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="auth-07-hero-body">
-          <div className="auth-07-hero-tag">
-            <Shield size={14} />
-            <span>Sri Shakthi Institute of Engineering & Technology</span>
-          </div>
-          <h1 className="auth-07-hero-title">
-            Empowering <br />
-            <span className="auth-07-hero-highlight">Technical Excellence</span>
-          </h1>
-
-          <p className="auth-07-hero-subtitle">
-            Department of Computer Science & Engineering. Access real-time competitive leaderboards, track achievements, and sync platform performance in one unified portal.
-          </p>
-
-          <div className="auth-07-feature-list">
-            <div className="auth-07-feature-item">
-              <div className="auth-07-feature-icon">
-                <Award size={18} />
-              </div>
-              <div>
-                <h4>Competitive Leaderboards</h4>
-                <p>Track rankings across LeetCode, SkillRack, CodeChef, & HackerRank</p>
-              </div>
-            </div>
-            <div className="auth-07-feature-item">
-              <div className="auth-07-feature-icon">
-                <Zap size={18} />
-              </div>
-              <div>
-                <h4>Automated Platform Sync</h4>
-                <p>Real-time analytics and activity verification</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="auth-07-hero-footer">
-          <p>© {new Date().getFullYear()} SIET Inceptron. All rights reserved.</p>
-        </div>
-      </div>
+      {/* LEFT PANEL: Black-and-White Halftone Artwork Background Only */}
+      <div className="auth-07-hero" aria-label="Inceptron Artwork" />
 
       {/* RIGHT PANEL: Authentication Form */}
       <div className="auth-07-form-wrapper">
@@ -219,200 +163,12 @@ export default function Login() {
         .auth-07-hero {
           flex: 1.3;
           position: relative;
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-          padding: 56px 64px;
-          background-color: #051a02;
-          background-image:
-            linear-gradient(135deg, rgba(5, 30, 2, 0.74) 0%, rgba(7, 42, 1, 0.84) 100%),
-            url('/real inceptron.png');
+          background-color: #000000;
+          background-image: url('/real inceptron.png');
           background-size: cover;
           background-position: center;
           background-repeat: no-repeat;
-          color: #ffffff;
-          overflow: hidden;
           min-height: 100vh;
-        }
-
-        .auth-07-hero-bg {
-          position: absolute;
-          inset: 0;
-          pointer-events: none;
-          z-index: 0;
-        }
-
-        .auth-07-hero-glow-1 {
-          position: absolute;
-          top: -15%;
-          right: -10%;
-          width: 500px;
-          height: 500px;
-          background: radial-gradient(circle, rgba(42, 125, 20, 0.35) 0%, rgba(7, 42, 1, 0) 70%);
-          border-radius: 50%;
-          filter: blur(40px);
-        }
-
-        .auth-07-hero-glow-2 {
-          position: absolute;
-          bottom: -20%;
-          left: -10%;
-          width: 600px;
-          height: 600px;
-          background: radial-gradient(circle, rgba(212, 155, 0, 0.18) 0%, rgba(7, 42, 1, 0) 70%);
-          border-radius: 50%;
-          filter: blur(60px);
-        }
-
-        .auth-07-hero-grid {
-          position: absolute;
-          inset: 0;
-          background-image:
-            linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-          background-size: 40px 40px;
-          mask-image: radial-gradient(ellipse at center, black 40%, transparent 80%);
-        }
-
-        .auth-07-hero-header,
-        .auth-07-hero-body,
-        .auth-07-hero-footer {
-          position: relative;
-          z-index: 1;
-        }
-
-        .auth-07-brand {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-        }
-
-        .auth-07-brand-logo {
-          height: 48px;
-          width: auto;
-          object-fit: contain;
-        }
-
-        .auth-07-brand-text {
-          display: flex;
-          flex-direction: column;
-        }
-
-        .auth-07-brand-name {
-          font-family: 'Space Grotesk', sans-serif;
-          font-weight: 800;
-          font-size: 20px;
-          letter-spacing: 0.04em;
-          color: #ffffff;
-        }
-
-        .auth-07-brand-badge {
-          font-size: 10px;
-          font-weight: 700;
-          letter-spacing: 0.12em;
-          color: #f0b400;
-          text-transform: uppercase;
-        }
-
-        .auth-07-hero-body {
-          max-width: 540px;
-          margin: 40px 0;
-        }
-
-        .auth-07-hero-tag {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          padding: 6px 14px;
-          background: rgba(0, 0, 0, 0.35);
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          border-radius: 9999px;
-          font-size: 12px;
-          font-weight: 600;
-          color: #d5efc8;
-          margin-bottom: 24px;
-          backdrop-filter: blur(12px);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-
-        .auth-07-hero-title {
-          font-family: 'Space Grotesk', sans-serif;
-          font-size: 44px;
-          font-weight: 800;
-          line-height: 1.15;
-          letter-spacing: -0.02em;
-          margin-bottom: 18px;
-          color: #ffffff;
-          text-shadow: 0 2px 10px rgba(0,0,0,0.4);
-        }
-
-        .auth-07-hero-highlight {
-          background: linear-gradient(135deg, #ffd93d 0%, #f0b400 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
-
-        .auth-07-hero-subtitle {
-          font-size: 15px;
-          line-height: 1.6;
-          color: rgba(255, 255, 255, 0.92);
-          margin-bottom: 36px;
-          text-shadow: 0 1px 4px rgba(0,0,0,0.5);
-        }
-
-        .auth-07-feature-list {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-        }
-
-        .auth-07-feature-item {
-          display: flex;
-          align-items: flex-start;
-          gap: 14px;
-          padding: 14px 18px;
-          background: rgba(5, 30, 2, 0.55);
-          border: 1px solid rgba(255, 255, 255, 0.15);
-          border-radius: 12px;
-          backdrop-filter: blur(12px);
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-          transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
-        }
-
-        .auth-07-feature-item:hover {
-          background: rgba(7, 42, 1, 0.75);
-          border-color: rgba(240, 180, 0, 0.35);
-          transform: translateX(4px);
-        }
-
-        .auth-07-feature-icon {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 36px;
-          height: 36px;
-          border-radius: 8px;
-          background: rgba(240, 180, 0, 0.18);
-          color: #ffd93d;
-          flex-shrink: 0;
-        }
-
-        .auth-07-feature-item h4 {
-          font-size: 14px;
-          font-weight: 700;
-          color: #ffffff;
-          margin: 0 0 2px 0;
-        }
-
-        .auth-07-feature-item p {
-          font-size: 12px;
-          color: rgba(255, 255, 255, 0.65);
-          margin: 0;
-        }
-
-        .auth-07-hero-footer p {
-          font-size: 12px;
-          color: rgba(255, 255, 255, 0.45);
         }
 
         /* Form Right Panel (auth-07) */
