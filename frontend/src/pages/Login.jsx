@@ -11,6 +11,7 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [stage, setStage] = useState('intro'); // Stage 1: 'intro' | Stage 2: 'form'
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,140 +28,197 @@ export default function Login() {
   };
 
   return (
-    <div className="auth-07-container">
-      {/* LEFT PANEL: Black-and-White Halftone Artwork Section */}
-      <div className="auth-07-left-panel">
-        {/* LAYER 1: Primary High-Resolution Static Artwork Image (Full Bleed Option A) */}
-        <img
-          src="/real inceptron.png"
-          alt="SIET Inceptron Halftone Artwork"
-          className="auth-07-art-image"
-        />
+    <div className="login-experience">
+      {/* STAGE 1: Full-Screen Initial Intro Screen */}
+      {stage === 'intro' && (
+        <section className="intro-screen">
+          <img
+            src="/real inceptron widescreen light.png"
+            alt="SIET INCEPTRON Halftone Artwork"
+            className="intro-artwork-img"
+          />
+        </section>
+      )}
 
-        {/* LAYER 2: Optional Transparent Interactive Canvas Particle Overlay */}
-        <HalftoneInteractiveHero src="/real inceptron.png" scale={1.0} />
-      </div>
+      {/* STAGE 2: Authentication Form Screen (Preserved for Stage 2) */}
+      {stage === 'form' && (
+        <section className="login-screen">
+          <div className="auth-07-container">
+            {/* LEFT PANEL: Black-and-White Halftone Artwork Section */}
+            <div className="auth-07-left-panel">
+              {/* LAYER 1: Primary High-Resolution Static Artwork Image */}
+              <img
+                src="/real inceptron.png"
+                alt="SIET Inceptron Halftone Artwork"
+                className="auth-07-art-image"
+              />
 
-      {/* RIGHT PANEL: Authentication Form */}
-      <div className="auth-07-form-wrapper">
-        <div className="auth-07-card">
-          {/* Mobile Header */}
-          <div className="auth-07-mobile-header">
-            <img src="/real inceptron.png" alt="SIET Inceptron Logo" className="auth-07-mobile-logo" />
-            <span className="auth-07-mobile-brand">SIET INCEPTRON</span>
-          </div>
-
-          <div className="auth-07-card-header">
-            <h2 className="auth-07-card-title">Welcome Back</h2>
-            <p className="auth-07-card-subtitle">Sign in to your SIET Inceptron account</p>
-          </div>
-
-          {error && (
-            <div className="auth-07-error-alert" role="alert">
-              <AlertCircle size={18} className="auth-07-error-icon" />
-              <span>{error}</span>
+              {/* LAYER 2: Optional Transparent Interactive Canvas Particle Overlay */}
+              <HalftoneInteractiveHero src="/real inceptron.png" scale={1.0} />
             </div>
-          )}
 
-          <form onSubmit={handleSubmit} className="auth-07-form">
-            <div className="auth-07-field">
-              <label htmlFor="login-email" className="auth-07-label">
-                REGISTER NO
-              </label>
-              <div className="auth-07-input-wrapper">
-                <User size={18} className="auth-07-input-icon" />
-                <input
-                  id="login-email"
-                  type="text"
-                  className="auth-07-input"
-                  placeholder="714025104173"
-                  value={form.email}
-                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                  required
-                  autoComplete="username"
-                />
+            {/* RIGHT PANEL: Authentication Form */}
+            <div className="auth-07-form-wrapper">
+              <div className="auth-07-card">
+                {/* Mobile Header */}
+                <div className="auth-07-mobile-header">
+                  <img src="/real inceptron.png" alt="SIET Inceptron Logo" className="auth-07-mobile-logo" />
+                  <span className="auth-07-mobile-brand">SIET INCEPTRON</span>
+                </div>
+
+                <div className="auth-07-card-header">
+                  <h2 className="auth-07-card-title">Welcome Back</h2>
+                  <p className="auth-07-card-subtitle">Sign in to your SIET Inceptron account</p>
+                </div>
+
+                {error && (
+                  <div className="auth-07-error-alert" role="alert">
+                    <AlertCircle size={18} className="auth-07-error-icon" />
+                    <span>{error}</span>
+                  </div>
+                )}
+
+                <form onSubmit={handleSubmit} className="auth-07-form">
+                  <div className="auth-07-field">
+                    <label htmlFor="login-email" className="auth-07-label">
+                      REGISTER NO
+                    </label>
+                    <div className="auth-07-input-wrapper">
+                      <User size={18} className="auth-07-input-icon" />
+                      <input
+                        id="login-email"
+                        type="text"
+                        className="auth-07-input"
+                        placeholder="714025104173"
+                        value={form.email}
+                        onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                        required
+                        autoComplete="username"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="auth-07-field">
+                    <div className="auth-07-label-row">
+                      <label htmlFor="login-password" className="auth-07-label">
+                        PASSWORD
+                      </label>
+                    </div>
+                    <div className="auth-07-input-wrapper">
+                      <Lock size={18} className="auth-07-input-icon" />
+                      <input
+                        id="login-password"
+                        type={showPassword ? 'text' : 'password'}
+                        className="auth-07-input auth-07-input-password"
+                        placeholder="••••••••"
+                        value={form.password}
+                        onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                        required
+                        autoComplete="current-password"
+                      />
+                      <button
+                        type="button"
+                        className="auth-07-password-toggle"
+                        onClick={() => setShowPassword(!showPassword)}
+                        tabIndex={-1}
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    id="login-submit"
+                    type="submit"
+                    className="auth-07-submit-btn"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <>
+                        <span className="auth-07-spinner" />
+                        <span>Signing In...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Sign In</span>
+                        <ArrowRight size={18} />
+                      </>
+                    )}
+                  </button>
+                </form>
+
+                {/* Test Credentials Helper */}
+                <div className="auth-07-demo-section">
+                  <div className="auth-07-divider">
+                    <span>TEST CREDENTIALS</span>
+                  </div>
+                  <div className="auth-07-demo-buttons">
+                    <button
+                      type="button"
+                      className="auth-07-demo-btn"
+                      onClick={() => setForm({ email: 'admin@siet.ac.in', password: 'password123' })}
+                    >
+                      <span className="auth-07-demo-badge">Admin</span>
+                      <span className="auth-07-demo-val">admin@siet.ac.in</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="auth-07-demo-btn"
+                      onClick={() => setForm({ email: '714025104144', password: '25CS144' })}
+                    >
+                      <span className="auth-07-demo-badge">Mithuneesh</span>
+                      <span className="auth-07-demo-val">714025104144</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
-
-            <div className="auth-07-field">
-              <div className="auth-07-label-row">
-                <label htmlFor="login-password" className="auth-07-label">
-                  PASSWORD
-                </label>
-              </div>
-              <div className="auth-07-input-wrapper">
-                <Lock size={18} className="auth-07-input-icon" />
-                <input
-                  id="login-password"
-                  type={showPassword ? 'text' : 'password'}
-                  className="auth-07-input auth-07-input-password"
-                  placeholder="••••••••"
-                  value={form.password}
-                  onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-                  required
-                  autoComplete="current-password"
-                />
-                <button
-                  type="button"
-                  className="auth-07-password-toggle"
-                  onClick={() => setShowPassword(!showPassword)}
-                  tabIndex={-1}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </div>
-
-            <button
-              id="login-submit"
-              type="submit"
-              className="auth-07-submit-btn"
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <span className="auth-07-spinner" />
-                  <span>Signing In...</span>
-                </>
-              ) : (
-                <>
-                  <span>Sign In</span>
-                  <ArrowRight size={18} />
-                </>
-              )}
-            </button>
-          </form>
-
-          {/* Test Credentials Helper */}
-          <div className="auth-07-demo-section">
-            <div className="auth-07-divider">
-              <span>TEST CREDENTIALS</span>
-            </div>
-            <div className="auth-07-demo-buttons">
-              <button
-                type="button"
-                className="auth-07-demo-btn"
-                onClick={() => setForm({ email: 'admin@siet.ac.in', password: 'password123' })}
-              >
-                <span className="auth-07-demo-badge">Admin</span>
-                <span className="auth-07-demo-val">admin@siet.ac.in</span>
-              </button>
-              <button
-                type="button"
-                className="auth-07-demo-btn"
-                onClick={() => setForm({ email: '714025104144', password: '25CS144' })}
-              >
-                <span className="auth-07-demo-badge">Mithuneesh</span>
-                <span className="auth-07-demo-val">714025104144</span>
-              </button>
-            </div>
           </div>
-        </div>
-      </div>
+        </section>
+      )}
 
       <style>{`
-        /* Auth-07 Dual-Panel Architecture */
+        /* Stage 1: Intro Experience Architecture */
+        .login-experience {
+          position: relative;
+          width: 100vw;
+          height: 100vh;
+          overflow: hidden;
+          margin: 0;
+          padding: 0;
+          background-color: #000000;
+        }
+
+        .intro-screen {
+          position: fixed;
+          inset: 0;
+          width: 100vw;
+          height: 100vh;
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background-color: #000000;
+          z-index: 9999;
+        }
+
+        .intro-artwork-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: center center;
+          display: block;
+        }
+
+        /* Stage 2: Dual-Panel Architecture */
+        .login-screen {
+          position: relative;
+          width: 100vw;
+          height: 100vh;
+          overflow: hidden;
+        }
+
         .auth-07-container {
           position: relative;
           display: flex;
