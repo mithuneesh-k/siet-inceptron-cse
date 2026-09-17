@@ -1,8 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Eye, EyeOff, Lock, User, ArrowRight, AlertCircle } from 'lucide-react';
-import HalftoneInteractiveHero from '../components/HalftoneInteractiveHero';
+import { Eye, EyeOff, Lock, User, ArrowRight, AlertCircle, ChevronDown } from 'lucide-react';
 
 export default function Login() {
   const { login } = useAuth();
@@ -11,7 +10,140 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [stage, setStage] = useState('intro'); // Stage 1: 'intro' | Stage 2: 'form'
+
+  // Cinematic Scroll-to-Enter Transition Animation State
+  const targetProgressRef = useRef(0);
+  const currentProgressRef = useRef(0);
+  const animFrameIdRef = useRef(null);
+  const isCompletedRef = useRef(false);
+
+  const overlayRef = useRef(null);
+  const artworkRef = useRef(null);
+  const loginStageRef = useRef(null);
+  const hintRef = useRef(null);
+
+  useEffect(() => {
+    // Check prefers-reduced-motion
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) {
+      isCompletedRef.current = true;
+      if (overlayRef.current) overlayRef.current.style.display = 'none';
+      if (loginStageRef.current) loginStageRef.current.style.opacity = '1';
+      return;
+    }
+
+    // Animation Render Loop (60fps lerp)
+    const animate = () => {
+      if (isCompletedRef.current) return;
+
+      const diff = targetProgressRef.current - currentProgressRef.current;
+      currentProgressRef.current += diff * 0.08;
+
+      const progress = currentProgressRef.current;
+
+      // 1. Zoom Transform targeting inner cube center (50% X, 36% Y)
+      const scale = 1 + Math.pow(progress, 1.3) * 6.5;
+      const translateY = -progress * 12;
+
+      if (artworkRef.current) {
+        artworkRef.current.style.transform = `scale(${scale}) translateY(${translateY}%)`;
+        artworkRef.current.style.transformOrigin = '50% 36%';
+      }
+
+      // 2. Opacity Fades
+      let artworkOpacity = 1;
+      if (progress > 0.70) {
+        artworkOpacity = 1 - (progress - 0.70) / 0.30;
+      }
+
+      if (overlayRef.current) {
+        overlayRef.current.style.opacity = Math.max(0, artworkOpacity);
+      }
+
+      let loginOpacity = 0;
+      if (progress > 0.65) {
+        loginOpacity = (progress - 0.65) / 0.35;
+      }
+
+      if (loginStageRef.current) {
+        loginStageRef.current.style.opacity = Math.min(1, loginOpacity);
+      }
+
+      // Scroll hint fades quickly
+      if (hintRef.current) {
+        hintRef.current.style.opacity = Math.max(0, 1 - progress * 15);
+      }
+
+      // Completion check
+      if (progress >= 0.995 && targetProgressRef.current >= 0.99) {
+        isCompletedRef.current = true;
+        if (overlayRef.current) {
+          overlayRef.current.style.display = 'none';
+          overlayRef.current.style.pointerEvents = 'none';
+        }
+        if (loginStageRef.current) {
+          loginStageRef.current.style.opacity = '1';
+          loginStageRef.current.style.pointerEvents = 'auto';
+        }
+        return;
+      }
+
+      animFrameIdRef.current = requestAnimationFrame(animate);
+    };
+
+    animFrameIdRef.current = requestAnimationFrame(animate);
+
+    // Event Listeners
+    const handleWheel = (e) => {
+      if (isCompletedRef.current) return;
+      e.preventDefault();
+
+      const delta = e.deltaY * 0.0015;
+      targetProgressRef.current = Math.min(1, Math.max(0, targetProgressRef.current + delta));
+    };
+
+    let touchStartY = 0;
+    const handleTouchStart = (e) => {
+      if (isCompletedRef.current) return;
+      touchStartY = e.touches[0].clientY;
+    };
+
+    const handleTouchMove = (e) => {
+      if (isCompletedRef.current) return;
+      const touchY = e.touches[0].clientY;
+      const deltaY = (touchStartY - touchY) * 0.003;
+      touchStartY = touchY;
+
+      targetProgressRef.current = Math.min(1, Math.max(0, targetProgressRef.current + deltaY));
+      if (targetProgressRef.current > 0 && targetProgressRef.current < 1) {
+        e.preventDefault();
+      }
+    };
+
+    const handleKeyDown = (e) => {
+      if (isCompletedRef.current) return;
+      if (['ArrowDown', 'PageDown', 'Space'].includes(e.key)) {
+        e.preventDefault();
+        targetProgressRef.current = Math.min(1, targetProgressRef.current + 0.25);
+      } else if (['ArrowUp', 'PageUp'].includes(e.key)) {
+        e.preventDefault();
+        targetProgressRef.current = Math.max(0, targetProgressRef.current - 0.25);
+      }
+    };
+
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      if (animFrameIdRef.current) cancelAnimationFrame(animFrameIdRef.current);
+      window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -29,196 +161,155 @@ export default function Login() {
 
   return (
     <div className="login-experience">
-      {/* STAGE 1: Full-Screen Initial Intro Screen */}
-      {stage === 'intro' && (
-        <section className="intro-screen">
-          <img
-            src="/real inceptron widescreen light.png"
-            alt="SIET INCEPTRON Halftone Artwork"
-            className="intro-artwork-img"
-          />
-        </section>
-      )}
+      {/* STEP 1-4: FULL-SCREEN CINEMATIC INTRO VIEWPORT OVERLAY */}
+      <div ref={overlayRef} className="intro-viewport">
+        <img
+          ref={artworkRef}
+          src="/main.png"
+          alt="SIET Inceptron Artwork"
+          className="intro-artwork"
+        />
+        <div ref={hintRef} className="intro-scroll-hint">
+          <span>Scroll to enter</span>
+          <ChevronDown size={16} className="intro-hint-arrow" />
+        </div>
+      </div>
 
-      {/* STAGE 2: Authentication Form Screen (Preserved for Stage 2) */}
-      {stage === 'form' && (
-        <section className="login-screen">
-          <div className="auth-07-container">
-            {/* LEFT PANEL: Black-and-White Halftone Artwork Section */}
-            <div className="auth-07-left-panel">
-              {/* LAYER 1: Primary High-Resolution Static Artwork Image */}
-              <img
-                src="/real inceptron.png"
-                alt="SIET Inceptron Halftone Artwork"
-                className="auth-07-art-image"
-              />
+      {/* STEP 5: LOGIN STAGE REVEALED UNDERNEATH */}
+      <div ref={loginStageRef} className="login-stage">
+        <div className="auth-07-container">
+          {/* LEFT PANEL: Halftone Artwork Section */}
+          <div className="auth-07-left-panel">
+            {/* LAYER 1: Primary High-Resolution Static Artwork Image (Full Bleed Option A) */}
+            <img
+              src="/main.png"
+              alt="SIET Inceptron Halftone Artwork"
+              className="auth-07-art-image"
+            />
+          </div>
 
-              {/* LAYER 2: Optional Transparent Interactive Canvas Particle Overlay */}
-              <HalftoneInteractiveHero src="/real inceptron.png" scale={1.0} />
+          {/* RIGHT PANEL: Authentication Form */}
+          <div className="auth-07-form-wrapper">
+        <div className="auth-07-card">
+          {/* Mobile Header */}
+          <div className="auth-07-mobile-header">
+            <img src="/real inceptron.png" alt="SIET Inceptron Logo" className="auth-07-mobile-logo" />
+            <span className="auth-07-mobile-brand">SIET INCEPTRON</span>
+          </div>
+
+          <div className="auth-07-card-header">
+            <h2 className="auth-07-card-title">Welcome Back</h2>
+            <p className="auth-07-card-subtitle">Sign in to your SIET Inceptron account</p>
+          </div>
+
+          {error && (
+            <div className="auth-07-error-alert" role="alert">
+              <AlertCircle size={18} className="auth-07-error-icon" />
+              <span>{error}</span>
             </div>
+          )}
 
-            {/* RIGHT PANEL: Authentication Form */}
-            <div className="auth-07-form-wrapper">
-              <div className="auth-07-card">
-                {/* Mobile Header */}
-                <div className="auth-07-mobile-header">
-                  <img src="/real inceptron.png" alt="SIET Inceptron Logo" className="auth-07-mobile-logo" />
-                  <span className="auth-07-mobile-brand">SIET INCEPTRON</span>
-                </div>
-
-                <div className="auth-07-card-header">
-                  <h2 className="auth-07-card-title">Welcome Back</h2>
-                  <p className="auth-07-card-subtitle">Sign in to your SIET Inceptron account</p>
-                </div>
-
-                {error && (
-                  <div className="auth-07-error-alert" role="alert">
-                    <AlertCircle size={18} className="auth-07-error-icon" />
-                    <span>{error}</span>
-                  </div>
-                )}
-
-                <form onSubmit={handleSubmit} className="auth-07-form">
-                  <div className="auth-07-field">
-                    <label htmlFor="login-email" className="auth-07-label">
-                      REGISTER NO
-                    </label>
-                    <div className="auth-07-input-wrapper">
-                      <User size={18} className="auth-07-input-icon" />
-                      <input
-                        id="login-email"
-                        type="text"
-                        className="auth-07-input"
-                        placeholder="714025104173"
-                        value={form.email}
-                        onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                        required
-                        autoComplete="username"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="auth-07-field">
-                    <div className="auth-07-label-row">
-                      <label htmlFor="login-password" className="auth-07-label">
-                        PASSWORD
-                      </label>
-                    </div>
-                    <div className="auth-07-input-wrapper">
-                      <Lock size={18} className="auth-07-input-icon" />
-                      <input
-                        id="login-password"
-                        type={showPassword ? 'text' : 'password'}
-                        className="auth-07-input auth-07-input-password"
-                        placeholder="••••••••"
-                        value={form.password}
-                        onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-                        required
-                        autoComplete="current-password"
-                      />
-                      <button
-                        type="button"
-                        className="auth-07-password-toggle"
-                        onClick={() => setShowPassword(!showPassword)}
-                        tabIndex={-1}
-                        aria-label={showPassword ? 'Hide password' : 'Show password'}
-                      >
-                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <button
-                    id="login-submit"
-                    type="submit"
-                    className="auth-07-submit-btn"
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <>
-                        <span className="auth-07-spinner" />
-                        <span>Signing In...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>Sign In</span>
-                        <ArrowRight size={18} />
-                      </>
-                    )}
-                  </button>
-                </form>
-
-                {/* Test Credentials Helper */}
-                <div className="auth-07-demo-section">
-                  <div className="auth-07-divider">
-                    <span>TEST CREDENTIALS</span>
-                  </div>
-                  <div className="auth-07-demo-buttons">
-                    <button
-                      type="button"
-                      className="auth-07-demo-btn"
-                      onClick={() => setForm({ email: 'admin@siet.ac.in', password: 'password123' })}
-                    >
-                      <span className="auth-07-demo-badge">Admin</span>
-                      <span className="auth-07-demo-val">admin@siet.ac.in</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="auth-07-demo-btn"
-                      onClick={() => setForm({ email: '714025104144', password: '25CS144' })}
-                    >
-                      <span className="auth-07-demo-badge">Mithuneesh</span>
-                      <span className="auth-07-demo-val">714025104144</span>
-                    </button>
-                  </div>
-                </div>
+          <form onSubmit={handleSubmit} className="auth-07-form">
+            <div className="auth-07-field">
+              <label htmlFor="login-email" className="auth-07-label">
+                REGISTER NO
+              </label>
+              <div className="auth-07-input-wrapper">
+                <User size={18} className="auth-07-input-icon" />
+                <input
+                  id="login-email"
+                  type="text"
+                  className="auth-07-input"
+                  placeholder="714025104173"
+                  value={form.email}
+                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                  required
+                  autoComplete="username"
+                />
               </div>
             </div>
+
+            <div className="auth-07-field">
+              <div className="auth-07-label-row">
+                <label htmlFor="login-password" className="auth-07-label">
+                  PASSWORD
+                </label>
+              </div>
+              <div className="auth-07-input-wrapper">
+                <Lock size={18} className="auth-07-input-icon" />
+                <input
+                  id="login-password"
+                  type={showPassword ? 'text' : 'password'}
+                  className="auth-07-input auth-07-input-password"
+                  placeholder="••••••••"
+                  value={form.password}
+                  onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                  required
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  className="auth-07-password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                  tabIndex={-1}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              id="login-submit"
+              type="submit"
+              className="auth-07-submit-btn"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <span className="auth-07-spinner" />
+                  <span>Signing In...</span>
+                </>
+              ) : (
+                <>
+                  <span>Sign In</span>
+                  <ArrowRight size={18} />
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Test Credentials Helper */}
+          <div className="auth-07-demo-section">
+            <div className="auth-07-divider">
+              <span>TEST CREDENTIALS</span>
+            </div>
+            <div className="auth-07-demo-buttons">
+              <button
+                type="button"
+                className="auth-07-demo-btn"
+                onClick={() => setForm({ email: 'admin@siet.ac.in', password: 'password123' })}
+              >
+                <span className="auth-07-demo-badge">Admin</span>
+                <span className="auth-07-demo-val">admin@siet.ac.in</span>
+              </button>
+              <button
+                type="button"
+                className="auth-07-demo-btn"
+                onClick={() => setForm({ email: '714025104144', password: '25CS144' })}
+              >
+                <span className="auth-07-demo-badge">Mithuneesh</span>
+                <span className="auth-07-demo-val">714025104144</span>
+              </button>
+            </div>
           </div>
-        </section>
-      )}
+        </div>
+      </div>
+    </div>
+  </div>
 
-      <style>{`
-        /* Stage 1: Intro Experience Architecture */
-        .login-experience {
-          position: relative;
-          width: 100vw;
-          height: 100vh;
-          overflow: hidden;
-          margin: 0;
-          padding: 0;
-          background-color: #000000;
-        }
-
-        .intro-screen {
-          position: fixed;
-          inset: 0;
-          width: 100vw;
-          height: 100vh;
-          overflow: hidden;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background-color: #000000;
-          z-index: 9999;
-        }
-
-        .intro-artwork-img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          object-position: center center;
-          display: block;
-        }
-
-        /* Stage 2: Dual-Panel Architecture */
-        .login-screen {
-          position: relative;
-          width: 100vw;
-          height: 100vh;
-          overflow: hidden;
-        }
-
+  <style>{`
+        /* Auth-07 Dual-Panel Architecture */
         .auth-07-container {
           position: relative;
           display: flex;
