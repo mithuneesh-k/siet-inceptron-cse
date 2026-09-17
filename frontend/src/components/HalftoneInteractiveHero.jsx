@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-export default function HalftoneInteractiveHero({ src = '/real inceptron clean.png', scale = 0.78 }) {
+export default function HalftoneInteractiveHero({ src = '/real inceptron clean.png', scale = 0.62 }) {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const animationFrameRef = useRef(null);
@@ -45,10 +45,10 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron clean.p
 
       ctx.scale(dpr, dpr);
 
-      // Create offscreen canvas to sample image pixels
-      const offscreen = document.createElement('canvas');
-      const sampleW = 480;
+      // Create offscreen canvas to sample image pixels at high resolution
+      const sampleW = 600;
       const sampleH = Math.round((sampleW / img.naturalWidth) * img.naturalHeight);
+      const offscreen = document.createElement('canvas');
       offscreen.width = sampleW;
       offscreen.height = sampleH;
       const offCtx = offscreen.getContext('2d');
@@ -56,27 +56,27 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron clean.p
 
       const imgData = offCtx.getImageData(0, 0, sampleW, sampleH).data;
 
-      // Full-bleed cover object-fit calculation with controlled scale factor (0.78) for clean composition
+      // Fit contained in left panel area with controlled scale factor for clean composition
       const containerAspect = width / height;
       const imgAspect = img.naturalWidth / img.naturalHeight;
       let fullW = width;
       let fullH = height;
 
       if (containerAspect > imgAspect) {
-        fullW = width;
-        fullH = width / imgAspect;
-      } else {
         fullH = height;
         fullW = height * imgAspect;
+      } else {
+        fullW = width;
+        fullH = width / imgAspect;
       }
 
       const imgW = fullW * scale;
       const imgH = fullH * scale;
-      const imgX = (width - imgW) * 0.32; // centered in left panel area with breathing room
+      const imgX = (width - imgW) / 2; // Centered in left panel area with breathing room
       const imgY = (height - imgH) / 2;
 
-      // Grid step for particle sampling across background
-      const gridStep = width > 1200 ? 8 : 7;
+      // Fine grid step for high-fidelity particle sampling across artwork & INCEPTRON wordmark
+      const gridStep = width > 1200 ? 5 : 6;
       const particles = [];
 
       for (let y = 0; y < height; y += gridStep) {
@@ -85,29 +85,26 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron clean.p
           const sampleY = Math.floor(((y - imgY) / imgH) * sampleH);
 
           if (sampleX >= 0 && sampleX < sampleW && sampleY >= 0 && sampleY < sampleH) {
-            // EXCLUDE WORDMARK REGION: Keep "INCEPTRON" text area completely free of dots
-            // The wordmark sits in sampleY between 70% and 94% of the artwork height on the left
-            const isWordmarkRegion = sampleY >= sampleH * 0.70 && sampleY <= sampleH * 0.94 && sampleX < sampleW * 0.58;
-            if (isWordmarkRegion) {
-              continue; // Do not place dots over INCEPTRON text! Keep text 100% crisp and readable.
-            }
-
             const idx = (sampleY * sampleW + sampleX) * 4;
 
             const r = imgData[idx];
             const g = imgData[idx + 1];
             const b = imgData[idx + 2];
+            const a = imgData[idx + 3];
+
+            if (a < 20) continue;
+
             const brightness = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
 
-            // Only generate dots for cloud/halftone textures, not extreme highlights/shadows
-            if (brightness > 0.92 || brightness < 0.12) {
+            // Generate halftone dots consistently across artwork & INCEPTRON text
+            if (brightness > 0.92) {
               continue;
             }
 
-            const maxRadius = gridStep * 0.35;
-            const radius = (1 - brightness) * maxRadius;
+            const maxRadius = gridStep * 0.42;
+            const radius = Math.max(0.4, (1 - brightness) * maxRadius);
 
-            if (radius > 0.45) {
+            if (radius > 0.35) {
               particles.push({
                 baseX: x,
                 baseY: y,
@@ -172,10 +169,10 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron clean.p
         p.x += p.vx;
         p.y += p.vy;
 
-        // Render dot with soft charcoal tone (reduced darkness)
+        // Render dot with crisp halftone dark tone
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(28, 28, 30, 0.82)';
+        ctx.fillStyle = 'rgba(20, 20, 22, 0.85)';
         ctx.fill();
       }
 
@@ -217,7 +214,7 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron clean.p
       window.removeEventListener('mouseleave', handleMouseLeave);
       resizeObserver.disconnect();
     };
-  }, [src]);
+  }, [src, scale]);
 
   return (
     <div
