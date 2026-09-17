@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-export default function HalftoneInteractiveHero({ src = '/real inceptron widescreen light.png', scale = 0.85 }) {
+export default function HalftoneInteractiveHero({ src = '/real inceptron clean.png', scale = 0.88 }) {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const animationFrameRef = useRef(null);
@@ -45,10 +45,10 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron widescr
 
       ctx.scale(dpr, dpr);
 
-      // Create offscreen canvas to sample image pixels
-      const offscreen = document.createElement('canvas');
-      const sampleW = 480;
+      // Create offscreen canvas to sample image pixels at high resolution
+      const sampleW = 640;
       const sampleH = Math.round((sampleW / img.naturalWidth) * img.naturalHeight);
+      const offscreen = document.createElement('canvas');
       offscreen.width = sampleW;
       offscreen.height = sampleH;
       const offCtx = offscreen.getContext('2d');
@@ -56,27 +56,27 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron widescr
 
       const imgData = offCtx.getImageData(0, 0, sampleW, sampleH).data;
 
-      // Full-bleed cover object-fit calculation with scale factor to make artwork slightly smaller
+      // Fit contained in artwork container area with controlled scale factor
       const containerAspect = width / height;
       const imgAspect = img.naturalWidth / img.naturalHeight;
       let fullW = width;
       let fullH = height;
 
       if (containerAspect > imgAspect) {
-        fullW = width;
-        fullH = width / imgAspect;
-      } else {
         fullH = height;
         fullW = height * imgAspect;
+      } else {
+        fullW = width;
+        fullH = width / imgAspect;
       }
 
       const imgW = fullW * scale;
       const imgH = fullH * scale;
-      const imgX = (width - imgW) * 0.35; // slightly offset towards left
+      const imgX = (width - imgW) / 2; // Centered in container
       const imgY = (height - imgH) / 2;
 
-      // Grid step for particle sampling across background
-      const gridStep = width > 1200 ? 8 : 7;
+      // Fine grid step for high-density particle sampling across artwork & INCEPTRON wordmark
+      const gridStep = width > 600 ? 5 : 6;
       const particles = [];
 
       for (let y = 0; y < height; y += gridStep) {
@@ -90,12 +90,21 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron widescr
             const r = imgData[idx];
             const g = imgData[idx + 1];
             const b = imgData[idx + 2];
+            const a = imgData[idx + 3];
+
+            if (a < 20) continue;
+
             const brightness = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
 
-            const maxRadius = gridStep * 0.38; // slightly smaller dots for reduced darkness
-            const radius = (1 - brightness) * maxRadius;
+            // Generate halftone dots consistently across artwork & INCEPTRON text
+            if (brightness > 0.92) {
+              continue;
+            }
 
-            if (radius > 0.45) {
+            const maxRadius = gridStep * 0.42;
+            const radius = Math.max(0.4, (1 - brightness) * maxRadius);
+
+            if (radius > 0.35) {
               particles.push({
                 baseX: x,
                 baseY: y,
@@ -125,7 +134,7 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron widescr
     // Spring physics configuration
     const springStrength = 0.05;
     const friction = 0.84;
-    const interactionRadius = 110;
+    const interactionRadius = 120;
     const maxRepulsion = 12;
 
     const animate = () => {
@@ -160,10 +169,10 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron widescr
         p.x += p.vx;
         p.y += p.vy;
 
-        // Render dot with soft charcoal tone (reduced darkness)
+        // Render dot with crisp halftone dark tone
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(28, 28, 30, 0.82)';
+        ctx.fillStyle = 'rgba(20, 20, 22, 0.85)';
         ctx.fill();
       }
 
@@ -205,7 +214,7 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron widescr
       window.removeEventListener('mouseleave', handleMouseLeave);
       resizeObserver.disconnect();
     };
-  }, [src]);
+  }, [src, scale]);
 
   return (
     <div
@@ -213,8 +222,7 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron widescr
       className="auth-07-hero"
       aria-label="Inceptron Artwork"
       style={{
-        position: 'absolute',
-        inset: 0,
+        position: 'relative',
         width: '100%',
         height: '100%',
         pointerEvents: 'none',
