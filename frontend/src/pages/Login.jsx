@@ -28,15 +28,25 @@ export default function Login() {
 
   return (
     <div className="auth-07-container">
-      {/* LAYER 2: Black-and-White Interactive Halftone Canvas Overlay */}
-      <HalftoneInteractiveHero src="/real inceptron clean.png" scale={0.78} />
+      {/* LEFT PANEL: Black-and-White Halftone Artwork Section */}
+      <div className="auth-07-left-panel">
+        {/* LAYER 1: Primary High-Resolution Static Artwork Image */}
+        <img
+          src="/real inceptron.png"
+          alt="SIET Inceptron Halftone Artwork"
+          className="auth-07-art-image"
+        />
 
-      {/* LAYER 3: Authentication Form Floating Card */}
+        {/* LAYER 2: Optional Transparent Interactive Canvas Particle Overlay */}
+        <HalftoneInteractiveHero src="/real inceptron.png" scale={0.88} />
+      </div>
+
+      {/* RIGHT PANEL: Authentication Form */}
       <div className="auth-07-form-wrapper">
         <div className="auth-07-card">
           {/* Mobile Header */}
           <div className="auth-07-mobile-header">
-            <img src="/real inceptron clean.png" alt="SIET Inceptron Logo" className="auth-07-mobile-logo" />
+            <img src="/real inceptron.png" alt="SIET Inceptron Logo" className="auth-07-mobile-logo" />
             <span className="auth-07-mobile-brand">SIET INCEPTRON</span>
           </div>
 
@@ -150,56 +160,80 @@ export default function Login() {
       </div>
 
       <style>{`
-        /* LAYER 1: Full-Bleed Background Architecture */
+        /* Auth-07 Dual-Panel Architecture */
         .auth-07-container {
           position: relative;
           display: flex;
-          min-height: 100vh;
-          width: 100%;
-          background-color: #f0f2f4;
-          background-image: url('/real inceptron clean.png');
-          background-size: cover;
-          background-position: center center;
-          background-repeat: no-repeat;
+          height: 100vh;
+          width: 100vw;
+          max-width: 100%;
+          background-color: #f4f5f7;
           font-family: 'Inter', system-ui, -apple-system, sans-serif;
           color: #111111;
           overflow: hidden;
         }
 
-        /* LAYER 2: Hero Canvas Overlay */
+        /* LEFT PANEL: Halftone Artwork Container (55-60% width) */
+        .auth-07-left-panel {
+          position: relative;
+          flex: 1.15;
+          height: 100vh;
+          background-color: #edeef0;
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 40px 32px;
+          border-right: 1px solid #e2e4e8;
+        }
+
+        /* LAYER 1: Primary Static Image (Always Visible, Sharp, Unbroken) */
+        .auth-07-art-image {
+          width: min(88%, 760px);
+          height: min(82vh, 640px);
+          object-fit: contain;
+          display: block;
+          opacity: 1;
+          visibility: visible;
+          z-index: 1;
+          position: relative;
+          filter: contrast(1.05);
+        }
+
+        /* LAYER 2: Transparent Hero Canvas Overlay */
         .auth-07-hero {
           position: absolute;
           inset: 0;
           width: 100%;
           height: 100%;
           pointer-events: none;
-          z-index: 1;
+          z-index: 2;
         }
 
-        /* LAYER 3: Floating Form Right Panel */
+        /* LAYER 3: RIGHT PANEL: Authentication Form Wrapper (40-45% width) */
         .auth-07-form-wrapper {
           position: relative;
-          z-index: 2;
-          flex: 1;
+          z-index: 10;
+          flex: 0.85;
           display: flex;
           align-items: center;
-          justify-content: flex-end;
-          padding: 40px 8vw 40px 24px;
-          min-height: 100vh;
+          justify-content: center;
+          padding: 40px 48px;
+          height: 100vh;
+          background: #ffffff;
+          overflow-y: auto;
         }
 
         .auth-07-card {
           width: 100%;
           max-width: 440px;
-          background: rgba(255, 255, 255, 0.95);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-          padding: 44px 38px;
-          border-radius: 24px;
-          border: 1px solid rgba(255, 255, 255, 0.9);
+          background: #ffffff;
+          padding: 40px 36px;
+          border-radius: 20px;
+          border: 1px solid #eaeaea;
           box-shadow:
-            0 25px 50px -12px rgba(0, 0, 0, 0.25),
-            0 4px 16px rgba(0, 0, 0, 0.1);
+            0 20px 40px -15px rgba(0, 0, 0, 0.07),
+            0 2px 8px rgba(0, 0, 0, 0.04);
         }
 
         .auth-07-mobile-header {
@@ -490,7 +524,13 @@ export default function Login() {
         /* RESPONSIVE DESIGN FOR MOBILE & TABLET */
         @media (max-width: 868px) {
           .auth-07-container {
-            background-position: center;
+            height: auto;
+            min-height: 100vh;
+            overflow-y: auto;
+          }
+
+          .auth-07-left-panel {
+            display: none;
           }
 
           .auth-07-mobile-header {
@@ -498,14 +538,18 @@ export default function Login() {
           }
 
           .auth-07-form-wrapper {
+            width: 100%;
+            height: auto;
+            min-height: 100vh;
             justify-content: center;
             padding: 24px 16px;
+            background: #f4f5f7;
           }
 
           .auth-07-card {
             padding: 36px 24px;
             border-radius: 20px;
-            background: rgba(255, 255, 255, 0.96);
+            background: rgba(255, 255, 255, 0.98);
           }
         }
 

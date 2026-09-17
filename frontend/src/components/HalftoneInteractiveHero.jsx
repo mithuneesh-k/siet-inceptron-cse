@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-export default function HalftoneInteractiveHero({ src = '/real inceptron clean.png', scale = 0.78 }) {
+export default function HalftoneInteractiveHero({ src = '/real inceptron.png', scale = 0.88 }) {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const animationFrameRef = useRef(null);
@@ -13,7 +13,7 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron clean.p
     const isMobile = window.innerWidth <= 868 || ('ontouchstart' in window);
 
     if (prefersReducedMotion || isMobile) {
-      return; // Static fallback via CSS
+      return; // Static fallback via CSS / HTML img
     }
 
     const container = containerRef.current;
@@ -46,9 +46,9 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron clean.p
       ctx.scale(dpr, dpr);
 
       // Create offscreen canvas to sample image pixels
-      const offscreen = document.createElement('canvas');
       const sampleW = 480;
       const sampleH = Math.round((sampleW / img.naturalWidth) * img.naturalHeight);
+      const offscreen = document.createElement('canvas');
       offscreen.width = sampleW;
       offscreen.height = sampleH;
       const offCtx = offscreen.getContext('2d');
@@ -56,26 +56,26 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron clean.p
 
       const imgData = offCtx.getImageData(0, 0, sampleW, sampleH).data;
 
-      // Full-bleed cover object-fit calculation with controlled scale factor (0.78) for clean composition
+      // Fit contained in artwork container area with controlled scale factor
       const containerAspect = width / height;
       const imgAspect = img.naturalWidth / img.naturalHeight;
       let fullW = width;
       let fullH = height;
 
       if (containerAspect > imgAspect) {
-        fullW = width;
-        fullH = width / imgAspect;
-      } else {
         fullH = height;
         fullW = height * imgAspect;
+      } else {
+        fullW = width;
+        fullH = width / imgAspect;
       }
 
       const imgW = fullW * scale;
       const imgH = fullH * scale;
-      const imgX = (width - imgW) * 0.32; // centered in left panel area with breathing room
+      const imgX = (width - imgW) / 2;
       const imgY = (height - imgH) / 2;
 
-      // Grid step for particle sampling across background
+      // Grid step for particle sampling
       const gridStep = width > 1200 ? 8 : 7;
       const particles = [];
 
@@ -96,7 +96,7 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron clean.p
 
             const brightness = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
 
-            // Only generate dots for cloud/halftone textures, not extreme highlights/shadows
+            // Accent dots for cloud/halftone textures
             if (brightness > 0.92 || brightness < 0.12) {
               continue;
             }
@@ -220,14 +220,14 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron clean.p
     <div
       ref={containerRef}
       className="auth-07-hero"
-      aria-label="Inceptron Artwork"
+      aria-label="Inceptron Artwork Overlay"
       style={{
         position: 'absolute',
         inset: 0,
         width: '100%',
         height: '100%',
         pointerEvents: 'none',
-        zIndex: 1
+        zIndex: 2
       }}
     >
       <canvas
