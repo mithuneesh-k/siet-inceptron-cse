@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authMiddleware } = require('../middleware/auth');
-const { supabase } = require('../db/supabase');
+const { supabase, getAdminScope } = require('../db/supabase');
 const platformStore = require('../services/platformStore');
 const platformSyncService = require('../services/platformSyncService');
 const { calculateUserCompetitiveScore } = require('../services/competitiveScoreService');
@@ -95,39 +95,56 @@ router.get('/admin/connections', authMiddleware, async (req, res, next) => {
       return res.status(403).json({ error: 'Only faculty and admins may view platform connections.' });
     }
 
+    const scope = await getAdminScope(req.user.id, req.user.role);
+
     const { connections, error: connErr } = await platformStore.getAllPlatformConnections();
     if (connErr) {
       return res.status(500).json({ error: 'Failed to fetch platform connections.' });
     }
 
-    const { data: students, error: studentErr } = await supabase
+    let studentQuery = supabase
       .from('students')
       .select('user_id, name, roll_no, class, batch');
+
+    if (!scope.hasFullAccess) {
+      if (!scope.advisingClass || !scope.advisingBatch) {
+        return res.json({ success: true, connections: [] });
+      }
+      studentQuery = studentQuery.eq('class', scope.advisingClass).eq('batch', scope.advisingBatch);
+    }
+
+    const { data: students, error: studentErr } = await studentQuery;
+    if (studentErr) {
+      return res.status(500).json({ error: 'Failed to fetch student profile data.' });
+    }
 
     const studentMap = new Map();
     if (students) {
       students.forEach(s => studentMap.set(s.user_id, s));
     }
 
-    const result = (connections || []).map(conn => {
-      const student = studentMap.get(conn.user_id) || {};
-      return {
-        userId: conn.user_id,
-        studentName: student.name || 'Unknown Student',
-        rollNo: student.roll_no || student.rollNo || null,
-        class: student.class || null,
-        batch: student.batch || null,
-        platformCode: conn.platform_code,
-        handle: conn.handle,
-        normalizedHandle: conn.normalized_handle,
-        ownershipVerified: Boolean(conn.ownership_verified),
-        status: conn.status,
-        lastSyncedAt: conn.last_synced_at,
-        lastAttemptedAt: conn.last_attempted_at,
-        lastErrorCode: conn.last_error_code,
-        metrics: conn.metrics
-      };
-    });
+    const result = [];
+    for (const conn of (connections || [])) {
+      if (studentMap.has(conn.user_id)) {
+        const student = studentMap.get(conn.user_id);
+        result.push({
+          userId: conn.user_id,
+          studentName: student.name || 'Unknown Student',
+          rollNo: student.roll_no || student.rollNo || null,
+          class: student.class || null,
+          batch: student.batch || null,
+          platformCode: conn.platform_code,
+          handle: conn.handle,
+          normalizedHandle: conn.normalized_handle,
+          ownershipVerified: Boolean(conn.ownership_verified),
+          status: conn.status,
+          lastSyncedAt: conn.last_synced_at,
+          lastAttemptedAt: conn.last_attempted_at,
+          lastErrorCode: conn.last_error_code,
+          metrics: conn.metrics
+        });
+      }
+    }
 
     res.json({ success: true, connections: result });
   } catch (err) {
@@ -146,6 +163,27 @@ router.post('/admin/verify', authMiddleware, async (req, res, next) => {
     const { userId, platformCode, verified } = req.body;
     if (!userId || !platformCode) {
       return res.status(400).json({ error: 'userId and platformCode are required.' });
+    }
+
+    const scope = await getAdminScope(req.user.id, req.user.role);
+    if (!scope.hasFullAccess) {
+      if (!scope.advisingClass || !scope.advisingBatch) {
+        return res.status(403).json({ error: 'You are not assigned to advise any class or batch.' });
+      }
+
+      const { data: targetStudent, error: studentErr } = await supabase
+        .from('students')
+        .select('user_id, class, batch')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (studentErr || !targetStudent) {
+        return res.status(404).json({ error: 'Target student profile not found.' });
+      }
+
+      if (targetStudent.class !== scope.advisingClass || targetStudent.batch !== scope.advisingBatch) {
+        return res.status(403).json({ error: 'You can only verify platform connections for students in your assigned class and batch.' });
+      }
     }
 
     const result = await platformStore.updateConnectionStatus(userId, platformCode, {

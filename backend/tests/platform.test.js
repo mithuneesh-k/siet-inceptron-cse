@@ -1454,6 +1454,196 @@ async function runPlatformTests() {
     }
   });
 
+  await asyncTest('45. Faculty advisor cross-class verification restriction (Same class=200, Cross class=403, Admin=200)', async () => {
+    const { supabase } = require('../db/supabase');
+    const platformStore = require('../services/platformStore');
+
+    const originalFrom = supabase.from;
+    const originalUpdateConn = platformStore.updateConnectionStatus;
+
+    platformStore.updateConnectionStatus = async (uid, pcode, update) => ({
+      connection: { user_id: uid, platform_code: pcode, ...update }
+    });
+
+    supabase.from = (table) => {
+      if (table === 'faculty') {
+        return {
+          select: () => ({
+            eq: (col, val) => ({
+              single: async () => {
+                if (val === 'advisor_a') return { data: { designation: 'Assistant Professor', advising_class: 'CSE-A', advising_batch: '2022-2026' } };
+                return { data: null };
+              }
+            })
+          })
+        };
+      }
+      if (table === 'students') {
+        return {
+          select: () => ({
+            eq: (col, val) => ({
+              maybeSingle: async () => {
+                if (val === 'student_a') return { data: { user_id: 'student_a', class: 'CSE-A', batch: '2022-2026' } };
+                if (val === 'student_e') return { data: { user_id: 'student_e', class: 'CSE-E', batch: '2022-2026' } };
+                return { data: null };
+              }
+            })
+          })
+        };
+      }
+      return originalFrom.call(supabase, table);
+    };
+
+    try {
+      const platformsRouter = require('../routes/platforms');
+
+      // 1. Advisor A verifies Student A (CSE-A -> CSE-A) -> Allowed
+      const mockReqA = {
+        user: { id: 'advisor_a', role: 'faculty' },
+        body: { userId: 'student_a', platformCode: 'leetcode', verified: true }
+      };
+      let statusA = 200, jsonA = null;
+      const mockResA = {
+        status: (s) => { statusA = s; return mockResA; },
+        json: (d) => { jsonA = d; }
+      };
+
+      const handler = platformsRouter.stack.find(r => r.route && r.route.path === '/admin/verify').route.stack[1].handle;
+      await handler(mockReqA, mockResA, () => {});
+      assert.strictEqual(statusA, 200);
+      assert.strictEqual(jsonA.success, true);
+
+      // 2. Advisor A verifies Student E (CSE-A -> CSE-E) -> Forbidden (403)
+      const mockReqE = {
+        user: { id: 'advisor_a', role: 'faculty' },
+        body: { userId: 'student_e', platformCode: 'leetcode', verified: true }
+      };
+      let statusE = 200, jsonE = null;
+      const mockResE = {
+        status: (s) => { statusE = s; return mockResE; },
+        json: (d) => { jsonE = d; }
+      };
+      await handler(mockReqE, mockResE, () => {});
+      assert.strictEqual(statusE, 403);
+      assert.strictEqual(jsonE.error.includes('assigned class'), true);
+
+      // 3. Admin verifies Student E -> Allowed (200)
+      const mockReqAdmin = {
+        user: { id: 'admin_1', role: 'admin', is_admin: true },
+        body: { userId: 'student_e', platformCode: 'leetcode', verified: true }
+      };
+      let statusAdmin = 200, jsonAdmin = null;
+      const mockResAdmin = {
+        status: (s) => { statusAdmin = s; return mockResAdmin; },
+        json: (d) => { jsonAdmin = d; }
+      };
+      await handler(mockReqAdmin, mockResAdmin, () => {});
+      assert.strictEqual(statusAdmin, 200);
+      assert.strictEqual(jsonAdmin.success, true);
+    } finally {
+      supabase.from = originalFrom;
+      platformStore.updateConnectionStatus = originalUpdateConn;
+    }
+  });
+
+  await asyncTest('46. GET /api/platforms/admin/connections filters student connections by faculty advisor class/batch scope', async () => {
+    const { supabase } = require('../db/supabase');
+    const platformStore = require('../services/platformStore');
+
+    const originalFrom = supabase.from;
+    const originalGetAll = platformStore.getAllPlatformConnections;
+
+    platformStore.getAllPlatformConnections = async () => ({
+      connections: [
+        { user_id: 'student_a', platform_code: 'leetcode', handle: 'studentA_lc', ownership_verified: true, status: 'verified' },
+        { user_id: 'student_e', platform_code: 'leetcode', handle: 'studentE_lc', ownership_verified: false, status: 'connected' }
+      ],
+      missingTable: false,
+      error: null
+    });
+
+    supabase.from = (table) => {
+      if (table === 'faculty') {
+        return {
+          select: () => ({
+            eq: (col, val) => ({
+              single: async () => {
+                if (val === 'advisor_a') return { data: { designation: 'Assistant Professor', advising_class: 'CSE-A', advising_batch: '2022-2026' } };
+                return { data: null };
+              }
+            })
+          })
+        };
+      }
+      if (table === 'students') {
+        return {
+          select: () => ({
+            eq: (col, val) => ({
+              eq: () => ({
+                data: [
+                  { user_id: 'student_a', name: 'Student A', roll_no: '714025104001', class: 'CSE-A', batch: '2022-2026' }
+                ],
+                error: null
+              })
+            })
+          })
+        };
+      }
+      return originalFrom.call(supabase, table);
+    };
+
+    try {
+      const platformsRouter = require('../routes/platforms');
+      const handler = platformsRouter.stack.find(r => r.route && r.route.path === '/admin/connections').route.stack[1].handle;
+
+      const mockReq = { user: { id: 'advisor_a', role: 'faculty' } };
+      let status = 200, json = null;
+      const mockRes = {
+        status: (s) => { status = s; return mockRes; },
+        json: (d) => { json = d; }
+      };
+
+      await handler(mockReq, mockRes, () => {});
+      assert.strictEqual(status, 200);
+      assert.strictEqual(json.success, true);
+      assert.strictEqual(json.connections.length, 1);
+      assert.strictEqual(json.connections[0].userId, 'student_a');
+      assert.strictEqual(json.connections[0].class, 'CSE-A');
+    } finally {
+      supabase.from = originalFrom;
+      platformStore.getAllPlatformConnections = originalGetAll;
+    }
+  });
+
+  await asyncTest('47. End-to-end LeetCode flow: Unverified connection (0 pts) -> Verify (730 pts) -> Leaderboard returns 730 pts', async () => {
+    const { calculateUserCompetitiveScore } = require('../services/competitiveScoreService');
+
+    const lcMetrics = { easySolved: 33, mediumSolved: 17, hardSolved: 2, totalSolved: 52 };
+    
+    // 1. Unverified LeetCode connection
+    const unverifiedConn = {
+      platform_code: 'leetcode',
+      handle: 'nishanthkr775',
+      ownership_verified: false,
+      metrics: lcMetrics
+    };
+
+    const unverifiedScore = calculateUserCompetitiveScore([unverifiedConn]);
+    assert.strictEqual(unverifiedScore.totalScore, 0);
+
+    // 2. Verification update
+    const verifiedConn = {
+      ...unverifiedConn,
+      ownership_verified: true
+    };
+
+    const verifiedScore = calculateUserCompetitiveScore([verifiedConn]);
+    assert.strictEqual(verifiedScore.totalScore, 730);
+    assert.strictEqual(verifiedScore.easyPoints, 330);
+    assert.strictEqual(verifiedScore.mediumPoints, 340);
+    assert.strictEqual(verifiedScore.hardPoints, 60);
+  });
+
   console.log(`\nPlatform Test Results: ${passedTests}/${totalTests} tests passed.\n`);
   if (passedTests !== totalTests) {
     process.exit(1);

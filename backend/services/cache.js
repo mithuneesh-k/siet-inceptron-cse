@@ -60,7 +60,16 @@ async function flush() {
 
 async function keys(pattern = '*') {
   if (redis) {
-    try { return await redis.keys(pattern); } catch { return []; }
+    try {
+      const foundKeys = [];
+      let cursor = '0';
+      do {
+        const [nextCursor, resKeys] = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+        cursor = nextCursor;
+        foundKeys.push(...resKeys);
+      } while (cursor !== '0');
+      return foundKeys;
+    } catch { return []; }
   }
   return Object.keys(memoryCache).filter((key) => {
     if (pattern === '*') return true;
@@ -70,8 +79,24 @@ async function keys(pattern = '*') {
 }
 
 async function delPrefix(prefix) {
-  const matching = await keys(`${prefix}*`);
-  await Promise.all(matching.map((key) => del(key)));
+  if (redis) {
+    try {
+      let cursor = '0';
+      const pattern = `${prefix}*`;
+      do {
+        const [nextCursor, foundKeys] = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+        cursor = nextCursor;
+        if (foundKeys.length > 0) {
+          await redis.del(...foundKeys);
+        }
+      } while (cursor !== '0');
+    } catch {}
+  }
+  Object.keys(memoryCache).forEach((key) => {
+    if (key.startsWith(prefix)) {
+      delete memoryCache[key];
+    }
+  });
 }
 
 module.exports = { get, set, del, flush, keys, delPrefix };
