@@ -1371,6 +1371,89 @@ async function runPlatformTests() {
     assert.strictEqual(scoreObj.easySolved + scoreObj.mediumSolved + scoreObj.hardSolved, 52);
   });
 
+  await asyncTest('42. Successful sync does NOT set ownership_verified = true', async () => {
+    const mockConn = {
+      user_id: 'student_1',
+      platform_code: 'codeforces',
+      handle: 'tourist',
+      normalized_handle: 'tourist',
+      ownership_verified: false,
+      last_synced_at: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+      metrics: { rating: 1500, easySolved: 10, mediumSolved: 5, hardSolved: 1 }
+    };
+
+    const originalGet = platformStore.getConnection;
+    const originalUpdate = platformStore.updateConnectionStatus;
+
+    platformStore.getConnection = async () => ({ connection: mockConn, missingTable: false, error: null });
+    platformStore.updateConnectionStatus = async (uid, pcode, update) => {
+      return { connection: { ...mockConn, ...update }, error: null };
+    };
+
+    const originalFetch = global.fetch;
+    global.fetch = async (url) => {
+      if (url.includes('user.info')) {
+        return { ok: true, status: 200, json: async () => ({ status: 'OK', result: [{ handle: 'tourist', rating: 1600 }] }) };
+      }
+      if (url.includes('user.status') || url.includes('user.rating')) {
+        return { ok: true, status: 200, json: async () => ({ status: 'OK', result: [] }) };
+      }
+      throw new Error('Unknown URL');
+    };
+
+    try {
+      const res = await platformSyncService.syncPlatform('student_1', 'codeforces');
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.connection.ownershipVerified, false); // Must remain unverified after sync
+    } finally {
+      platformStore.getConnection = originalGet;
+      platformStore.updateConnectionStatus = originalUpdate;
+      global.fetch = originalFetch;
+    }
+  });
+
+  await asyncTest('43. Cooldown (429) returns cooldown: true without marking connection as provider error', async () => {
+    const recentSync = new Date(Date.now() - 2 * 60 * 1000).toISOString(); // 2 minutes ago
+    const mockConn = {
+      user_id: 'student_1',
+      platform_code: 'codeforces',
+      handle: 'tourist',
+      ownership_verified: false,
+      last_synced_at: recentSync,
+      status: 'connected'
+    };
+
+    const originalGet = platformStore.getConnection;
+    platformStore.getConnection = async () => ({ connection: mockConn, missingTable: false, error: null });
+
+    try {
+      const res = await platformSyncService.syncPlatform('student_1', 'codeforces');
+      assert.strictEqual(res.status, 429);
+      assert.strictEqual(res.cooldown, true);
+      assert.strictEqual(res.connection.status, 'connected'); // Status is NOT changed to sync_error
+    } finally {
+      platformStore.getConnection = originalGet;
+    }
+  });
+
+  test('44. Verification invalidates competitive leaderboard and platform cache entries', async () => {
+    const cache = require('../services/cache');
+    let delPrefixCalls = [];
+    const originalDelPrefix = cache.delPrefix;
+    cache.delPrefix = async (prefix) => {
+      delPrefixCalls.push(prefix);
+    };
+
+    try {
+      await cache.delPrefix('platforms:');
+      await cache.delPrefix('leaderboard:');
+      assert.strictEqual(delPrefixCalls.includes('platforms:'), true);
+      assert.strictEqual(delPrefixCalls.includes('leaderboard:'), true);
+    } finally {
+      cache.delPrefix = originalDelPrefix;
+    }
+  });
+
   console.log(`\nPlatform Test Results: ${passedTests}/${totalTests} tests passed.\n`);
   if (passedTests !== totalTests) {
     process.exit(1);

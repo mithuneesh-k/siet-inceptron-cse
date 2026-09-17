@@ -87,6 +87,54 @@ router.get('/leaderboard', authMiddleware, async (req, res, next) => {
   }
 });
 
+// ─── GET /api/platforms/admin/connections ────────────────────────────────────
+router.get('/admin/connections', authMiddleware, async (req, res, next) => {
+  try {
+    const isAuthorized = req.user && (req.user.is_admin || req.user.role === 'admin' || req.user.role === 'faculty');
+    if (!isAuthorized) {
+      return res.status(403).json({ error: 'Only faculty and admins may view platform connections.' });
+    }
+
+    const { connections, error: connErr } = await platformStore.getAllPlatformConnections();
+    if (connErr) {
+      return res.status(500).json({ error: 'Failed to fetch platform connections.' });
+    }
+
+    const { data: students, error: studentErr } = await supabase
+      .from('students')
+      .select('user_id, name, roll_no, class, batch');
+
+    const studentMap = new Map();
+    if (students) {
+      students.forEach(s => studentMap.set(s.user_id, s));
+    }
+
+    const result = (connections || []).map(conn => {
+      const student = studentMap.get(conn.user_id) || {};
+      return {
+        userId: conn.user_id,
+        studentName: student.name || 'Unknown Student',
+        rollNo: student.roll_no || student.rollNo || null,
+        class: student.class || null,
+        batch: student.batch || null,
+        platformCode: conn.platform_code,
+        handle: conn.handle,
+        normalizedHandle: conn.normalized_handle,
+        ownershipVerified: Boolean(conn.ownership_verified),
+        status: conn.status,
+        lastSyncedAt: conn.last_synced_at,
+        lastAttemptedAt: conn.last_attempted_at,
+        lastErrorCode: conn.last_error_code,
+        metrics: conn.metrics
+      };
+    });
+
+    res.json({ success: true, connections: result });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ─── POST /api/platforms/admin/verify ─────────────────────────────────────────
 router.post('/admin/verify', authMiddleware, async (req, res, next) => {
   try {
@@ -107,6 +155,11 @@ router.post('/admin/verify', authMiddleware, async (req, res, next) => {
     if (result.error) {
       return res.status(500).json({ error: 'Failed to update platform verification status.' });
     }
+
+    // Invalidate competitive leaderboard and platform state caches
+    const cache = require('../services/cache');
+    await cache.delPrefix('platforms:');
+    await cache.delPrefix('leaderboard:');
 
     res.json({ success: true, connection: result.connection });
   } catch (err) {
@@ -187,6 +240,10 @@ router.post('/verify', authMiddleware, studentOnlyMiddleware, async (req, res, n
     if (result.status && result.status !== 200) {
       return res.status(result.status).json({ error: result.error, success: false });
     }
+
+    const cache = require('../services/cache');
+    await cache.delPrefix('platforms:');
+    await cache.delPrefix('leaderboard:');
 
     res.status(200).json(result);
   } catch (err) {

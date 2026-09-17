@@ -251,6 +251,8 @@ export default function Platforms() {
   // Per-platform sync states & feedback
   const [syncingMap, setSyncingMap] = useState({});
   const [syncFeedbackMap, setSyncFeedbackMap] = useState({});
+  const [verifyingMap, setVerifyingMap] = useState({});
+  const [cooldownRemainingMap, setCooldownRemainingMap] = useState({});
   const [toast, setToast] = useState(null);
   const autoSyncRan = useState(() => ({ current: false }))[0];
 
@@ -258,6 +260,30 @@ export default function Platforms() {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 4000);
   };
+
+  // Dynamic 1-second countdown timer for sync cooldowns
+  useEffect(() => {
+    const updateCooldowns = () => {
+      const now = Date.now();
+      const newMap = {};
+      platforms.forEach(p => {
+        if (!p.connection) return;
+        const lastSynced = p.connection.lastSyncedAt || p.connection.last_synced_at;
+        if (!lastSynced) return;
+        const elapsed = now - new Date(lastSynced).getTime();
+        const COOLDOWN_MS = 5 * 60 * 1000;
+        if (elapsed < COOLDOWN_MS) {
+          const remainingSec = Math.ceil((COOLDOWN_MS - elapsed) / 1000);
+          newMap[p.code] = remainingSec;
+        }
+      });
+      setCooldownRemainingMap(newMap);
+    };
+
+    updateCooldowns();
+    const interval = setInterval(updateCooldowns, 1000);
+    return () => clearInterval(interval);
+  }, [platforms]);
 
   const fetchPlatformsState = async () => {
     try {
@@ -447,9 +473,36 @@ export default function Platforms() {
           message: msg
         }
       }));
-      showToast(msg, 'error');
+      // ONLY show toast for genuine errors, NOT for rate-limit cooldowns
+      if (!isCooldown) {
+        showToast(msg, 'error');
+      }
     } finally {
       setSyncingMap(prev => ({ ...prev, [pCode]: false }));
+    }
+  };
+
+  const handleVerifyLeetCode = async () => {
+    if (verifyingMap.leetcode) return;
+    setVerifyingMap(prev => ({ ...prev, leetcode: true }));
+    try {
+      const res = await client.post('/platforms/verify', { platformCode: 'leetcode' });
+      const resData = res.data || {};
+      if (resData.success && resData.connection) {
+        setPlatforms(prev => prev.map(p => p.code === 'leetcode' ? {
+          ...p,
+          connectionStatus: 'verified',
+          connection: resData.connection
+        } : p));
+        showToast('LeetCode ownership verified successfully! 🎉');
+        fetchPlatformsState();
+      } else {
+        showToast(resData.error || 'Verification failed.', 'error');
+      }
+    } catch (err) {
+      showToast(err.response?.data?.error || 'Verification failed.', 'error');
+    } finally {
+      setVerifyingMap(prev => ({ ...prev, leetcode: false }));
     }
   };
 
@@ -670,12 +723,19 @@ export default function Platforms() {
                         display: 'flex',
                         alignItems: 'center',
                         gap: 6,
-                        background: syncFeedbackMap.codeforces.type === 'success' ? 'rgba(16, 185, 129, 0.12)' : syncFeedbackMap.codeforces.type === 'cooldown' || syncFeedbackMap.codeforces.type === 'error' ? 'rgba(239, 68, 68, 0.12)' : 'rgba(59, 130, 246, 0.12)',
-                        color: syncFeedbackMap.codeforces.type === 'success' ? '#10B981' : syncFeedbackMap.codeforces.type === 'cooldown' || syncFeedbackMap.codeforces.type === 'error' ? '#EF4444' : '#3B82F6',
-                        border: `1px solid ${syncFeedbackMap.codeforces.type === 'success' ? 'rgba(16, 185, 129, 0.25)' : syncFeedbackMap.codeforces.type === 'cooldown' || syncFeedbackMap.codeforces.type === 'error' ? 'rgba(239, 68, 68, 0.25)' : 'rgba(59, 130, 246, 0.25)'}`
+                        background: syncFeedbackMap.codeforces.type === 'success' ? 'rgba(16, 185, 129, 0.12)' : syncFeedbackMap.codeforces.type === 'cooldown' ? 'rgba(59, 130, 246, 0.08)' : 'rgba(239, 68, 68, 0.12)',
+                        color: syncFeedbackMap.codeforces.type === 'success' ? '#10B981' : syncFeedbackMap.codeforces.type === 'cooldown' ? 'var(--color-text-muted)' : '#EF4444',
+                        border: `1px solid ${syncFeedbackMap.codeforces.type === 'success' ? 'rgba(16, 185, 129, 0.25)' : syncFeedbackMap.codeforces.type === 'cooldown' ? 'var(--color-border)' : 'rgba(239, 68, 68, 0.25)'}`
                       }}>
                         <RefreshCw size={12} className={syncFeedbackMap.codeforces.type === 'loading' ? 'spin' : ''} />
                         {syncFeedbackMap.codeforces.message}
+                      </div>
+                    )}
+
+                    {(!cfConn?.ownershipVerified && !cfConn?.ownership_verified) && (
+                      <div style={{ marginTop: 8, padding: '6px 10px', background: 'var(--bg-hover)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: 11, color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Shield size={12} style={{ color: '#F59E0B', flexShrink: 0 }} />
+                        <span>Requires faculty/admin verification</span>
                       </div>
                     )}
                   </div>
@@ -713,11 +773,15 @@ export default function Platforms() {
                         type="button"
                         className="btn btn-secondary btn-xs"
                         onClick={() => handleSync('codeforces')}
-                        disabled={syncingMap.codeforces}
-                        style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}
+                        disabled={syncingMap.codeforces || (cooldownRemainingMap.codeforces > 0)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, opacity: (cooldownRemainingMap.codeforces > 0) ? 0.75 : 1 }}
                       >
                         <RefreshCw size={13} className={syncingMap.codeforces ? 'spin' : ''} />
-                        {syncingMap.codeforces ? 'Syncing...' : 'Sync'}
+                        {syncingMap.codeforces
+                          ? 'Syncing...'
+                          : (cooldownRemainingMap.codeforces > 0)
+                            ? `Sync in ${Math.floor(cooldownRemainingMap.codeforces / 60)}:${String(cooldownRemainingMap.codeforces % 60).padStart(2, '0')}`
+                            : 'Sync'}
                       </button>
                       <button
                         type="button"
@@ -838,12 +902,43 @@ export default function Platforms() {
                         display: 'flex',
                         alignItems: 'center',
                         gap: 6,
-                        background: syncFeedbackMap.leetcode.type === 'success' ? 'rgba(16, 185, 129, 0.12)' : syncFeedbackMap.leetcode.type === 'cooldown' || syncFeedbackMap.leetcode.type === 'error' ? 'rgba(239, 68, 68, 0.12)' : 'rgba(59, 130, 246, 0.12)',
-                        color: syncFeedbackMap.leetcode.type === 'success' ? '#10B981' : syncFeedbackMap.leetcode.type === 'cooldown' || syncFeedbackMap.leetcode.type === 'error' ? '#EF4444' : '#3B82F6',
-                        border: `1px solid ${syncFeedbackMap.leetcode.type === 'success' ? 'rgba(16, 185, 129, 0.25)' : syncFeedbackMap.leetcode.type === 'cooldown' || syncFeedbackMap.leetcode.type === 'error' ? 'rgba(239, 68, 68, 0.25)' : 'rgba(59, 130, 246, 0.25)'}`
+                        background: syncFeedbackMap.leetcode.type === 'success' ? 'rgba(16, 185, 129, 0.12)' : syncFeedbackMap.leetcode.type === 'cooldown' ? 'rgba(59, 130, 246, 0.08)' : 'rgba(239, 68, 68, 0.12)',
+                        color: syncFeedbackMap.leetcode.type === 'success' ? '#10B981' : syncFeedbackMap.leetcode.type === 'cooldown' ? 'var(--color-text-muted)' : '#EF4444',
+                        border: `1px solid ${syncFeedbackMap.leetcode.type === 'success' ? 'rgba(16, 185, 129, 0.25)' : syncFeedbackMap.leetcode.type === 'cooldown' ? 'var(--color-border)' : 'rgba(239, 68, 68, 0.25)'}`
                       }}>
                         <RefreshCw size={12} className={syncFeedbackMap.leetcode.type === 'loading' ? 'spin' : ''} />
                         {syncFeedbackMap.leetcode.message}
+                      </div>
+                    )}
+
+                    {(!lcConn?.ownershipVerified && !lcConn?.ownership_verified) && (
+                      <div style={{ marginTop: 8, padding: '8px 10px', background: 'rgba(245, 158, 11, 0.08)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(245, 158, 11, 0.25)', fontSize: 11 }}>
+                        {(lcConn?.verification_token || lcConn?.verificationToken) ? (
+                          <>
+                            <div style={{ fontWeight: 700, color: '#D97706', marginBottom: 2 }}>
+                              Verification Code: <code style={{ background: 'var(--bg-hover)', padding: '2px 6px', borderRadius: 4, color: 'var(--color-text)' }}>{lcConn.verification_token || lcConn.verificationToken}</code>
+                            </div>
+                            <div style={{ color: 'var(--color-text-muted)', marginBottom: 6 }}>
+                              Set your LeetCode Name/Real Name to this code and click Verify.
+                            </div>
+                          </>
+                        ) : (
+                          <div style={{ color: 'var(--color-text-muted)', marginBottom: 6 }}>
+                            Click Verify to check your LeetCode profile ownership.
+                          </div>
+                        )}
+                        {!isNonStudent && (
+                          <button
+                            type="button"
+                            className="btn btn-primary btn-xs"
+                            onClick={handleVerifyLeetCode}
+                            disabled={verifyingMap.leetcode}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700 }}
+                          >
+                            <CheckCircle2 size={12} />
+                            {verifyingMap.leetcode ? 'Verifying...' : 'Verify LeetCode'}
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -873,11 +968,15 @@ export default function Platforms() {
                         type="button"
                         className="btn btn-secondary btn-xs"
                         onClick={() => handleSync('leetcode')}
-                        disabled={syncingMap.leetcode}
-                        style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}
+                        disabled={syncingMap.leetcode || (cooldownRemainingMap.leetcode > 0)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, opacity: (cooldownRemainingMap.leetcode > 0) ? 0.75 : 1 }}
                       >
                         <RefreshCw size={13} className={syncingMap.leetcode ? 'spin' : ''} />
-                        {syncingMap.leetcode ? 'Syncing...' : 'Sync'}
+                        {syncingMap.leetcode
+                          ? 'Syncing...'
+                          : (cooldownRemainingMap.leetcode > 0)
+                            ? `Sync in ${Math.floor(cooldownRemainingMap.leetcode / 60)}:${String(cooldownRemainingMap.leetcode % 60).padStart(2, '0')}`
+                            : 'Sync'}
                       </button>
                       <button
                         type="button"
@@ -998,12 +1097,19 @@ export default function Platforms() {
                         display: 'flex',
                         alignItems: 'center',
                         gap: 6,
-                        background: syncFeedbackMap.geeksforgeeks.type === 'success' ? 'rgba(16, 185, 129, 0.12)' : syncFeedbackMap.geeksforgeeks.type === 'cooldown' || syncFeedbackMap.geeksforgeeks.type === 'error' ? 'rgba(239, 68, 68, 0.12)' : 'rgba(59, 130, 246, 0.12)',
-                        color: syncFeedbackMap.geeksforgeeks.type === 'success' ? '#10B981' : syncFeedbackMap.geeksforgeeks.type === 'cooldown' || syncFeedbackMap.geeksforgeeks.type === 'error' ? '#EF4444' : '#3B82F6',
-                        border: `1px solid ${syncFeedbackMap.geeksforgeeks.type === 'success' ? 'rgba(16, 185, 129, 0.25)' : syncFeedbackMap.geeksforgeeks.type === 'cooldown' || syncFeedbackMap.geeksforgeeks.type === 'error' ? 'rgba(239, 68, 68, 0.25)' : 'rgba(59, 130, 246, 0.25)'}`
+                        background: syncFeedbackMap.geeksforgeeks.type === 'success' ? 'rgba(16, 185, 129, 0.12)' : syncFeedbackMap.geeksforgeeks.type === 'cooldown' ? 'rgba(59, 130, 246, 0.08)' : 'rgba(239, 68, 68, 0.12)',
+                        color: syncFeedbackMap.geeksforgeeks.type === 'success' ? '#10B981' : syncFeedbackMap.geeksforgeeks.type === 'cooldown' ? 'var(--color-text-muted)' : '#EF4444',
+                        border: `1px solid ${syncFeedbackMap.geeksforgeeks.type === 'success' ? 'rgba(16, 185, 129, 0.25)' : syncFeedbackMap.geeksforgeeks.type === 'cooldown' ? 'var(--color-border)' : 'rgba(239, 68, 68, 0.25)'}`
                       }}>
                         <RefreshCw size={12} className={syncFeedbackMap.geeksforgeeks.type === 'loading' ? 'spin' : ''} />
                         {syncFeedbackMap.geeksforgeeks.message}
+                      </div>
+                    )}
+
+                    {(!gfgConn?.ownershipVerified && !gfgConn?.ownership_verified) && (
+                      <div style={{ marginTop: 8, padding: '6px 10px', background: 'var(--bg-hover)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: 11, color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Shield size={12} style={{ color: '#F59E0B', flexShrink: 0 }} />
+                        <span>Requires faculty/admin verification</span>
                       </div>
                     )}
                   </div>
@@ -1033,11 +1139,15 @@ export default function Platforms() {
                         type="button"
                         className="btn btn-secondary btn-xs"
                         onClick={() => handleSync('geeksforgeeks')}
-                        disabled={syncingMap.geeksforgeeks}
-                        style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}
+                        disabled={syncingMap.geeksforgeeks || (cooldownRemainingMap.geeksforgeeks > 0)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, opacity: (cooldownRemainingMap.geeksforgeeks > 0) ? 0.75 : 1 }}
                       >
                         <RefreshCw size={13} className={syncingMap.geeksforgeeks ? 'spin' : ''} />
-                        {syncingMap.geeksforgeeks ? 'Syncing...' : 'Sync'}
+                        {syncingMap.geeksforgeeks
+                          ? 'Syncing...'
+                          : (cooldownRemainingMap.geeksforgeeks > 0)
+                            ? `Sync in ${Math.floor(cooldownRemainingMap.geeksforgeeks / 60)}:${String(cooldownRemainingMap.geeksforgeeks % 60).padStart(2, '0')}`
+                            : 'Sync'}
                       </button>
                       <button
                         type="button"
@@ -1158,12 +1268,19 @@ export default function Platforms() {
                         display: 'flex',
                         alignItems: 'center',
                         gap: 6,
-                        background: syncFeedbackMap.hackerrank.type === 'success' ? 'rgba(16, 185, 129, 0.12)' : syncFeedbackMap.hackerrank.type === 'cooldown' || syncFeedbackMap.hackerrank.type === 'error' ? 'rgba(239, 68, 68, 0.12)' : 'rgba(59, 130, 246, 0.12)',
-                        color: syncFeedbackMap.hackerrank.type === 'success' ? '#10B981' : syncFeedbackMap.hackerrank.type === 'cooldown' || syncFeedbackMap.hackerrank.type === 'error' ? '#EF4444' : '#3B82F6',
-                        border: `1px solid ${syncFeedbackMap.hackerrank.type === 'success' ? 'rgba(16, 185, 129, 0.25)' : syncFeedbackMap.hackerrank.type === 'cooldown' || syncFeedbackMap.hackerrank.type === 'error' ? 'rgba(239, 68, 68, 0.25)' : 'rgba(59, 130, 246, 0.25)'}`
+                        background: syncFeedbackMap.hackerrank.type === 'success' ? 'rgba(16, 185, 129, 0.12)' : syncFeedbackMap.hackerrank.type === 'cooldown' ? 'rgba(59, 130, 246, 0.08)' : 'rgba(239, 68, 68, 0.12)',
+                        color: syncFeedbackMap.hackerrank.type === 'success' ? '#10B981' : syncFeedbackMap.hackerrank.type === 'cooldown' ? 'var(--color-text-muted)' : '#EF4444',
+                        border: `1px solid ${syncFeedbackMap.hackerrank.type === 'success' ? 'rgba(16, 185, 129, 0.25)' : syncFeedbackMap.hackerrank.type === 'cooldown' ? 'var(--color-border)' : 'rgba(239, 68, 68, 0.25)'}`
                       }}>
                         <RefreshCw size={12} className={syncFeedbackMap.hackerrank.type === 'loading' ? 'spin' : ''} />
                         {syncFeedbackMap.hackerrank.message}
+                      </div>
+                    )}
+
+                    {(!hrConn?.ownershipVerified && !hrConn?.ownership_verified) && (
+                      <div style={{ marginTop: 8, padding: '6px 10px', background: 'var(--bg-hover)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: 11, color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Shield size={12} style={{ color: '#F59E0B', flexShrink: 0 }} />
+                        <span>Requires faculty/admin verification</span>
                       </div>
                     )}
                   </div>
@@ -1189,11 +1306,15 @@ export default function Platforms() {
                         type="button"
                         className="btn btn-secondary btn-xs"
                         onClick={() => handleSync('hackerrank')}
-                        disabled={syncingMap.hackerrank}
-                        style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}
+                        disabled={syncingMap.hackerrank || (cooldownRemainingMap.hackerrank > 0)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, opacity: (cooldownRemainingMap.hackerrank > 0) ? 0.75 : 1 }}
                       >
                         <RefreshCw size={13} className={syncingMap.hackerrank ? 'spin' : ''} />
-                        {syncingMap.hackerrank ? 'Syncing...' : 'Sync'}
+                        {syncingMap.hackerrank
+                          ? 'Syncing...'
+                          : (cooldownRemainingMap.hackerrank > 0)
+                            ? `Sync in ${Math.floor(cooldownRemainingMap.hackerrank / 60)}:${String(cooldownRemainingMap.hackerrank % 60).padStart(2, '0')}`
+                            : 'Sync'}
                       </button>
                       <button
                         type="button"
