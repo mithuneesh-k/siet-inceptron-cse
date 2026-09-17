@@ -226,6 +226,10 @@ router.post('/connect', authMiddleware, studentOnlyMiddleware, async (req, res, 
       return res.status(result.status).json({ error: result.error, cooldown: result.cooldown });
     }
 
+    const cache = require('../services/cache');
+    await cache.delPrefix('platforms:');
+    await cache.delPrefix('leaderboard:');
+
     res.status(200).json(result);
   } catch (err) {
     next(err);
@@ -250,6 +254,10 @@ router.post('/sync', authMiddleware, studentOnlyMiddleware, async (req, res, nex
       });
     }
 
+    const cache = require('../services/cache');
+    await cache.delPrefix('platforms:');
+    await cache.delPrefix('leaderboard:');
+
     res.status(200).json(result);
   } catch (err) {
     next(err);
@@ -260,6 +268,11 @@ router.post('/sync', authMiddleware, studentOnlyMiddleware, async (req, res, nex
 router.post('/sync-stale', authMiddleware, studentOnlyMiddleware, async (req, res, next) => {
   try {
     const result = await platformSyncService.syncStalePlatforms(req.user.id);
+    if (result.synced) {
+      const cache = require('../services/cache');
+      await cache.delPrefix('platforms:');
+      await cache.delPrefix('leaderboard:');
+    }
     res.status(200).json(result);
   } catch (err) {
     next(err);
@@ -297,6 +310,10 @@ router.delete('/:platformCode', authMiddleware, studentOnlyMiddleware, async (re
     if (result.status && result.status !== 200) {
       return res.status(result.status).json({ error: result.error });
     }
+
+    const cache = require('../services/cache');
+    await cache.delPrefix('platforms:');
+    await cache.delPrefix('leaderboard:');
 
     res.status(200).json(result);
   } catch (err) {

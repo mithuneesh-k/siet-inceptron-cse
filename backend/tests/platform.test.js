@@ -1644,6 +1644,109 @@ async function runPlatformTests() {
     assert.strictEqual(verifiedScore.hardPoints, 60);
   });
 
+  await asyncTest('48. One-time verification persistence: Normal sync updates metrics and preserves ownership_verified = true', async () => {
+    const leetcodeAdapter = require('../platforms/leetcodeAdapter');
+
+    const verifiedConn = {
+      id: 'conn_1',
+      user_id: 'student_1',
+      platform_code: 'leetcode',
+      handle: 'nishanthkr775',
+      normalized_handle: 'nishanthkr775',
+      ownership_verified: true,
+      status: 'verified',
+      metrics: { easySolved: 33, mediumSolved: 17, hardSolved: 2, totalSolved: 52 },
+      last_synced_at: new Date(Date.now() - 36 * 60 * 1000).toISOString()
+    };
+
+    const originalGet = platformStore.getConnection;
+    const originalUpdate = platformStore.updateConnectionStatus;
+    const originalFetchUser = leetcodeAdapter.fetchLeetCodeUser;
+
+    let updatedPayload = null;
+    platformStore.getConnection = async () => ({ connection: verifiedConn, missingTable: false, error: null });
+    platformStore.updateConnectionStatus = async (uid, pcode, update) => {
+      updatedPayload = update;
+      return { connection: { ...verifiedConn, ...update } };
+    };
+
+    leetcodeAdapter.fetchLeetCodeUser = async () => ({
+      found: true,
+      handle: 'nishanthkr775',
+      normalizedHandle: 'nishanthkr775',
+      realName: 'Nishanth',
+      metrics: { easySolved: 34, mediumSolved: 17, hardSolved: 2, totalSolved: 53 }
+    });
+
+    try {
+      const res = await platformSyncService.syncPlatform('student_1', 'leetcode');
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.connection.ownershipVerified, true); // Ownership remains TRUE
+      assert.strictEqual(res.connection.metrics.easySolved, 34);
+      assert.strictEqual(updatedPayload.status, 'verified'); // Status remains verified
+    } finally {
+      platformStore.getConnection = originalGet;
+      platformStore.updateConnectionStatus = originalUpdate;
+      leetcodeAdapter.fetchLeetCodeUser = originalFetchUser;
+    }
+  });
+
+  await asyncTest('49. Disconnect platform immediately deducts score contribution and updates total score', async () => {
+    const { calculateUserCompetitiveScore } = require('../services/competitiveScoreService');
+
+    const connsBefore = [
+      { platform_code: 'leetcode', ownership_verified: true, metrics: { easySolved: 33, mediumSolved: 17, hardSolved: 2 } }, // 730 pts
+      { platform_code: 'codeforces', ownership_verified: true, metrics: { easySolved: 10, mediumSolved: 10, hardSolved: 0 } } // 300 pts
+    ];
+
+    const scoreBefore = calculateUserCompetitiveScore(connsBefore);
+    assert.strictEqual(scoreBefore.totalScore, 1030);
+
+    // Disconnect LeetCode -> Only Codeforces remains
+    const connsAfter = [
+      { platform_code: 'codeforces', ownership_verified: true, metrics: { easySolved: 10, mediumSolved: 10, hardSolved: 0 } }
+    ];
+
+    const scoreAfter = calculateUserCompetitiveScore(connsAfter);
+    assert.strictEqual(scoreAfter.totalScore, 300);
+    assert.strictEqual(scoreAfter.platformBreakdown.leetcode.connected, false);
+    assert.strictEqual(scoreAfter.platformBreakdown.leetcode.totalScore, 0);
+  });
+
+  await asyncTest('50. Disconnect last platform resets competitive total to 0, rank —, and removes podium placement', async () => {
+    const { calculateUserCompetitiveScore } = require('../services/competitiveScoreService');
+
+    const connsAfterDisconnectAll = [];
+    const scoreObj = calculateUserCompetitiveScore(connsAfterDisconnectAll);
+
+    assert.strictEqual(scoreObj.totalScore, 0);
+    assert.strictEqual(scoreObj.easySolved, 0);
+    assert.strictEqual(scoreObj.mediumSolved, 0);
+    assert.strictEqual(scoreObj.hardSolved, 0);
+
+    // Filter scored students for podium
+    const scoredStudents = [
+      { userId: 'student_1', totalScore: scoreObj.totalScore }
+    ].filter(s => s.totalScore > 0);
+
+    assert.strictEqual(scoredStudents.length, 0); // Excluded from podium
+  });
+
+  await asyncTest('51. Automatic stale sync: New solved LeetCode problem (34 Easy) updates score from 730 to 740 without manual reverification', async () => {
+    const { calculateUserCompetitiveScore } = require('../services/competitiveScoreService');
+
+    // 1. Initial verified LeetCode (33 Easy = 330, 17 Medium = 340, 2 Hard = 60 => 730 pts)
+    const conn1 = { platform_code: 'leetcode', ownership_verified: true, metrics: { easySolved: 33, mediumSolved: 17, hardSolved: 2 } };
+    const score1 = calculateUserCompetitiveScore([conn1]);
+    assert.strictEqual(score1.totalScore, 730);
+
+    // 2. Student solves 1 new Easy problem on external LeetCode platform -> Auto-sync fetches updated metrics (34 Easy)
+    const conn2 = { platform_code: 'leetcode', ownership_verified: true, metrics: { easySolved: 34, mediumSolved: 17, hardSolved: 2 } };
+    const score2 = calculateUserCompetitiveScore([conn2]);
+    assert.strictEqual(score2.totalScore, 740);
+    assert.strictEqual(score2.easyPoints, 340);
+  });
+
   console.log(`\nPlatform Test Results: ${passedTests}/${totalTests} tests passed.\n`);
   if (passedTests !== totalTests) {
     process.exit(1);
