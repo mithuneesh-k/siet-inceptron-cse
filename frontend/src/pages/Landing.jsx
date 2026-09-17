@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import client from '../api/client';
 import ScoreBadge from '../components/ScoreBadge';
 import { useAuth } from '../contexts/AuthContext';
-import { Users, Award, Trophy, Briefcase, UsersRound, Star, Zap, BookOpen, Rocket, Medal, Target } from 'lucide-react';
+import { Users, Award, Trophy, Briefcase, Star, Zap, BookOpen, Rocket, Medal, Target } from 'lucide-react';
 
 const RANK_ICONS = [
   <Medal size={18} color="#B45309" strokeWidth={2.5} style={{ display: 'inline' }} />,
@@ -78,7 +78,7 @@ function AchievementCarousel({ topStudents }) {
 
 export default function Landing() {
   const { user } = useAuth();
-  const [stats, setStats] = useState({ totalStudents: 0, totalAchievements: 0, totalHackathonWins: 0, totalInternships: 0, activeTeams: 0 });
+  const [stats, setStats] = useState({ totalStudents: 0, totalAchievements: 0, totalHackathonWins: 0, totalInternships: 0 });
   const [topStudents, setTopStudents] = useState([]);
 
   useEffect(() => {
@@ -154,7 +154,6 @@ export default function Landing() {
             { v: stats.totalAchievements,  l: 'Achievements',   i: <Award size={28} /> },
             { v: stats.totalHackathonWins, l: 'Hackathon Wins', i: <Trophy size={28} /> },
             { v: stats.totalInternships,   l: 'Internships',    i: <Briefcase size={28} /> },
-            { v: stats.activeTeams,        l: 'Active Teams',   i: <UsersRound size={28} /> },
           ].map((s, i) => (
             <div key={i} className="stat-card card animate-fadeInUp" style={{ animationDelay: `${i * 0.06}s` }}>
               <div className="stat-icon">{s.i}</div>
@@ -334,7 +333,7 @@ export default function Landing() {
 
         /* ── Stats ── */
         .lp-stats { padding: 40px 0; background: var(--bg-primary); border-bottom: 2px solid var(--border); }
-        .lp-stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+        .lp-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
         @media (max-width: 768px) { .lp-stats-grid { grid-template-columns: repeat(2, 1fr); } }
 
         /* ── Sections ── */

@@ -4,142 +4,146 @@ import { useAuth } from '../contexts/AuthContext';
 import ConfirmModal from '../components/ConfirmModal';
 import {
   Code, RefreshCw, Unlink, CheckCircle2, AlertTriangle,
-  ExternalLink, Eye, PieChart, BarChart2
+  ExternalLink, Eye, BarChart2
 } from 'lucide-react';
 
-// ─── 1. PIE CHART COMPONENT ───────────────────────────────────────────────────
-function PlatformPieChart({ platforms }) {
-  const cf = platforms.find(p => p.code === 'codeforces');
-  const lc = platforms.find(p => p.code === 'leetcode');
-  const gfg = platforms.find(p => p.code === 'geeksforgeeks');
-  const hr = platforms.find(p => p.code === 'hackerrank');
+// ─── 1. SCORE CONTRIBUTION HORIZONTAL VISUALIZATION COMPONENT ──────────────────
+function ScoreContributionChart({ platforms }) {
+  const platformConfigs = [
+    { code: 'codeforces', name: 'Codeforces', color: '#3B82F6', iconSymbol: 'CF' },
+    { code: 'leetcode', name: 'LeetCode', color: '#FFA116', iconSymbol: '⚡' },
+    { code: 'geeksforgeeks', name: 'GeeksforGeeks', color: '#2F8D46', iconSymbol: '🌿' },
+    { code: 'hackerrank', name: 'HackerRank', color: '#2EC866', iconSymbol: '🏆' }
+  ];
 
-  const cfConn = Boolean(cf?.connection);
-  const lcConn = Boolean(lc?.connection);
-  const gfgConn = Boolean(gfg?.connection);
-  const hrConn = Boolean(hr?.connection);
+  const connectedList = platformConfigs.map(cfg => {
+    const p = platforms.find(item => item.code === cfg.code);
+    const conn = p?.connection;
+    const isConnected = Boolean(conn);
+    const isVerified = Boolean(conn?.ownershipVerified ?? conn?.ownership_verified);
 
-  const cfMetrics = cf?.connection?.metrics || {};
-  const lcMetrics = lc?.connection?.metrics || {};
+    let score = 0;
+    if (isConnected && isVerified && conn?.metrics) {
+      const easy = typeof conn.metrics.easySolved === 'number' && conn.metrics.easySolved >= 0 ? conn.metrics.easySolved : 0;
+      const med = typeof conn.metrics.mediumSolved === 'number' && conn.metrics.mediumSolved >= 0 ? conn.metrics.mediumSolved : 0;
+      const hard = typeof conn.metrics.hardSolved === 'number' && conn.metrics.hardSolved >= 0 ? conn.metrics.hardSolved : 0;
+      score = easy * 10 + med * 20 + hard * 30;
+    }
 
-  const cfEasy = cfMetrics.easySolved || 0;
-  const cfMed = cfMetrics.mediumSolved || 0;
-  const cfHard = cfMetrics.hardSolved || 0;
-  const cfScore = (cfConn && cf?.connection?.ownershipVerified !== false) ? (cfEasy * 10 + cfMed * 20 + cfHard * 30) : 0;
+    return {
+      ...cfg,
+      isConnected,
+      isVerified,
+      handle: conn?.handle || null,
+      score
+    };
+  }).filter(p => p.isConnected);
 
-  const lcEasy = lcMetrics.easySolved || 0;
-  const lcMed = lcMetrics.mediumSolved || 0;
-  const lcHard = lcMetrics.hardSolved || 0;
-  const lcScore = lcConn ? (lcEasy * 10 + lcMed * 20 + lcHard * 30) : 0;
-
-  const totalScore = cfScore + lcScore;
-  const totalConnected = (cfConn ? 1 : 0) + (lcConn ? 1 : 0) + (gfgConn ? 1 : 0) + (hrConn ? 1 : 0);
-
-  let items = [];
-  if (totalScore > 0) {
-    items = [
-      { name: 'Codeforces', score: cfScore, color: '#3B82F6', active: cfConn && cfScore > 0 },
-      { name: 'LeetCode', score: lcScore, color: '#FFA116', active: lcConn && lcScore > 0 },
-      { name: 'GeeksforGeeks', score: 0, color: '#2F8D46', active: gfgConn },
-      { name: 'HackerRank', score: 0, color: '#2EC866', active: hrConn }
-    ].filter(i => i.active);
-  } else if (totalConnected > 0) {
-    items = [
-      { name: 'Codeforces', score: cfConn ? 1 : 0, color: '#3B82F6', active: cfConn },
-      { name: 'LeetCode', score: lcConn ? 1 : 0, color: '#FFA116', active: lcConn },
-      { name: 'GeeksforGeeks', score: gfgConn ? 1 : 0, color: '#2F8D46', active: gfgConn },
-      { name: 'HackerRank', score: hrConn ? 1 : 0, color: '#2EC866', active: hrConn }
-    ].filter(i => i.active);
-  }
-
-  const chartTotal = items.reduce((acc, i) => acc + i.score, 0);
-
-  if (items.length === 0 || chartTotal === 0) {
+  if (connectedList.length === 0) {
     return (
-      <div className="card" style={{ padding: '20px', textAlign: 'center', background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)' }}>
-        <h3 style={{ fontSize: 13, fontWeight: 800, margin: '0 0 12px 0', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
-          <PieChart size={16} style={{ color: '#3B82F6' }} /> Platform Score Contribution
+      <div className="card" style={{ padding: '20px', background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)' }}>
+        <h3 style={{ fontSize: 13, fontWeight: 800, margin: '0 0 12px 0', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <BarChart2 size={16} style={{ color: '#3B82F6' }} /> SCORE CONTRIBUTION
         </h3>
-        <div style={{ padding: '24px 12px', color: 'var(--color-text-muted)', fontSize: 12.5, background: 'var(--bg-hover)', borderRadius: 'var(--radius-md)' }}>
+        <div style={{ padding: '24px 12px', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: 12.5, background: 'var(--bg-hover)', borderRadius: 'var(--radius-md)' }}>
           No platform accounts connected yet.
         </div>
       </div>
     );
   }
 
-  let cumulativeAngle = 0;
-  const radius = 55;
-  const cx = 75;
-  const cy = 75;
-
-  const slices = items.map(item => {
-    const percentage = item.score / chartTotal;
-    const angle = percentage * 360;
-    const startAngle = cumulativeAngle;
-    const endAngle = cumulativeAngle + angle;
-    cumulativeAngle += angle;
-
-    const startRad = (startAngle - 90) * (Math.PI / 180);
-    const endRad = (endAngle - 90) * (Math.PI / 180);
-
-    const x1 = cx + radius * Math.cos(startRad);
-    const y1 = cy + radius * Math.sin(startRad);
-    const x2 = cx + radius * Math.cos(endRad);
-    const y2 = cy + radius * Math.sin(endRad);
-
-    const largeArcFlag = angle > 180 ? 1 : 0;
-    const pathData = items.length === 1
-      ? `M ${cx} ${cy - radius} A ${radius} ${radius} 0 1 1 ${cx - 0.01} ${cy - radius}`
-      : `M ${cx} ${cy} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
-
-    return {
-      ...item,
-      percentage: Math.round(percentage * 100),
-      pathData
-    };
-  });
+  const totalScore = connectedList.reduce((sum, p) => sum + p.score, 0);
 
   return (
     <div className="card" style={{ padding: '20px', background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)' }}>
-      <h3 style={{ fontSize: 13, fontWeight: 800, margin: '0 0 16px 0', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
-        <PieChart size={16} style={{ color: '#3B82F6' }} /> {totalScore > 0 ? 'Score Contribution' : 'Connected Platforms'}
-      </h3>
-
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14 }}>
-        <svg width="150" height="150" viewBox="0 0 150 150">
-          {slices.map((slice, i) => (
-            <path
-              key={i}
-              d={slice.pathData}
-              fill={slice.color}
-              opacity={0.9}
-              style={{ transition: 'all 0.3s ease', cursor: 'pointer' }}
-            >
-              <title>{`${slice.name}: ${totalScore > 0 ? `${slice.score} pts` : 'Connected'} (${slice.percentage}%)`}</title>
-            </path>
-          ))}
-          <circle cx="75" cy="75" r="34" fill="var(--color-card)" />
-          <text x="75" y="72" textAnchor="middle" fill="var(--color-text)" fontSize="15" fontWeight="900">
-            {totalScore > 0 ? `${totalScore}` : `${totalConnected}`}
-          </text>
-          <text x="75" y="86" textAnchor="middle" fill="var(--color-text-muted)" fontSize="8.5" fontWeight="700" letterSpacing="0.05em">
-            {totalScore > 0 ? 'PTS' : 'CONNECTED'}
-          </text>
-        </svg>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1, minWidth: 110 }}>
-          {slices.map((slice, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11.5 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ width: 9, height: 9, borderRadius: 2.5, background: slice.color, display: 'inline-block' }} />
-                <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>{slice.name}</span>
-              </div>
-              <span style={{ fontWeight: 800, color: 'var(--color-text-muted)' }}>
-                {totalScore > 0 ? `${slice.score} pts` : `${slice.percentage}%`}
-              </span>
-            </div>
-          ))}
+      {/* Header: Section Heading (Left) + Total Score (Right) */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+        <div>
+          <h3 style={{ fontSize: 13, fontWeight: 800, margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <BarChart2 size={16} style={{ color: '#3B82F6' }} /> SCORE CONTRIBUTION
+          </h3>
         </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            TOTAL SCORE
+          </div>
+          <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--color-text)', fontFamily: 'Space Grotesk, sans-serif' }}>
+            {totalScore} <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text-muted)' }}>PTS</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Platform Rows */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {connectedList.map((p) => {
+          const percentage = totalScore > 0 ? Math.round((p.score / totalScore) * 100) : 0;
+
+          return (
+            <div key={p.code} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {/* Row Header */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: 6,
+                    background: `${p.color}1E`,
+                    border: `1px solid ${p.color}40`,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 12,
+                    fontWeight: 800,
+                    color: p.color
+                  }}>
+                    {p.iconSymbol}
+                  </span>
+                  <div>
+                    <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {p.name}
+                    </div>
+                    <div style={{ fontSize: 10.5, fontWeight: 600, color: p.isVerified ? '#10B981' : '#D97706', display: 'flex', alignItems: 'center', gap: 3 }}>
+                      {p.isVerified ? (
+                        <>
+                          <CheckCircle2 size={11} /> Verified
+                        </>
+                      ) : (
+                        <>
+                          <AlertTriangle size={11} /> Pending verification
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--color-text)', fontFamily: 'Space Grotesk, sans-serif' }}>
+                    {p.score} <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-muted)' }}>pts</span>
+                  </div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: p.color }}>
+                    {percentage}%
+                  </div>
+                </div>
+              </div>
+
+              {/* Horizontal Progress Bar */}
+              <div style={{ height: 8, borderRadius: 4, background: 'var(--bg-hover)', overflow: 'hidden', width: '100%' }}>
+                <div style={{
+                  width: `${percentage}%`,
+                  height: '100%',
+                  background: p.color,
+                  borderRadius: 4,
+                  transition: 'width 0.4s ease'
+                }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Explanatory Note Footer */}
+      <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--color-border)', fontSize: 11, color: 'var(--color-text-muted)', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: 5 }}>
+        <span>💡</span> Only verified platform accounts contribute to your competitive score.
       </div>
     </div>
   );
@@ -387,8 +391,16 @@ export default function Platforms() {
 
   const handleSync = async (pCode) => {
     if (syncingMap[pCode]) return;
+    const platformNames = {
+      codeforces: 'Codeforces',
+      leetcode: 'LeetCode',
+      geeksforgeeks: 'GeeksforGeeks',
+      hackerrank: 'HackerRank'
+    };
+    const pName = platformNames[pCode] || pCode;
+
     setSyncingMap(prev => ({ ...prev, [pCode]: true }));
-    setSyncFeedbackMap(prev => ({ ...prev, [pCode]: { type: 'loading', message: `Syncing ${pCode} metrics...` } }));
+    setSyncFeedbackMap(prev => ({ ...prev, [pCode]: { type: 'loading', message: `Syncing ${pName} metrics...` } }));
 
     try {
       const res = await client.post('/platforms/sync', { platformCode: pCode });
@@ -403,13 +415,15 @@ export default function Platforms() {
       }
 
       if (resData.syncError) {
+        const errMsg = resData.message || `${pName} is temporarily unavailable. Try again later.`;
         setSyncFeedbackMap(prev => ({
           ...prev,
           [pCode]: {
             type: 'error',
-            message: resData.message || `Last sync failed. ${pCode} API is temporarily unavailable.`
+            message: errMsg
           }
         }));
+        showToast(errMsg, 'error');
       } else {
         setSyncFeedbackMap(prev => ({
           ...prev,
@@ -418,13 +432,14 @@ export default function Platforms() {
             message: 'Synced successfully — Leaderboard updated!'
           }
         }));
+        showToast(`${pName} synced successfully.`);
         setTimeout(() => {
           setSyncFeedbackMap(prev => ({ ...prev, [pCode]: null }));
         }, 5000);
       }
     } catch (err) {
       const isCooldown = err.response?.status === 429 || err.response?.data?.cooldown;
-      const msg = err.response?.data?.error || `Failed to sync ${pCode} data.`;
+      const msg = err.response?.data?.error || `Failed to sync ${pName} data.`;
       setSyncFeedbackMap(prev => ({
         ...prev,
         [pCode]: {
@@ -432,6 +447,7 @@ export default function Platforms() {
           message: msg
         }
       }));
+      showToast(msg, 'error');
     } finally {
       setSyncingMap(prev => ({ ...prev, [pCode]: false }));
     }
@@ -486,7 +502,7 @@ export default function Platforms() {
 
   const cfConn = cfPlatform.connection;
   const cfStatus = cfPlatform.connectionStatus || (cfConn ? cfConn.status : 'not_connected');
-  const isCfConnected = cfStatus === 'connected' || cfStatus === 'sync_error' || cfStatus === 'verified';
+  const isCfConnected = Boolean(cfConn);
   const cfMetrics = cfConn?.metrics || {};
 
   const lcConn = lcPlatform.connection;
@@ -571,7 +587,7 @@ export default function Platforms() {
           {/* LEFT SECTION: 4 PLATFORM CARDS GRID */}
           <div style={{ flex: '1 1 580px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }} className="animate-fadeInUp delay-1">
 
-            {/* 1. CODEFORCES CARD (TOP-LEFT: Row 1, Col 1) */}
+            {/* 1. CODEFORCES CARD */}
             <div className="card" style={{ padding: '22px', display: 'flex', flexDirection: 'column', position: 'relative', borderTop: '4px solid #3B82F6', borderRadius: 'var(--radius-lg)', background: 'var(--color-card)', borderLeft: '1px solid var(--color-border)', borderRight: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)' }}>
 
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
@@ -591,6 +607,10 @@ export default function Platforms() {
                   {!isCfConnected ? (
                     <span className="badge" style={{ background: 'var(--bg-hover)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)', fontSize: 10.5, fontWeight: 700 }}>
                       NOT CONNECTED
+                    </span>
+                  ) : (!cfConn?.ownershipVerified && !cfConn?.ownership_verified) ? (
+                    <span className="badge" style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#D97706', border: '1px solid rgba(234, 179, 8, 0.3)', fontSize: 10.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <AlertTriangle size={11} /> PENDING VERIFICATION
                     </span>
                   ) : cfStatus === 'sync_error' ? (
                     <span className="badge" style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#D97706', border: '1px solid rgba(234, 179, 8, 0.3)', fontSize: 10.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
@@ -614,13 +634,30 @@ export default function Platforms() {
                           <ExternalLink size={13} />
                         </a>
                       </div>
-                      <div style={{ fontSize: 10.5, color: '#10B981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: 10, border: '1px solid rgba(16, 185, 129, 0.25)', display: 'inline-flex', alignItems: 'center', gap: 3, fontWeight: 700 }}>
-                        <CheckCircle2 size={11} /> Points count
-                      </div>
+                      {(!cfConn?.ownershipVerified && !cfConn?.ownership_verified) ? (
+                        <div style={{ fontSize: 10.5, color: '#D97706', background: 'rgba(234, 179, 8, 0.1)', padding: '2px 8px', borderRadius: 10, border: '1px solid rgba(234, 179, 8, 0.25)', display: 'inline-flex', alignItems: 'center', gap: 3, fontWeight: 700 }}>
+                          Pending verification
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: 10.5, color: '#10B981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: 10, border: '1px solid rgba(16, 185, 129, 0.25)', display: 'inline-flex', alignItems: 'center', gap: 3, fontWeight: 700 }}>
+                          <CheckCircle2 size={11} /> Verified
+                        </div>
+                      )}
                     </div>
 
-                    <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 6 }}>
-                      Last synced: {cfConn.last_synced_at || cfConn.lastSyncedAt ? new Date(cfConn.last_synced_at || cfConn.lastSyncedAt).toLocaleString() : 'Never synced'}
+                    <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <div>
+                        Last successful sync: {cfConn.last_synced_at || cfConn.lastSyncedAt ? new Date(cfConn.last_synced_at || cfConn.lastSyncedAt).toLocaleString() : 'Never'}
+                      </div>
+                      {(cfConn.last_attempted_at || cfConn.lastAttemptedAt) && (
+                        (!cfConn.last_synced_at && !cfConn.lastSyncedAt) ||
+                        (cfConn.last_error_code || cfConn.lastErrorCode) ||
+                        (new Date(cfConn.last_attempted_at || cfConn.lastAttemptedAt).getTime() !== new Date(cfConn.last_synced_at || cfConn.lastSyncedAt || 0).getTime())
+                      ) && (
+                        <div style={{ color: (cfConn.last_error_code || cfConn.lastErrorCode) ? '#D97706' : 'var(--color-text-muted)' }}>
+                          Last attempted: {new Date(cfConn.last_attempted_at || cfConn.lastAttemptedAt).toLocaleString()}
+                        </div>
+                      )}
                     </div>
 
                     {syncFeedbackMap.codeforces && (
@@ -718,7 +755,7 @@ export default function Platforms() {
               )}
             </div>
 
-            {/* 2. LEETCODE CARD (TOP-MIDDLE / RIGHT: Row 1, Col 2) */}
+            {/* 2. LEETCODE CARD */}
             <div className="card" style={{ padding: '22px', display: 'flex', flexDirection: 'column', position: 'relative', borderTop: '4px solid #FFA116', borderRadius: 'var(--radius-lg)', background: 'var(--color-card)', borderLeft: '1px solid var(--color-border)', borderRight: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)' }}>
 
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
@@ -771,13 +808,24 @@ export default function Platforms() {
                         </div>
                       ) : (
                         <div style={{ fontSize: 10.5, color: '#10B981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: 10, border: '1px solid rgba(16, 185, 129, 0.25)', display: 'inline-flex', alignItems: 'center', gap: 3, fontWeight: 700 }}>
-                          <CheckCircle2 size={11} /> Points count
+                          <CheckCircle2 size={11} /> Verified
                         </div>
                       )}
                     </div>
 
-                    <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 6 }}>
-                      Last synced: {lcConn.last_synced_at || lcConn.lastSyncedAt ? new Date(lcConn.last_synced_at || lcConn.lastSyncedAt).toLocaleString() : 'Never synced'}
+                    <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <div>
+                        Last successful sync: {lcConn.last_synced_at || lcConn.lastSyncedAt ? new Date(lcConn.last_synced_at || lcConn.lastSyncedAt).toLocaleString() : 'Never'}
+                      </div>
+                      {(lcConn.last_attempted_at || lcConn.lastAttemptedAt) && (
+                        (!lcConn.last_synced_at && !lcConn.lastSyncedAt) ||
+                        (lcConn.last_error_code || lcConn.lastErrorCode) ||
+                        (new Date(lcConn.last_attempted_at || lcConn.lastAttemptedAt).getTime() !== new Date(lcConn.last_synced_at || lcConn.lastSyncedAt || 0).getTime())
+                      ) && (
+                        <div style={{ color: (lcConn.last_error_code || lcConn.lastErrorCode) ? '#D97706' : 'var(--color-text-muted)' }}>
+                          Last attempted: {new Date(lcConn.last_attempted_at || lcConn.lastAttemptedAt).toLocaleString()}
+                        </div>
+                      )}
                     </div>
 
                     {syncFeedbackMap.leetcode && (
@@ -867,7 +915,7 @@ export default function Platforms() {
               )}
             </div>
 
-            {/* 3. GEEKSFORGEEKS CARD (Row 2, Col 1 - Remaining Left Position) */}
+            {/* 3. GEEKSFORGEEKS CARD */}
             <div className="card" style={{ padding: '22px', display: 'flex', flexDirection: 'column', position: 'relative', borderTop: '4px solid #2F8D46', borderRadius: 'var(--radius-lg)', background: 'var(--color-card)', borderLeft: '1px solid var(--color-border)', borderRight: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)' }}>
 
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
@@ -914,13 +962,30 @@ export default function Platforms() {
                           <ExternalLink size={13} />
                         </a>
                       </div>
-                      <div style={{ fontSize: 10, color: 'var(--color-text-muted)', background: 'var(--bg-hover)', padding: '2px 8px', borderRadius: 10, border: '1px solid var(--color-border)', display: 'inline-flex', alignItems: 'center', gap: 3, fontWeight: 600 }}>
-                        {(!gfgConn?.ownershipVerified && !gfgConn?.ownership_verified) ? 'Pending verification (0 pts)' : '0 pts contribution'}
-                      </div>
+                      {(!gfgConn?.ownershipVerified && !gfgConn?.ownership_verified) ? (
+                        <div style={{ fontSize: 10.5, color: '#D97706', background: 'rgba(234, 179, 8, 0.1)', padding: '2px 8px', borderRadius: 10, border: '1px solid rgba(234, 179, 8, 0.25)', display: 'inline-flex', alignItems: 'center', gap: 3, fontWeight: 700 }}>
+                          Pending verification
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: 10.5, color: '#10B981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: 10, border: '1px solid rgba(16, 185, 129, 0.25)', display: 'inline-flex', alignItems: 'center', gap: 3, fontWeight: 700 }}>
+                          <CheckCircle2 size={11} /> Verified
+                        </div>
+                      )}
                     </div>
 
-                    <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 6 }}>
-                      Last synced: {gfgConn.last_synced_at || gfgConn.lastSyncedAt ? new Date(gfgConn.last_synced_at || gfgConn.lastSyncedAt).toLocaleString() : 'Never synced'}
+                    <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <div>
+                        Last successful sync: {gfgConn.last_synced_at || gfgConn.lastSyncedAt ? new Date(gfgConn.last_synced_at || gfgConn.lastSyncedAt).toLocaleString() : 'Never'}
+                      </div>
+                      {(gfgConn.last_attempted_at || gfgConn.lastAttemptedAt) && (
+                        (!gfgConn.last_synced_at && !gfgConn.lastSyncedAt) ||
+                        (gfgConn.last_error_code || gfgConn.lastErrorCode) ||
+                        (new Date(gfgConn.last_attempted_at || gfgConn.lastAttemptedAt).getTime() !== new Date(gfgConn.last_synced_at || gfgConn.lastSyncedAt || 0).getTime())
+                      ) && (
+                        <div style={{ color: (gfgConn.last_error_code || gfgConn.lastErrorCode) ? '#D97706' : 'var(--color-text-muted)' }}>
+                          Last attempted: {new Date(gfgConn.last_attempted_at || gfgConn.lastAttemptedAt).toLocaleString()}
+                        </div>
+                      )}
                     </div>
 
                     {syncFeedbackMap.geeksforgeeks && (
@@ -1010,7 +1075,7 @@ export default function Platforms() {
               )}
             </div>
 
-            {/* 4. HACKERRANK CARD (Row 2, Col 2 - DIRECTLY BELOW LEETCODE) */}
+            {/* 4. HACKERRANK CARD */}
             <div className="card" style={{ padding: '22px', display: 'flex', flexDirection: 'column', position: 'relative', borderTop: '4px solid #2EC866', borderRadius: 'var(--radius-lg)', background: 'var(--color-card)', borderLeft: '1px solid var(--color-border)', borderRight: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)' }}>
 
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
@@ -1057,13 +1122,30 @@ export default function Platforms() {
                           <ExternalLink size={13} />
                         </a>
                       </div>
-                      <div style={{ fontSize: 10, color: 'var(--color-text-muted)', background: 'var(--bg-hover)', padding: '2px 8px', borderRadius: 10, border: '1px solid var(--color-border)', display: 'inline-flex', alignItems: 'center', gap: 3, fontWeight: 600 }}>
-                        {(!hrConn?.ownershipVerified && !hrConn?.ownership_verified) ? 'Pending verification (0 pts)' : '0 pts contribution'}
-                      </div>
+                      {(!hrConn?.ownershipVerified && !hrConn?.ownership_verified) ? (
+                        <div style={{ fontSize: 10.5, color: '#D97706', background: 'rgba(234, 179, 8, 0.1)', padding: '2px 8px', borderRadius: 10, border: '1px solid rgba(234, 179, 8, 0.25)', display: 'inline-flex', alignItems: 'center', gap: 3, fontWeight: 700 }}>
+                          Pending verification
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: 10.5, color: '#10B981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: 10, border: '1px solid rgba(16, 185, 129, 0.25)', display: 'inline-flex', alignItems: 'center', gap: 3, fontWeight: 700 }}>
+                          <CheckCircle2 size={11} /> Verified
+                        </div>
+                      )}
                     </div>
 
-                    <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 6 }}>
-                      Last synced: {hrConn.last_synced_at || hrConn.lastSyncedAt ? new Date(hrConn.last_synced_at || hrConn.lastSyncedAt).toLocaleString() : 'Never synced'}
+                    <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <div>
+                        Last successful sync: {hrConn.last_synced_at || hrConn.lastSyncedAt ? new Date(hrConn.last_synced_at || hrConn.lastSyncedAt).toLocaleString() : 'Never'}
+                      </div>
+                      {(hrConn.last_attempted_at || hrConn.lastAttemptedAt) && (
+                        (!hrConn.last_synced_at && !hrConn.lastSyncedAt) ||
+                        (hrConn.last_error_code || hrConn.lastErrorCode) ||
+                        (new Date(hrConn.last_attempted_at || hrConn.lastAttemptedAt).getTime() !== new Date(hrConn.last_synced_at || hrConn.lastSyncedAt || 0).getTime())
+                      ) && (
+                        <div style={{ color: (hrConn.last_error_code || hrConn.lastErrorCode) ? '#D97706' : 'var(--color-text-muted)' }}>
+                          Last attempted: {new Date(hrConn.last_attempted_at || hrConn.lastAttemptedAt).toLocaleString()}
+                        </div>
+                      )}
                     </div>
 
                     {syncFeedbackMap.hackerrank && (
@@ -1151,9 +1233,9 @@ export default function Platforms() {
 
           </div>
 
-          {/* RIGHT SECTION: 2 VISUAL CHARTS (PIE + BAR CHART SIDEBAR) */}
+          {/* RIGHT SECTION: 2 VISUAL CHARTS (SCORE CONTRIBUTION + BAR CHART SIDEBAR) */}
           <div style={{ flex: '1 1 320px', display: 'flex', flexDirection: 'column', gap: 20, minWidth: 300 }} className="animate-fadeInUp delay-2">
-            <PlatformPieChart platforms={platforms} />
+            <ScoreContributionChart platforms={platforms} />
             <DifficultyBarChart platforms={platforms} />
           </div>
 

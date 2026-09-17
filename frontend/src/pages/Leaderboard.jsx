@@ -12,7 +12,7 @@ const CLASS_OPTIONS = ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D', 'CSE-E'];
 
 export default function Leaderboard() {
   const [students, setStudents] = useState([]);
-  const [stats, setStats] = useState({ totalStudents: 0, totalAchievements: 0, totalHackathonWins: 0, totalInternships: 0, activeTeams: 0 });
+  const [stats, setStats] = useState({ totalStudents: 0, totalAchievements: 0, totalHackathonWins: 0, totalInternships: 0 });
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [batchFilter, setBatchFilter] = useState('all');

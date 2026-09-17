@@ -467,9 +467,16 @@ async function syncPlatform(userId, platformCode) {
     const errorCode = fetchResult.isOutage
       ? `${platformCode.toUpperCase()}_UNAVAILABLE`
       : `${platformCode.toUpperCase()}_HANDLE_NOT_FOUND`;
+    const platformNames = {
+      codeforces: 'Codeforces',
+      leetcode: 'LeetCode',
+      geeksforgeeks: 'GeeksforGeeks',
+      hackerrank: 'HackerRank'
+    };
+    const displayName = platformNames[platformCode] || platformCode;
     const errorMessage = fetchResult.isOutage
-      ? `Last sync failed. ${platformCode} is temporarily unavailable.`
-      : `Last sync failed. Connected handle could not be found on ${platformCode}.`;
+      ? `${displayName} is temporarily unavailable. Try again later.`
+      : `Last sync failed. Connected handle could not be found on ${displayName}.`;
 
     const updatePayload = {
       status: 'sync_error',
@@ -477,24 +484,24 @@ async function syncPlatform(userId, platformCode) {
       last_error_code: errorCode
     };
 
-    await platformStore.updateConnectionStatus(userId, platformCode, updatePayload);
+    const { connection: updatedConn } = await platformStore.updateConnectionStatus(userId, platformCode, updatePayload);
 
     return {
       status: 200,
       syncError: true,
       message: errorMessage,
-      connection: {
-        ...formatConnectionObj(connection),
+      connection: formatConnectionObj(updatedConn || {
+        ...connection,
         status: 'sync_error',
-        lastAttemptedAt: attemptedAt,
-        lastErrorCode: errorCode
-      }
+        last_attempted_at: attemptedAt,
+        last_error_code: errorCode
+      })
     };
   }
 
   const updatePayload = {
     metrics: fetchResult.metrics,
-    status: 'connected',
+    status: connection.ownership_verified ? 'verified' : 'connected',
     last_synced_at: attemptedAt,
     last_attempted_at: attemptedAt,
     last_error_code: null
