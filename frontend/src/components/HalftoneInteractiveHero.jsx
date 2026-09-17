@@ -8,7 +8,7 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron.png' })
   const mouseRef = useRef({ x: -1000, y: -1000, active: false });
 
   useEffect(() => {
-    // 1. Check prefers-reduced-motion & touch/mobile screens
+    // Check prefers-reduced-motion & mobile screens
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const isMobile = window.innerWidth <= 868 || ('ontouchstart' in window);
 
@@ -47,7 +47,7 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron.png' })
 
       // Create offscreen canvas to sample image pixels
       const offscreen = document.createElement('canvas');
-      const sampleW = 320;
+      const sampleW = 360;
       const sampleH = Math.round((sampleW / img.naturalWidth) * img.naturalHeight);
       offscreen.width = sampleW;
       offscreen.height = sampleH;
@@ -56,13 +56,12 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron.png' })
 
       const imgData = offCtx.getImageData(0, 0, sampleW, sampleH).data;
 
-      // Calculate grid step for target particle count (~2,500 - 4,000 particles)
-      const gridStep = width > 1200 ? 8 : 7;
+      // Grid step for particle count (~3,000 particles)
+      const gridStep = width > 1200 ? 9 : 8;
       const particles = [];
 
       for (let y = 0; y < height; y += gridStep) {
         for (let x = 0; x < width; x += gridStep) {
-          // Map (x, y) to offscreen image coordinate
           const sampleX = Math.floor((x / width) * sampleW);
           const sampleY = Math.floor((y / height) * sampleH);
           const idx = (sampleY * sampleW + sampleX) * 4;
@@ -72,7 +71,6 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron.png' })
           const b = imgData[idx + 2];
           const brightness = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
 
-          // Darker image areas = larger dots
           const maxRadius = gridStep * 0.46;
           const radius = (1 - brightness) * maxRadius;
 
@@ -152,8 +150,9 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron.png' })
 
     animationFrameRef.current = requestAnimationFrame(animate);
 
-    // Event handlers
+    // Global Window Event Handlers so floating form does not break pointer tracking
     const handleMouseMove = (e) => {
+      if (!container) return;
       const rect = container.getBoundingClientRect();
       mouseRef.current = {
         x: e.clientX - rect.left,
@@ -166,8 +165,8 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron.png' })
       mouseRef.current.active = false;
     };
 
-    container.addEventListener('mousemove', handleMouseMove);
-    container.addEventListener('mouseleave', handleMouseLeave);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseleave', handleMouseLeave);
 
     // ResizeObserver
     const resizeObserver = new ResizeObserver(() => {
@@ -180,8 +179,8 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron.png' })
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
-      container.removeEventListener('mousemove', handleMouseMove);
-      container.removeEventListener('mouseleave', handleMouseLeave);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseleave', handleMouseLeave);
       resizeObserver.disconnect();
     };
   }, [src]);
@@ -191,7 +190,14 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron.png' })
       ref={containerRef}
       className="auth-07-hero"
       aria-label="Inceptron Artwork"
-      style={{ position: 'relative', overflow: 'hidden' }}
+      style={{
+        position: 'absolute',
+        inset: 0,
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none',
+        zIndex: 1
+      }}
     >
       <canvas
         ref={canvasRef}

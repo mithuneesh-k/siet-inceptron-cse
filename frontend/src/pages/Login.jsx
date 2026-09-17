@@ -150,48 +150,56 @@ export default function Login() {
       </div>
 
       <style>{`
-        /* Auth-07 Minimal Light-Neutral Architecture */
+        /* Auth-07 Full-Bleed Background Architecture */
         .auth-07-container {
+          position: relative;
           display: flex;
           min-height: 100vh;
           width: 100%;
-          background: #f5f5f3;
-          font-family: 'Inter', system-ui, -apple-system, sans-serif;
-          color: #111111;
-        }
-
-        /* Hero Left Panel (Monochrome Artwork) */
-        .auth-07-hero {
-          flex: 1.2;
-          position: relative;
           background-color: #f5f5f3;
           background-image: url('/real inceptron.png');
           background-size: cover;
-          background-position: center;
+          background-position: left center;
           background-repeat: no-repeat;
-          filter: grayscale(100%) opacity(0.85);
-          min-height: 100vh;
+          font-family: 'Inter', system-ui, -apple-system, sans-serif;
+          color: #111111;
+          overflow: hidden;
         }
 
-        /* Form Right Panel */
+        /* Hero Canvas Overlay */
+        .auth-07-hero {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        /* Form Right Floating Panel */
         .auth-07-form-wrapper {
+          position: relative;
+          z-index: 2;
           flex: 1;
           display: flex;
           align-items: center;
-          justify-content: center;
-          padding: 40px 24px;
-          background: #f5f5f3;
-          position: relative;
+          justify-content: flex-end;
+          padding: 40px 10vw 40px 24px;
+          min-height: 100vh;
         }
 
         .auth-07-card {
           width: 100%;
-          max-width: 440px;
-          background: #ffffff;
+          max-width: 450px;
+          background: rgba(255, 255, 255, 0.94);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
           padding: 48px 40px;
           border-radius: 24px;
-          border: 1px solid #e5e5e5;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+          border: 1px solid rgba(255, 255, 255, 0.8);
+          box-shadow:
+            0 20px 45px rgba(0, 0, 0, 0.1),
+            0 2px 10px rgba(0, 0, 0, 0.04);
         }
 
         .auth-07-mobile-header {
@@ -473,25 +481,23 @@ export default function Login() {
 
         /* RESPONSIVE DESIGN FOR MOBILE & TABLET */
         @media (max-width: 868px) {
-          .auth-07-hero {
-            display: none;
+          .auth-07-container {
+            background-position: center;
           }
 
           .auth-07-mobile-header {
             display: flex;
           }
 
-          .auth-07-container {
-            background: #f5f5f3;
-          }
-
           .auth-07-form-wrapper {
+            justify-content: center;
             padding: 24px 16px;
           }
 
           .auth-07-card {
             padding: 36px 24px;
             border-radius: 20px;
+            background: rgba(255, 255, 255, 0.96);
           }
         }
 
