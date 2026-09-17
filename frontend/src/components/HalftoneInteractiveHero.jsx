@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-export default function HalftoneInteractiveHero({ src = '/real inceptron.png', scale = 0.88 }) {
+export default function HalftoneInteractiveHero({ src = '/real inceptron clean.png', scale = 0.78 }) {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const animationFrameRef = useRef(null);
@@ -45,10 +45,10 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron.png', s
 
       ctx.scale(dpr, dpr);
 
-      // Create offscreen canvas to sample image pixels at high resolution
-      const sampleW = 640;
-      const sampleH = Math.round((sampleW / img.naturalWidth) * img.naturalHeight);
+      // Create offscreen canvas to sample image pixels
       const offscreen = document.createElement('canvas');
+      const sampleW = 480;
+      const sampleH = Math.round((sampleW / img.naturalWidth) * img.naturalHeight);
       offscreen.width = sampleW;
       offscreen.height = sampleH;
       const offCtx = offscreen.getContext('2d');
@@ -56,27 +56,27 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron.png', s
 
       const imgData = offCtx.getImageData(0, 0, sampleW, sampleH).data;
 
-      // Fit contained in artwork container area with controlled scale factor
+      // Full-bleed cover object-fit calculation with controlled scale factor (0.78) for clean composition
       const containerAspect = width / height;
       const imgAspect = img.naturalWidth / img.naturalHeight;
       let fullW = width;
       let fullH = height;
 
       if (containerAspect > imgAspect) {
-        fullH = height;
-        fullW = height * imgAspect;
-      } else {
         fullW = width;
         fullH = width / imgAspect;
+      } else {
+        fullH = height;
+        fullW = height * imgAspect;
       }
 
       const imgW = fullW * scale;
       const imgH = fullH * scale;
-      const imgX = (width - imgW) / 2; // Centered in container
+      const imgX = (width - imgW) * 0.32; // centered in left panel area with breathing room
       const imgY = (height - imgH) / 2;
 
-      // Fine grid step for high-density particle sampling across artwork & INCEPTRON wordmark
-      const gridStep = width > 600 ? 5 : 6;
+      // Grid step for particle sampling across background
+      const gridStep = width > 1200 ? 8 : 7;
       const particles = [];
 
       for (let y = 0; y < height; y += gridStep) {
@@ -96,15 +96,15 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron.png', s
 
             const brightness = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
 
-            // Generate halftone dots consistently across artwork & INCEPTRON text
-            if (brightness > 0.92) {
+            // Only generate dots for cloud/halftone textures, not extreme highlights/shadows
+            if (brightness > 0.92 || brightness < 0.12) {
               continue;
             }
 
-            const maxRadius = gridStep * 0.42;
-            const radius = Math.max(0.4, (1 - brightness) * maxRadius);
+            const maxRadius = gridStep * 0.35;
+            const radius = (1 - brightness) * maxRadius;
 
-            if (radius > 0.35) {
+            if (radius > 0.45) {
               particles.push({
                 baseX: x,
                 baseY: y,
@@ -134,7 +134,7 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron.png', s
     // Spring physics configuration
     const springStrength = 0.05;
     const friction = 0.84;
-    const interactionRadius = 120;
+    const interactionRadius = 110;
     const maxRepulsion = 12;
 
     const animate = () => {
@@ -169,10 +169,10 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron.png', s
         p.x += p.vx;
         p.y += p.vy;
 
-        // Render dot with crisp halftone dark tone
+        // Render dot with soft charcoal tone over transparent background
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(20, 20, 22, 0.85)';
+        ctx.fillStyle = 'rgba(28, 28, 30, 0.82)';
         ctx.fill();
       }
 
@@ -222,7 +222,8 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron.png', s
       className="auth-07-hero"
       aria-label="Inceptron Artwork"
       style={{
-        position: 'relative',
+        position: 'absolute',
+        inset: 0,
         width: '100%',
         height: '100%',
         pointerEvents: 'none',
