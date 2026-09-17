@@ -169,15 +169,15 @@ export default function CompetitiveLeaderboard() {
   // Summary metrics
   const summaryMetrics = useMemo(() => {
     const totalStudents = leaderboard.length;
-    const verifiedProfiles = leaderboard.filter(s =>
-      Object.values(s.platformBreakdown || {}).some(p => p.ownershipVerified)
+    const connectedStudents = leaderboard.filter(s =>
+      Object.values(s.platformBreakdown || {}).some(p => p.connected)
     ).length;
     const totalProblemsSolved = leaderboard.reduce((acc, s) => acc + (s.totalProblems || 0), 0);
     const topScore = leaderboard.length > 0 && leaderboard[0].totalScore > 0 ? leaderboard[0].totalScore : 0;
 
     return {
       totalStudents,
-      verifiedProfiles,
+      connectedStudents,
       totalProblemsSolved,
       topScore
     };
@@ -264,8 +264,8 @@ export default function CompetitiveLeaderboard() {
               <ShieldCheck size={22} />
             </div>
             <div>
-              <div style={{ fontSize: 11, color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.06em' }}>Verified Profiles</div>
-              <div style={{ fontSize: 24, fontWeight: 900, color: '#10B981', marginTop: 2, lineHeight: 1 }}>{summaryMetrics.verifiedProfiles}</div>
+              <div style={{ fontSize: 11, color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.06em' }}>Connected Students</div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: '#10B981', marginTop: 2, lineHeight: 1 }}>{summaryMetrics.connectedStudents}</div>
             </div>
           </div>
 

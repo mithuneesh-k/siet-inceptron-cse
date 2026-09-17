@@ -577,23 +577,23 @@ async function runPlatformTests() {
     assert.strictEqual(scoreMixed.totalScore, 110);
   });
 
-  test('15. Unverified profile scores 0 points, Verified profile scores included', () => {
-    const unverifiedConn = {
+  test('15. Disconnected/error profile scores 0 points, Active connected profile scores included', () => {
+    const errorConn = {
       platform_code: 'codeforces',
-      ownership_verified: false,
+      status: 'sync_error',
       metrics: { easySolved: 10, mediumSolved: 5, hardSolved: 2 }
     };
-    const userUnverified = calculateUserCompetitiveScore([unverifiedConn]);
-    assert.strictEqual(userUnverified.totalScore, 0); // MUST BE 0 when ownership_verified = false
-    assert.strictEqual(userUnverified.easyPoints, 0);
+    const userError = calculateUserCompetitiveScore([errorConn]);
+    assert.strictEqual(userError.totalScore, 0); // MUST BE 0 when sync_error
+    assert.strictEqual(userError.easyPoints, 0);
 
-    const verifiedConn = {
+    const connectedConn = {
       platform_code: 'codeforces',
-      ownership_verified: true,
+      status: 'connected',
       metrics: { easySolved: 10, mediumSolved: 5, hardSolved: 2 } // 100 + 100 + 60 = 260
     };
-    const userVerified = calculateUserCompetitiveScore([verifiedConn]);
-    assert.strictEqual(userVerified.totalScore, 260); // Included when verified
+    const userConnected = calculateUserCompetitiveScore([connectedConn]);
+    assert.strictEqual(userConnected.totalScore, 260); // Included when connected
   });
 
   await asyncTest('16. Codeforces difficulty rating boundaries: 800/1200=Easy, 1300/1900=Medium, 2000=Hard', async () => {
@@ -720,12 +720,11 @@ async function runPlatformTests() {
     assert.strictEqual(combined.totalScore, 750); // 260 + 490 = 750
   });
 
-  test('22. Unverified Codeforces connection does NOT contribute to score even when LeetCode is connected', () => {
-    const cfUnverified = {
+  test('22. Sync error Codeforces connection does NOT contribute to score even when LeetCode is connected', () => {
+    const cfError = {
       platform_code: 'codeforces',
-      status: 'connected',
-      ownership_verified: false,
-      metrics: { easySolved: 10, mediumSolved: 5, hardSolved: 2 } // MUST BE 0 pts because ownership_verified = false
+      status: 'sync_error',
+      metrics: { easySolved: 10, mediumSolved: 5, hardSolved: 2 } // MUST BE 0 pts because sync_error
     };
     const lcConnected = {
       platform_code: 'leetcode',
@@ -734,7 +733,7 @@ async function runPlatformTests() {
       metrics: { easySolved: 10, mediumSolved: 0, hardSolved: 0 } // 100 pts
     };
 
-    const score = calculateUserCompetitiveScore([cfUnverified, lcConnected]);
+    const score = calculateUserCompetitiveScore([cfError, lcConnected]);
     assert.strictEqual(score.totalScore, 100); // ONLY LeetCode counted!
     assert.strictEqual(score.platformBreakdown.codeforces.totalScore, 0);
     assert.strictEqual(score.platformBreakdown.leetcode.totalScore, 100);
@@ -1307,54 +1306,41 @@ async function runPlatformTests() {
     assert.strictEqual(result.platformBreakdown.hackerrank.connected, true);
   });
 
-  test('38. Regression fixture: unverified LeetCode metrics (33 easy, 17 med, 2 hard) -> 0 pts, verified -> 730 pts', () => {
-    const unverifiedConn = {
+  test('38. Trusted connection fixture: connected LeetCode metrics (33 easy, 17 med, 2 hard) -> 730 pts immediately', () => {
+    const connectedConn = {
       platform_code: 'leetcode',
-      ownership_verified: false,
+      status: 'connected',
       metrics: { easySolved: 33, mediumSolved: 17, hardSolved: 2, totalSolved: 52 }
     };
 
-    const unverifiedResult = calculateUserCompetitiveScore([unverifiedConn]);
-    assert.strictEqual(unverifiedResult.totalScore, 0);
-    assert.strictEqual(unverifiedResult.easySolved, 0);
-    assert.strictEqual(unverifiedResult.mediumSolved, 0);
-    assert.strictEqual(unverifiedResult.hardSolved, 0);
-
-    const verifiedConn = {
-      ...unverifiedConn,
-      ownership_verified: true
-    };
-
-    const verifiedResult = calculateUserCompetitiveScore([verifiedConn]);
-    assert.strictEqual(verifiedResult.totalScore, 730); // 33*10 + 17*20 + 2*30 = 730
-    assert.strictEqual(verifiedResult.easySolved, 33);
-    assert.strictEqual(verifiedResult.mediumSolved, 17);
-    assert.strictEqual(verifiedResult.hardSolved, 2);
+    const connectedResult = calculateUserCompetitiveScore([connectedConn]);
+    assert.strictEqual(connectedResult.totalScore, 730); // 33*10 + 17*20 + 2*30 = 730
+    assert.strictEqual(connectedResult.easySolved, 33);
+    assert.strictEqual(connectedResult.mediumSolved, 17);
+    assert.strictEqual(connectedResult.hardSolved, 2);
   });
 
   test('39. Unified competitive score: Platforms score equals Leaderboard score', () => {
     const connList = [
-      { platform_code: 'codeforces', ownership_verified: true, metrics: { easySolved: 15, mediumSolved: 5, hardSolved: 1 } },
-      { platform_code: 'leetcode', ownership_verified: false, metrics: { easySolved: 50, mediumSolved: 20 } }
+      { platform_code: 'codeforces', status: 'connected', metrics: { easySolved: 15, mediumSolved: 5, hardSolved: 1 } },
+      { platform_code: 'leetcode', status: 'connected', metrics: { easySolved: 50, mediumSolved: 20, hardSolved: 0 } }
     ];
 
     const scoreObj = calculateUserCompetitiveScore(connList);
-    assert.strictEqual(scoreObj.totalScore, 280);
+    assert.strictEqual(scoreObj.totalScore, 1180);
     assert.strictEqual(scoreObj.platformBreakdown.codeforces.totalScore, 280);
-    assert.strictEqual(scoreObj.platformBreakdown.leetcode.totalScore, 0);
+    assert.strictEqual(scoreObj.platformBreakdown.leetcode.totalScore, 900);
   });
 
-  test('40. Zero verified profiles result in topScore = 0 and no positive competitive scores', () => {
+  test('40. Zero connected profiles result in topScore = 0 and no positive competitive scores', () => {
     const students = [
       { user_id: 'u1', name: 'Alice' },
       { user_id: 'u2', name: 'Bob' }
     ];
-    const unverifiedConns = [
-      { user_id: 'u1', platform_code: 'leetcode', ownership_verified: false, metrics: { easySolved: 10 } }
-    ];
+    const emptyConns = [];
 
     const scored = students.map(s => {
-      const uConns = unverifiedConns.filter(c => c.user_id === s.user_id);
+      const uConns = emptyConns.filter(c => c.user_id === s.user_id);
       return calculateUserCompetitiveScore(uConns);
     });
 
@@ -1404,7 +1390,7 @@ async function runPlatformTests() {
     try {
       const res = await platformSyncService.syncPlatform('student_1', 'codeforces');
       assert.strictEqual(res.status, 200);
-      assert.strictEqual(res.connection.ownershipVerified, false); // Must remain unverified after sync
+      assert.strictEqual(res.connection.status, 'connected'); // Must remain connected after sync
     } finally {
       platformStore.getConnection = originalGet;
       platformStore.updateConnectionStatus = originalUpdate;
@@ -1615,33 +1601,24 @@ async function runPlatformTests() {
     }
   });
 
-  await asyncTest('47. End-to-end LeetCode flow: Unverified connection (0 pts) -> Verify (730 pts) -> Leaderboard returns 730 pts', async () => {
+  await asyncTest('47. End-to-end LeetCode flow: Active connected profile (33/17/2) -> Leaderboard returns 730 pts immediately', async () => {
     const { calculateUserCompetitiveScore } = require('../services/competitiveScoreService');
 
     const lcMetrics = { easySolved: 33, mediumSolved: 17, hardSolved: 2, totalSolved: 52 };
     
-    // 1. Unverified LeetCode connection
-    const unverifiedConn = {
+    // Active connected LeetCode profile
+    const activeConn = {
       platform_code: 'leetcode',
       handle: 'nishanthkr775',
-      ownership_verified: false,
+      status: 'connected',
       metrics: lcMetrics
     };
 
-    const unverifiedScore = calculateUserCompetitiveScore([unverifiedConn]);
-    assert.strictEqual(unverifiedScore.totalScore, 0);
-
-    // 2. Verification update
-    const verifiedConn = {
-      ...unverifiedConn,
-      ownership_verified: true
-    };
-
-    const verifiedScore = calculateUserCompetitiveScore([verifiedConn]);
-    assert.strictEqual(verifiedScore.totalScore, 730);
-    assert.strictEqual(verifiedScore.easyPoints, 330);
-    assert.strictEqual(verifiedScore.mediumPoints, 340);
-    assert.strictEqual(verifiedScore.hardPoints, 60);
+    const activeScore = calculateUserCompetitiveScore([activeConn]);
+    assert.strictEqual(activeScore.totalScore, 730);
+    assert.strictEqual(activeScore.easyPoints, 330);
+    assert.strictEqual(activeScore.mediumPoints, 340);
+    assert.strictEqual(activeScore.hardPoints, 60);
   });
 
   await asyncTest('48. One-time verification persistence: Normal sync updates metrics and preserves ownership_verified = true', async () => {

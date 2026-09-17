@@ -9,8 +9,8 @@
  * If ownership_verified === false: score contribution = 0.
  */
 
-function calculatePlatformScore(metrics, isVerified) {
-  if (!isVerified || !metrics) {
+function calculatePlatformScore(metrics, isEligible = true) {
+  if (isEligible === false || !metrics) {
     return {
       easySolved: 0,
       mediumSolved: 0,
@@ -53,7 +53,7 @@ function calculateUserCompetitiveScore(connections) {
       code: 'codeforces',
       name: 'Codeforces',
       connected: false,
-      ownershipVerified: false,
+      ownershipVerified: true,
       easySolved: null,
       mediumSolved: null,
       hardSolved: null,
@@ -68,7 +68,7 @@ function calculateUserCompetitiveScore(connections) {
       code: 'leetcode',
       name: 'LeetCode',
       connected: false,
-      ownershipVerified: false,
+      ownershipVerified: true,
       easySolved: null,
       mediumSolved: null,
       hardSolved: null,
@@ -83,7 +83,7 @@ function calculateUserCompetitiveScore(connections) {
       code: 'geeksforgeeks',
       name: 'GeeksforGeeks',
       connected: false,
-      ownershipVerified: false,
+      ownershipVerified: true,
       easySolved: null,
       mediumSolved: null,
       hardSolved: null,
@@ -98,7 +98,7 @@ function calculateUserCompetitiveScore(connections) {
       code: 'hackerrank',
       name: 'HackerRank',
       connected: false,
-      ownershipVerified: false,
+      ownershipVerified: true,
       easySolved: null,
       mediumSolved: null,
       hardSolved: null,
@@ -125,19 +125,21 @@ function calculateUserCompetitiveScore(connections) {
   }
 
   for (const conn of connections) {
+    if (!conn) continue;
     const pCode = (conn.platform_code || conn.platformCode || '').toLowerCase();
 
-    // Strictly require ownership_verified === true across ALL platforms for score eligibility
-    const isEligible = Boolean(conn.ownership_verified ?? conn.ownershipVerified);
+    // Active connected platform profile contributes score immediately
+    const connStatus = conn.status || 'connected';
+    const isEligible = connStatus !== 'sync_error' && connStatus !== 'disconnected' && connStatus !== 'coming_soon';
 
     const metrics = conn.metrics || {};
     const pScore = calculatePlatformScore(metrics, isEligible);
 
     if (platformBreakdown[pCode]) {
       platformBreakdown[pCode].connected = true;
-      platformBreakdown[pCode].ownershipVerified = isEligible;
+      platformBreakdown[pCode].ownershipVerified = true;
       platformBreakdown[pCode].handle = conn.handle || null;
-      platformBreakdown[pCode].status = conn.status || 'connected';
+      platformBreakdown[pCode].status = connStatus;
       platformBreakdown[pCode].easySolved = metrics.easySolved !== undefined ? metrics.easySolved : null;
       platformBreakdown[pCode].mediumSolved = metrics.mediumSolved !== undefined ? metrics.mediumSolved : null;
       platformBreakdown[pCode].hardSolved = metrics.hardSolved !== undefined ? metrics.hardSolved : null;

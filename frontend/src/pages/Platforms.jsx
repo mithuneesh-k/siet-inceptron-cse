@@ -97,16 +97,8 @@ function ScoreContributionChart({ platforms }) {
                     <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 6 }}>
                       {p.name}
                     </div>
-                    <div style={{ fontSize: 10.5, fontWeight: 600, color: p.isVerified ? '#10B981' : '#D97706', display: 'flex', alignItems: 'center', gap: 3 }}>
-                      {p.isVerified ? (
-                        <>
-                          <CheckCircle2 size={11} /> Verified
-                        </>
-                      ) : (
-                        <>
-                          <AlertTriangle size={11} /> Pending verification
-                        </>
-                      )}
+                    <div style={{ fontSize: 10.5, fontWeight: 600, color: '#10B981', display: 'flex', alignItems: 'center', gap: 3 }}>
+                      <CheckCircle2 size={11} /> Connected
                     </div>
                   </div>
                 </div>
@@ -138,7 +130,7 @@ function ScoreContributionChart({ platforms }) {
 
       {/* Explanatory Note Footer */}
       <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--color-border)', fontSize: 11, color: 'var(--color-text-muted)', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: 5 }}>
-        <span>💡</span> Only verified platform accounts contribute to your competitive score.
+        <span>💡</span> Connected platform accounts contribute according to competitive scoring rules.
       </div>
     </div>
   );
@@ -656,10 +648,6 @@ export default function Platforms() {
                     <span className="badge" style={{ background: 'var(--bg-hover)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)', fontSize: 10.5, fontWeight: 700 }}>
                       NOT CONNECTED
                     </span>
-                  ) : (!cfConn?.ownershipVerified && !cfConn?.ownership_verified) ? (
-                    <span className="badge" style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#D97706', border: '1px solid rgba(234, 179, 8, 0.3)', fontSize: 10.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      <AlertTriangle size={11} /> PENDING VERIFICATION
-                    </span>
                   ) : cfStatus === 'sync_error' ? (
                     <span className="badge" style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#D97706', border: '1px solid rgba(234, 179, 8, 0.3)', fontSize: 10.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                       <AlertTriangle size={11} /> SYNC ERROR
@@ -682,15 +670,9 @@ export default function Platforms() {
                           <ExternalLink size={13} />
                         </a>
                       </div>
-                      {(!cfConn?.ownershipVerified && !cfConn?.ownership_verified) ? (
-                        <div style={{ fontSize: 10.5, color: '#D97706', background: 'rgba(234, 179, 8, 0.1)', padding: '2px 8px', borderRadius: 10, border: '1px solid rgba(234, 179, 8, 0.25)', display: 'inline-flex', alignItems: 'center', gap: 3, fontWeight: 700 }}>
-                          Pending verification
-                        </div>
-                      ) : (
-                        <div style={{ fontSize: 10.5, color: '#10B981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: 10, border: '1px solid rgba(16, 185, 129, 0.25)', display: 'inline-flex', alignItems: 'center', gap: 3, fontWeight: 700 }}>
-                          <CheckCircle2 size={11} /> Verified
-                        </div>
-                      )}
+                      <div style={{ fontSize: 10.5, color: '#10B981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: 10, border: '1px solid rgba(16, 185, 129, 0.25)', display: 'inline-flex', alignItems: 'center', gap: 3, fontWeight: 700 }}>
+                        <CheckCircle2 size={11} /> Active
+                      </div>
                     </div>
 
                     <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -724,13 +706,6 @@ export default function Platforms() {
                       }}>
                         <RefreshCw size={12} className={syncFeedbackMap.codeforces.type === 'loading' ? 'spin' : ''} />
                         {syncFeedbackMap.codeforces.message}
-                      </div>
-                    )}
-
-                    {(!cfConn?.ownershipVerified && !cfConn?.ownership_verified) && (
-                      <div style={{ marginTop: 8, padding: '6px 10px', background: 'var(--bg-hover)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: 11, color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <Shield size={12} style={{ color: '#F59E0B', flexShrink: 0 }} />
-                        <span>Requires faculty/admin verification</span>
                       </div>
                     )}
                   </div>
@@ -831,10 +806,6 @@ export default function Platforms() {
                     <span className="badge" style={{ background: 'var(--bg-hover)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)', fontSize: 10.5, fontWeight: 700 }}>
                       NOT CONNECTED
                     </span>
-                  ) : (!lcConn?.ownershipVerified && !lcConn?.ownership_verified) ? (
-                    <span className="badge" style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#D97706', border: '1px solid rgba(234, 179, 8, 0.3)', fontSize: 10.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      <AlertTriangle size={11} /> PENDING VERIFICATION
-                    </span>
                   ) : lcStatus === 'sync_error' ? (
                     <span className="badge" style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#D97706', border: '1px solid rgba(234, 179, 8, 0.3)', fontSize: 10.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                       <AlertTriangle size={11} /> SYNC ERROR
@@ -857,15 +828,9 @@ export default function Platforms() {
                           <ExternalLink size={13} />
                         </a>
                       </div>
-                      {(!lcConn?.ownershipVerified && !lcConn?.ownership_verified) ? (
-                        <div style={{ fontSize: 10.5, color: '#D97706', background: 'rgba(234, 179, 8, 0.1)', padding: '2px 8px', borderRadius: 10, border: '1px solid rgba(234, 179, 8, 0.25)', display: 'inline-flex', alignItems: 'center', gap: 3, fontWeight: 700 }}>
-                          Pending verification
-                        </div>
-                      ) : (
-                        <div style={{ fontSize: 10.5, color: '#10B981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: 10, border: '1px solid rgba(16, 185, 129, 0.25)', display: 'inline-flex', alignItems: 'center', gap: 3, fontWeight: 700 }}>
-                          <CheckCircle2 size={11} /> Verified
-                        </div>
-                      )}
+                      <div style={{ fontSize: 10.5, color: '#10B981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: 10, border: '1px solid rgba(16, 185, 129, 0.25)', display: 'inline-flex', alignItems: 'center', gap: 3, fontWeight: 700 }}>
+                        <CheckCircle2 size={11} /> Active
+                      </div>
                     </div>
 
                     <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -899,37 +864,6 @@ export default function Platforms() {
                       }}>
                         <RefreshCw size={12} className={syncFeedbackMap.leetcode.type === 'loading' ? 'spin' : ''} />
                         {syncFeedbackMap.leetcode.message}
-                      </div>
-                    )}
-
-                    {(!lcConn?.ownershipVerified && !lcConn?.ownership_verified) && (
-                      <div style={{ marginTop: 8, padding: '8px 10px', background: 'rgba(245, 158, 11, 0.08)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(245, 158, 11, 0.25)', fontSize: 11 }}>
-                        {(lcConn?.verification_token || lcConn?.verificationToken) ? (
-                          <>
-                            <div style={{ fontWeight: 700, color: '#D97706', marginBottom: 2 }}>
-                              Verification Code: <code style={{ background: 'var(--bg-hover)', padding: '2px 6px', borderRadius: 4, color: 'var(--color-text)' }}>{lcConn.verification_token || lcConn.verificationToken}</code>
-                            </div>
-                            <div style={{ color: 'var(--color-text-muted)', marginBottom: 6 }}>
-                              Set your LeetCode Name/Real Name to this code and click Verify.
-                            </div>
-                          </>
-                        ) : (
-                          <div style={{ color: 'var(--color-text-muted)', marginBottom: 6 }}>
-                            Click Verify to check your LeetCode profile ownership.
-                          </div>
-                        )}
-                        {!isNonStudent && (
-                          <button
-                            type="button"
-                            className="btn btn-primary btn-xs"
-                            onClick={handleVerifyLeetCode}
-                            disabled={verifyingMap.leetcode}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700 }}
-                          >
-                            <CheckCircle2 size={12} />
-                            {verifyingMap.leetcode ? 'Verifying...' : 'Verify LeetCode'}
-                          </button>
-                        )}
                       </div>
                     )}
                   </div>
@@ -1022,10 +956,6 @@ export default function Platforms() {
                     <span className="badge" style={{ background: 'var(--bg-hover)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)', fontSize: 10.5, fontWeight: 700 }}>
                       NOT CONNECTED
                     </span>
-                  ) : (!gfgConn?.ownershipVerified && !gfgConn?.ownership_verified) ? (
-                    <span className="badge" style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#D97706', border: '1px solid rgba(234, 179, 8, 0.3)', fontSize: 10.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      <AlertTriangle size={11} /> PENDING VERIFICATION
-                    </span>
                   ) : gfgStatus === 'sync_error' ? (
                     <span className="badge" style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#D97706', border: '1px solid rgba(234, 179, 8, 0.3)', fontSize: 10.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                       <AlertTriangle size={11} /> SYNC ERROR
@@ -1048,15 +978,9 @@ export default function Platforms() {
                           <ExternalLink size={13} />
                         </a>
                       </div>
-                      {(!gfgConn?.ownershipVerified && !gfgConn?.ownership_verified) ? (
-                        <div style={{ fontSize: 10.5, color: '#D97706', background: 'rgba(234, 179, 8, 0.1)', padding: '2px 8px', borderRadius: 10, border: '1px solid rgba(234, 179, 8, 0.25)', display: 'inline-flex', alignItems: 'center', gap: 3, fontWeight: 700 }}>
-                          Pending verification
-                        </div>
-                      ) : (
-                        <div style={{ fontSize: 10.5, color: '#10B981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: 10, border: '1px solid rgba(16, 185, 129, 0.25)', display: 'inline-flex', alignItems: 'center', gap: 3, fontWeight: 700 }}>
-                          <CheckCircle2 size={11} /> Verified
-                        </div>
-                      )}
+                      <div style={{ fontSize: 10.5, color: '#10B981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: 10, border: '1px solid rgba(16, 185, 129, 0.25)', display: 'inline-flex', alignItems: 'center', gap: 3, fontWeight: 700 }}>
+                        <CheckCircle2 size={11} /> Active
+                      </div>
                     </div>
 
                     <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -1090,13 +1014,6 @@ export default function Platforms() {
                       }}>
                         <RefreshCw size={12} className={syncFeedbackMap.geeksforgeeks.type === 'loading' ? 'spin' : ''} />
                         {syncFeedbackMap.geeksforgeeks.message}
-                      </div>
-                    )}
-
-                    {(!gfgConn?.ownershipVerified && !gfgConn?.ownership_verified) && (
-                      <div style={{ marginTop: 8, padding: '6px 10px', background: 'var(--bg-hover)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)', fontSize: 11, color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <Shield size={12} style={{ color: '#F59E0B', flexShrink: 0 }} />
-                        <span>Requires faculty/admin verification</span>
                       </div>
                     )}
                   </div>
@@ -1189,10 +1106,6 @@ export default function Platforms() {
                     <span className="badge" style={{ background: 'var(--bg-hover)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)', fontSize: 10.5, fontWeight: 700 }}>
                       NOT CONNECTED
                     </span>
-                  ) : (!hrConn?.ownershipVerified && !hrConn?.ownership_verified) ? (
-                    <span className="badge" style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#D97706', border: '1px solid rgba(234, 179, 8, 0.3)', fontSize: 10.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      <AlertTriangle size={11} /> PENDING VERIFICATION
-                    </span>
                   ) : hrStatus === 'sync_error' ? (
                     <span className="badge" style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#D97706', border: '1px solid rgba(234, 179, 8, 0.3)', fontSize: 10.5, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                       <AlertTriangle size={11} /> SYNC ERROR
@@ -1215,15 +1128,9 @@ export default function Platforms() {
                           <ExternalLink size={13} />
                         </a>
                       </div>
-                      {(!hrConn?.ownershipVerified && !hrConn?.ownership_verified) ? (
-                        <div style={{ fontSize: 10.5, color: '#D97706', background: 'rgba(234, 179, 8, 0.1)', padding: '2px 8px', borderRadius: 10, border: '1px solid rgba(234, 179, 8, 0.25)', display: 'inline-flex', alignItems: 'center', gap: 3, fontWeight: 700 }}>
-                          Pending verification
-                        </div>
-                      ) : (
-                        <div style={{ fontSize: 10.5, color: '#10B981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: 10, border: '1px solid rgba(16, 185, 129, 0.25)', display: 'inline-flex', alignItems: 'center', gap: 3, fontWeight: 700 }}>
-                          <CheckCircle2 size={11} /> Verified
-                        </div>
-                      )}
+                      <div style={{ fontSize: 10.5, color: '#10B981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: 10, border: '1px solid rgba(16, 185, 129, 0.25)', display: 'inline-flex', alignItems: 'center', gap: 3, fontWeight: 700 }}>
+                        <CheckCircle2 size={11} /> Active
+                      </div>
                     </div>
 
                     <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>

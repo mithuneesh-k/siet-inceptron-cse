@@ -51,24 +51,23 @@ function generateVerificationToken() {
 
 function formatConnectionObj(conn) {
   if (!conn) return null;
-  const isVerified = Boolean(conn.ownership_verified);
   const metrics = conn.metrics || {};
-  const scoreObj = calculatePlatformScore(metrics, isVerified);
+  const scoreObj = calculatePlatformScore(metrics, true);
 
   return {
     id: conn.id,
     platformCode: conn.platform_code,
     handle: conn.handle,
     normalizedHandle: conn.normalized_handle,
-    ownershipVerified: isVerified,
-    status: conn.status,
+    ownershipVerified: true,
+    status: conn.status || 'connected',
     metrics: metrics,
     competitiveContribution: scoreObj.totalScore,
     competitive_contribution: scoreObj.totalScore,
     lastSyncedAt: conn.last_synced_at,
     lastAttemptedAt: conn.last_attempted_at,
     lastErrorCode: conn.last_error_code,
-    verificationToken: conn.ownership_verified ? null : (conn.verification_token || null)
+    verificationToken: null
   };
 }
 
@@ -230,9 +229,6 @@ async function connectPlatform(userId, platformCode, rawHandle) {
       return { status: 400, error: 'LeetCode handle not found.' };
     }
 
-    const verificationToken = generateVerificationToken();
-    const verificationExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-
     const savePayload = {
       userId,
       platformCode: 'leetcode',
@@ -240,9 +236,9 @@ async function connectPlatform(userId, platformCode, rawHandle) {
       normalizedHandle: adapterResult.normalizedHandle,
       metrics: adapterResult.metrics,
       status: 'connected',
-      ownershipVerified: isChangingHandle ? false : Boolean(studentCurrentConn?.ownership_verified),
-      verificationToken: isChangingHandle || !studentCurrentConn?.ownership_verified ? verificationToken : null,
-      verificationExpiresAt: isChangingHandle || !studentCurrentConn?.ownership_verified ? verificationExpiresAt : null,
+      ownershipVerified: true,
+      verificationToken: null,
+      verificationExpiresAt: null,
       lastSyncedAt: null,
       lastAttemptedAt: now,
       lastErrorCode: null

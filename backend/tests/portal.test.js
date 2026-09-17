@@ -425,11 +425,11 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
     assert.strictEqual(cacheKeyB.includes('adv_b'), true);
   });
 
-  test('48. Unverified platform connections score zero points', () => {
+  test('48. Error or disconnected platform connections score zero points', () => {
     const { calculateUserCompetitiveScore } = require('../services/competitiveScoreService');
     const connections = [
-      { platform_code: 'leetcode', handle: 'user1', ownership_verified: false, metrics: { easySolved: 10, mediumSolved: 5 } },
-      { platform_code: 'geeksforgeeks', handle: 'user1', ownership_verified: false, metrics: { easySolved: 10 } }
+      { platform_code: 'leetcode', handle: 'user1', status: 'sync_error', metrics: { easySolved: 10, mediumSolved: 5 } },
+      { platform_code: 'geeksforgeeks', handle: 'user1', status: 'disconnected', metrics: { easySolved: 10 } }
     ];
 
     const result = calculateUserCompetitiveScore(connections);
