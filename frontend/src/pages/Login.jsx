@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Eye, EyeOff, Lock, User, ArrowRight, AlertCircle } from 'lucide-react';
+import HalftoneInteractiveHero from '../components/HalftoneInteractiveHero';
 
 export default function Login() {
   const { login } = useAuth();
@@ -27,8 +28,8 @@ export default function Login() {
 
   return (
     <div className="auth-07-container">
-      {/* LEFT PANEL: Black-and-White Halftone Artwork Background Only */}
-      <div className="auth-07-hero" aria-label="Inceptron Artwork" />
+      {/* LEFT PANEL: Black-and-White Interactive Halftone Artwork */}
+      <HalftoneInteractiveHero src="/real inceptron.png" />
 
       {/* RIGHT PANEL: Authentication Form */}
       <div className="auth-07-form-wrapper">
