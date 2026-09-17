@@ -165,7 +165,7 @@ export default function Login() {
       <div ref={overlayRef} className="intro-viewport">
         <img
           ref={artworkRef}
-          src="/main.png"
+          src="/module.png"
           alt="SIET Inceptron Artwork"
           className="intro-artwork"
         />
@@ -182,7 +182,7 @@ export default function Login() {
           <div className="auth-07-left-panel">
             {/* LAYER 1: Primary High-Resolution Static Artwork Image (Full Bleed Option A) */}
             <img
-              src="/main.png"
+              src="/module.png"
               alt="SIET Inceptron Halftone Artwork"
               className="auth-07-art-image"
             />
