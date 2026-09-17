@@ -7,6 +7,9 @@ import {
   RefreshCw, ExternalLink, Copy, Check
 } from 'lucide-react';
 
+const BATCH_OPTIONS = ['2026-2030', '2025-2029', '2024-2028', '2023-2027', '2022-2026'];
+const CLASS_OPTIONS = ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D', 'CSE-E'];
+
 export default function CompetitiveLeaderboard() {
   const { user } = useAuth();
 
@@ -453,17 +456,16 @@ export default function CompetitiveLeaderboard() {
 
               <select className="form-select" value={batchFilter} onChange={e => setBatchFilter(e.target.value)} style={{ fontSize: 12.5, padding: '6px 12px', height: 38, borderRadius: 'var(--radius-md)' }}>
                 <option value="all">All Batches</option>
-                <option value="2021-2025">2021-2025</option>
-                <option value="2022-2026">2022-2026</option>
-                <option value="2023-2027">2023-2027</option>
-                <option value="2024-2028">2024-2028</option>
+                {BATCH_OPTIONS.map(b => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
               </select>
 
               <select className="form-select" value={classFilter} onChange={e => setClassFilter(e.target.value)} style={{ fontSize: 12.5, padding: '6px 12px', height: 38, borderRadius: 'var(--radius-md)' }}>
                 <option value="all">All Classes</option>
-                <option value="CSE-A">CSE-A</option>
-                <option value="CSE-B">CSE-B</option>
-                <option value="CSE-C">CSE-C</option>
+                {CLASS_OPTIONS.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
               </select>
 
             </div>
@@ -471,7 +473,7 @@ export default function CompetitiveLeaderboard() {
 
           {filteredLeaderboard.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '48px 20px', color: 'var(--color-text-muted)' }}>
-              No students match the selected filters or search query.
+              No students found for the selected filters.
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>

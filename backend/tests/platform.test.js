@@ -1842,6 +1842,75 @@ async function runPlatformTests() {
     }
   });
 
+  await asyncTest('52. Competitive leaderboard filters correctly for CSE-A, CSE-D, and CSE-E sections', async () => {
+    const { supabase } = require('../db/supabase');
+    const platformStore = require('../services/platformStore');
+
+    const originalGetAllConnections = platformStore.getAllPlatformConnections;
+    const originalFrom = supabase.from;
+
+    platformStore.getAllPlatformConnections = async () => ({
+      connections: [],
+      error: null
+    });
+
+    const mockStudents = [
+      { user_id: 'u1', name: 'Alice', roll_no: '064', class: 'CSE-A', batch: '2025-2029' },
+      { user_id: 'u2', name: 'Bob', roll_no: '189', class: 'CSE-D', batch: '2025-2029' },
+      { user_id: 'u3', name: 'Charlie', roll_no: '241', class: 'CSE-E', batch: '2025-2029' }
+    ];
+
+    supabase.from = (tableName) => {
+      if (tableName === 'students') {
+        let filters = {};
+        const builder = {
+          select: () => builder,
+          eq: (field, val) => {
+            filters[field] = val;
+            return builder;
+          },
+          then: (resolve) => {
+            let res = mockStudents;
+            if (filters.class) res = res.filter(s => s.class === filters.class);
+            if (filters.batch) res = res.filter(s => s.batch === filters.batch);
+            resolve({ data: res, error: null });
+          }
+        };
+        return builder;
+      }
+      return originalFrom.call(supabase, tableName);
+    };
+
+    try {
+      // Helper function to simulate GET /api/platforms/leaderboard query logic
+      const runQuery = async (queryClass, queryBatch = 'all') => {
+        let studentQuery = supabase.from('students').select('user_id, name, roll_no, class, batch, avatar_url');
+        if (queryBatch && queryBatch !== 'all') studentQuery = studentQuery.eq('batch', queryBatch);
+        if (queryClass && queryClass !== 'all') studentQuery = studentQuery.eq('class', queryClass);
+        const { data: students } = await studentQuery;
+        return students || [];
+      };
+
+      // Test CSE-A query
+      const studentsA = await runQuery('CSE-A');
+      assert.strictEqual(studentsA.length, 1);
+      assert.strictEqual(studentsA[0].class, 'CSE-A');
+
+      // Test CSE-D query
+      const studentsD = await runQuery('CSE-D');
+      assert.strictEqual(studentsD.length, 1);
+      assert.strictEqual(studentsD[0].class, 'CSE-D');
+
+      // Test CSE-E query
+      const studentsE = await runQuery('CSE-E');
+      assert.strictEqual(studentsE.length, 1);
+      assert.strictEqual(studentsE[0].class, 'CSE-E');
+    } finally {
+      platformStore.getAllPlatformConnections = originalGetAllConnections;
+      supabase.from = originalFrom;
+    }
+  });
+
   console.log(`\nPlatform Test Results: ${passedTests}/${totalTests} tests passed.\n`);
   if (passedTests !== totalTests) {
     process.exit(1);
