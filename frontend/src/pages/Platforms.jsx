@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import ConfirmModal from '../components/ConfirmModal';
 import {
   Code, RefreshCw, Unlink, CheckCircle2, AlertTriangle,
-  ExternalLink, Eye, BarChart2
+  ExternalLink, Eye, BarChart2, Shield
 } from 'lucide-react';
 
 // ─── 1. SCORE CONTRIBUTION HORIZONTAL VISUALIZATION COMPONENT ──────────────────
@@ -17,18 +17,13 @@ function ScoreContributionChart({ platforms }) {
   ];
 
   const connectedList = platformConfigs.map(cfg => {
-    const p = platforms.find(item => item.code === cfg.code);
+    const p = (platforms || []).find(item => item.code === cfg.code);
     const conn = p?.connection;
     const isConnected = Boolean(conn);
     const isVerified = Boolean(conn?.ownershipVerified ?? conn?.ownership_verified);
 
-    let score = 0;
-    if (isConnected && isVerified && conn?.metrics) {
-      const easy = typeof conn.metrics.easySolved === 'number' && conn.metrics.easySolved >= 0 ? conn.metrics.easySolved : 0;
-      const med = typeof conn.metrics.mediumSolved === 'number' && conn.metrics.mediumSolved >= 0 ? conn.metrics.mediumSolved : 0;
-      const hard = typeof conn.metrics.hardSolved === 'number' && conn.metrics.hardSolved >= 0 ? conn.metrics.hardSolved : 0;
-      score = easy * 10 + med * 20 + hard * 30;
-    }
+    // Consume canonical score computed by backend (NO React arithmetic formulas)
+    const score = isConnected ? (p?.competitiveContribution ?? conn?.competitiveContribution ?? conn?.competitive_contribution ?? 0) : 0;
 
     return {
       ...cfg,
@@ -294,6 +289,7 @@ export default function Platforms() {
       setConfigMessage(data.message || '');
       const fetchedPlatforms = data.platforms || [];
       setPlatforms(fetchedPlatforms);
+      setLoading(false);
 
       // Auto-sync stale platforms for authenticated student only
       if (!isNonStudent && !autoSyncRan.current) {
@@ -314,8 +310,7 @@ export default function Platforms() {
             }));
           });
 
-          try {
-            const syncRes = await client.post('/platforms/sync-stale');
+          client.post('/platforms/sync-stale').then(syncRes => {
             const syncData = syncRes.data || {};
             if (syncData.state?.platforms) {
               setPlatforms(syncData.state.platforms);
@@ -344,7 +339,7 @@ export default function Platforms() {
                 setSyncFeedbackMap(prev => ({ ...prev, [code]: null }));
               });
             }
-          } catch (syncErr) {
+          }).catch(syncErr => {
             console.error('Auto-sync stale failed:', syncErr);
             staleCodes.forEach(code => {
               setSyncFeedbackMap(prev => ({
@@ -352,13 +347,12 @@ export default function Platforms() {
                 [code]: { type: 'error', message: 'Could not refresh latest stats. Showing last synced data.' }
               }));
             });
-          }
+          });
         }
       }
     } catch (err) {
       console.error('Failed to fetch platforms state:', err);
       setErrorMsg(err.response?.data?.error || 'Failed to load platforms data.');
-    } finally {
       setLoading(false);
     }
   };
@@ -465,17 +459,18 @@ export default function Platforms() {
       }
     } catch (err) {
       const isCooldown = err.response?.status === 429 || err.response?.data?.cooldown;
-      const msg = err.response?.data?.error || `Failed to sync ${pName} data.`;
-      setSyncFeedbackMap(prev => ({
-        ...prev,
-        [pCode]: {
-          type: isCooldown ? 'cooldown' : 'error',
-          message: msg
-        }
-      }));
-      // ONLY show toast for genuine errors, NOT for rate-limit cooldowns
       if (!isCooldown) {
+        const msg = err.response?.data?.error || `Failed to sync ${pName} data.`;
+        setSyncFeedbackMap(prev => ({
+          ...prev,
+          [pCode]: {
+            type: 'error',
+            message: msg
+          }
+        }));
         showToast(msg, 'error');
+      } else {
+        setSyncFeedbackMap(prev => ({ ...prev, [pCode]: null }));
       }
     } finally {
       setSyncingMap(prev => ({ ...prev, [pCode]: false }));

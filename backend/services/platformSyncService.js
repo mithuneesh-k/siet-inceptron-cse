@@ -3,6 +3,7 @@ const codeforcesAdapter = require('../platforms/codeforcesAdapter');
 const leetcodeAdapter = require('../platforms/leetcodeAdapter');
 const geeksforgeeksAdapter = require('../platforms/geeksforgeeksAdapter');
 const hackerRankAdapter = require('../platforms/hackerRankAdapter');
+const { calculatePlatformScore } = require('./competitiveScoreService');
 
 const SYNC_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
 const STALE_THRESHOLD_MS = 30 * 60 * 1000; // 30 minutes
@@ -50,14 +51,20 @@ function generateVerificationToken() {
 
 function formatConnectionObj(conn) {
   if (!conn) return null;
+  const isVerified = Boolean(conn.ownership_verified);
+  const metrics = conn.metrics || {};
+  const scoreObj = calculatePlatformScore(metrics, isVerified);
+
   return {
     id: conn.id,
     platformCode: conn.platform_code,
     handle: conn.handle,
     normalizedHandle: conn.normalized_handle,
-    ownershipVerified: Boolean(conn.ownership_verified),
+    ownershipVerified: isVerified,
     status: conn.status,
-    metrics: conn.metrics || {},
+    metrics: metrics,
+    competitiveContribution: scoreObj.totalScore,
+    competitive_contribution: scoreObj.totalScore,
     lastSyncedAt: conn.last_synced_at,
     lastAttemptedAt: conn.last_attempted_at,
     lastErrorCode: conn.last_error_code,
@@ -79,6 +86,8 @@ async function getPlatformsState(userId) {
       platforms: SUPPORTED_PLATFORMS.map(p => ({
         ...p,
         connectionStatus: p.status === 'active' ? 'not_connected' : 'coming_soon',
+        competitiveContribution: 0,
+        competitive_contribution: 0,
         connection: null
       }))
     };
@@ -91,6 +100,8 @@ async function getPlatformsState(userId) {
       return {
         ...p,
         connectionStatus: 'coming_soon',
+        competitiveContribution: 0,
+        competitive_contribution: 0,
         connection: null
       };
     }
@@ -100,14 +111,21 @@ async function getPlatformsState(userId) {
       return {
         ...p,
         connectionStatus: 'not_connected',
+        competitiveContribution: 0,
+        competitive_contribution: 0,
         connection: null
       };
     }
 
+    const formattedConn = formatConnectionObj(conn);
+    const contribution = formattedConn ? formattedConn.competitiveContribution : 0;
+
     return {
       ...p,
       connectionStatus: conn.status || 'connected',
-      connection: formatConnectionObj(conn)
+      competitiveContribution: contribution,
+      competitive_contribution: contribution,
+      connection: formattedConn
     };
   });
 
