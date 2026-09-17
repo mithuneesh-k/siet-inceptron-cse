@@ -37,7 +37,7 @@ export default function Login() {
 
         <div className="auth-07-hero-header">
           <div className="auth-07-brand">
-            <img src="/inceptron-logo.png" alt="Inceptron Logo" className="auth-07-brand-logo" />
+            <img src="/real inceptron.png" alt="SIET Inceptron Logo" className="auth-07-brand-logo" />
             <div className="auth-07-brand-text">
               <span className="auth-07-brand-name">SIET INCEPTRON</span>
               <span className="auth-07-brand-badge">CSE PORTAL</span>
@@ -54,6 +54,7 @@ export default function Login() {
             Empowering <br />
             <span className="auth-07-hero-highlight">Technical Excellence</span>
           </h1>
+
           <p className="auth-07-hero-subtitle">
             Department of Computer Science & Engineering. Access real-time competitive leaderboards, track achievements, and sync platform performance in one unified portal.
           </p>
@@ -90,7 +91,7 @@ export default function Login() {
         <div className="auth-07-card">
           {/* Mobile Header */}
           <div className="auth-07-mobile-header">
-            <img src="/inceptron-logo.png" alt="Inceptron Logo" className="auth-07-mobile-logo" />
+            <img src="/real inceptron.png" alt="SIET Inceptron Logo" className="auth-07-mobile-logo" />
             <span className="auth-07-mobile-brand">SIET INCEPTRON</span>
           </div>
 
@@ -216,15 +217,22 @@ export default function Login() {
 
         /* Hero Left Panel (auth-07) */
         .auth-07-hero {
-          flex: 1.1;
+          flex: 1.3;
           position: relative;
           display: flex;
           flex-direction: column;
           justify-content: space-between;
           padding: 56px 64px;
-          background: #072a01;
+          background-color: #051a02;
+          background-image:
+            linear-gradient(135deg, rgba(5, 30, 2, 0.74) 0%, rgba(7, 42, 1, 0.84) 100%),
+            url('/real inceptron.png');
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
           color: #ffffff;
           overflow: hidden;
+          min-height: 100vh;
         }
 
         .auth-07-hero-bg {
@@ -240,7 +248,7 @@ export default function Login() {
           right: -10%;
           width: 500px;
           height: 500px;
-          background: radial-gradient(circle, rgba(42, 125, 20, 0.45) 0%, rgba(7, 42, 1, 0) 70%);
+          background: radial-gradient(circle, rgba(42, 125, 20, 0.35) 0%, rgba(7, 42, 1, 0) 70%);
           border-radius: 50%;
           filter: blur(40px);
         }
@@ -251,7 +259,7 @@ export default function Login() {
           left: -10%;
           width: 600px;
           height: 600px;
-          background: radial-gradient(circle, rgba(212, 155, 0, 0.22) 0%, rgba(7, 42, 1, 0) 70%);
+          background: radial-gradient(circle, rgba(212, 155, 0, 0.18) 0%, rgba(7, 42, 1, 0) 70%);
           border-radius: 50%;
           filter: blur(60px);
         }
@@ -316,14 +324,15 @@ export default function Login() {
           align-items: center;
           gap: 8px;
           padding: 6px 14px;
-          background: rgba(255, 255, 255, 0.08);
-          border: 1px solid rgba(255, 255, 255, 0.15);
+          background: rgba(0, 0, 0, 0.35);
+          border: 1px solid rgba(255, 255, 255, 0.2);
           border-radius: 9999px;
           font-size: 12px;
           font-weight: 600;
           color: #d5efc8;
           margin-bottom: 24px;
-          backdrop-filter: blur(8px);
+          backdrop-filter: blur(12px);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
 
         .auth-07-hero-title {
@@ -334,6 +343,7 @@ export default function Login() {
           letter-spacing: -0.02em;
           margin-bottom: 18px;
           color: #ffffff;
+          text-shadow: 0 2px 10px rgba(0,0,0,0.4);
         }
 
         .auth-07-hero-highlight {
@@ -345,8 +355,9 @@ export default function Login() {
         .auth-07-hero-subtitle {
           font-size: 15px;
           line-height: 1.6;
-          color: rgba(255, 255, 255, 0.78);
+          color: rgba(255, 255, 255, 0.92);
           margin-bottom: 36px;
+          text-shadow: 0 1px 4px rgba(0,0,0,0.5);
         }
 
         .auth-07-feature-list {
@@ -360,15 +371,17 @@ export default function Login() {
           align-items: flex-start;
           gap: 14px;
           padding: 14px 18px;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          background: rgba(5, 30, 2, 0.55);
+          border: 1px solid rgba(255, 255, 255, 0.15);
           border-radius: 12px;
-          backdrop-filter: blur(10px);
-          transition: transform 0.2s ease, background 0.2s ease;
+          backdrop-filter: blur(12px);
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+          transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
         }
 
         .auth-07-feature-item:hover {
-          background: rgba(255, 255, 255, 0.09);
+          background: rgba(7, 42, 1, 0.75);
+          border-color: rgba(240, 180, 0, 0.35);
           transform: translateX(4px);
         }
 

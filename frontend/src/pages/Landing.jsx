@@ -122,7 +122,7 @@ export default function Landing() {
         <div className="container">
           <div className="lp-hero-inner animate-fadeInUp">
             <div className="lp-hero-logo-col">
-              <img src="/inceptron-logo.png" alt="Inceptron Logo" className="lp-hero-logo-img" />
+              <img src="/real inceptron.png" alt="Real Inceptron Logo" className="lp-hero-logo-img" />
             </div>
             <div className="lp-hero-text">
               <div className="lp-pill">
