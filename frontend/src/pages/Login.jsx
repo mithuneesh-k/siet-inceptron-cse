@@ -29,14 +29,14 @@ export default function Login() {
   return (
     <div className="auth-07-container">
       {/* LEFT PANEL: Black-and-White Interactive Halftone Artwork */}
-      <HalftoneInteractiveHero src="/real inceptron widescreen light.png" scale={0.85} />
+      <HalftoneInteractiveHero src="/real inceptron clean.png" scale={0.78} />
 
       {/* RIGHT PANEL: Authentication Form */}
       <div className="auth-07-form-wrapper">
         <div className="auth-07-card">
           {/* Mobile Header */}
           <div className="auth-07-mobile-header">
-            <img src="/real inceptron widescreen light.png" alt="SIET Inceptron Logo" className="auth-07-mobile-logo" />
+            <img src="/real inceptron clean.png" alt="SIET Inceptron Logo" className="auth-07-mobile-logo" />
             <span className="auth-07-mobile-brand">SIET INCEPTRON</span>
           </div>
 
@@ -156,8 +156,8 @@ export default function Login() {
           display: flex;
           min-height: 100vh;
           width: 100%;
-          background-color: #eef0f2;
-          background-image: url('/real inceptron widescreen light.png');
+          background-color: #f0f2f4;
+          background-image: url('/real inceptron clean.png');
           background-size: cover;
           background-position: center center;
           background-repeat: no-repeat;

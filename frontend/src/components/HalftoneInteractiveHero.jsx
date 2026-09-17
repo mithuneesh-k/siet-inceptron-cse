@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-export default function HalftoneInteractiveHero({ src = '/real inceptron widescreen light.png', scale = 0.85 }) {
+export default function HalftoneInteractiveHero({ src = '/real inceptron clean.png', scale = 0.78 }) {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const animationFrameRef = useRef(null);
@@ -56,7 +56,7 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron widescr
 
       const imgData = offCtx.getImageData(0, 0, sampleW, sampleH).data;
 
-      // Full-bleed cover object-fit calculation with scale factor to make artwork slightly smaller
+      // Full-bleed cover object-fit calculation with controlled scale factor (0.78) for clean composition
       const containerAspect = width / height;
       const imgAspect = img.naturalWidth / img.naturalHeight;
       let fullW = width;
@@ -72,7 +72,7 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron widescr
 
       const imgW = fullW * scale;
       const imgH = fullH * scale;
-      const imgX = (width - imgW) * 0.35; // slightly offset towards left
+      const imgX = (width - imgW) * 0.32; // centered in left panel area with breathing room
       const imgY = (height - imgH) / 2;
 
       // Grid step for particle sampling across background
@@ -85,6 +85,13 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron widescr
           const sampleY = Math.floor(((y - imgY) / imgH) * sampleH);
 
           if (sampleX >= 0 && sampleX < sampleW && sampleY >= 0 && sampleY < sampleH) {
+            // EXCLUDE WORDMARK REGION: Keep "INCEPTRON" text area completely free of dots
+            // The wordmark sits in sampleY between 70% and 94% of the artwork height on the left
+            const isWordmarkRegion = sampleY >= sampleH * 0.70 && sampleY <= sampleH * 0.94 && sampleX < sampleW * 0.58;
+            if (isWordmarkRegion) {
+              continue; // Do not place dots over INCEPTRON text! Keep text 100% crisp and readable.
+            }
+
             const idx = (sampleY * sampleW + sampleX) * 4;
 
             const r = imgData[idx];
@@ -92,7 +99,12 @@ export default function HalftoneInteractiveHero({ src = '/real inceptron widescr
             const b = imgData[idx + 2];
             const brightness = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
 
-            const maxRadius = gridStep * 0.38; // slightly smaller dots for reduced darkness
+            // Only generate dots for cloud/halftone textures, not extreme highlights/shadows
+            if (brightness > 0.92 || brightness < 0.12) {
+              continue;
+            }
+
+            const maxRadius = gridStep * 0.35;
             const radius = (1 - brightness) * maxRadius;
 
             if (radius > 0.45) {
