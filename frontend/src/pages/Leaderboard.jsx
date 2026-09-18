@@ -258,7 +258,7 @@ export default function Leaderboard() {
         /* Podium — flat 2D */
         .podium { display: flex; justify-content: center; align-items: flex-end; gap: 16px; margin-bottom: 40px; }
         .podium-col { display: flex; flex-direction: column; align-items: center; }
-        .podium-student { padding: 16px 14px; border: 2px solid var(--border); border-radius: var(--radius-lg); text-align: center; text-decoration: none; color: inherit; transition: border-color var(--transition); min-width: 130px; background: #fff; }
+        .podium-student { padding: 16px 14px; border: 2px solid var(--border); border-radius: var(--radius-lg); text-align: center; text-decoration: none; color: inherit; transition: border-color var(--transition); min-width: 130px; background: var(--portal-surface); }
         .podium-student:hover { border-color: var(--color-green); }
         .podium-ava { width: 60px; height: 60px; background: var(--color-green); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; color: #fff; margin: 0 auto 8px; }
         .podium-sname { font-size: 14px; font-weight: 700; margin-bottom: 2px; color: var(--color-text); }
@@ -277,7 +277,7 @@ export default function Leaderboard() {
         .lb-table-header { display: grid; grid-template-columns: 60px 2fr 100px 70px 120px 100px; gap: 12px; padding: 12px 20px; background: var(--bg-primary); font-size: 11px; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 1.5px solid var(--border); }
         .lb-row { display: grid; grid-template-columns: 60px 2fr 100px 70px 120px 100px; gap: 12px; padding: 13px 20px; border-bottom: 1px solid var(--border); align-items: center; text-decoration: none; color: inherit; transition: background var(--transition); animation: fadeInUp 0.3s ease both; }
         .lb-row:last-child { border-bottom: none; }
-        .lb-row:hover { background: var(--green-50); }
+        .lb-row:hover { background: var(--portal-surface-2); }
         .lb-rank-container { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; }
         .lb-rank { font-size: 14px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; color: var(--color-text-muted); line-height: 1; }
         .lb-student { display: flex; align-items: center; gap: 10px; }

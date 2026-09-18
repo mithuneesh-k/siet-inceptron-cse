@@ -1,19 +1,19 @@
-/* ─── Navbar — Green Background with White Text ─────────────────── */
+/* ─── Navbar — Deep SIET Green Background with Active Indicators ─────────────────── */
 .navbar {
   position: fixed;
   top: 0; left: 0; right: 0;
   height: var(--navbar-height);
-  background: #004d00;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
+  background: var(--portal-navbar);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
   z-index: 1000;
   transition: all var(--transition);
 }
 
 .navbar.scrolled {
-  background: #004d00;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  background: #064d12;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 .navbar-inner {
@@ -23,7 +23,7 @@
   height: 100%;
   display: flex;
   align-items: center;
-  gap: 28px;
+  gap: 24px;
 }
 
 /* Brand */
@@ -33,16 +33,19 @@
   gap: 10px;
   flex-shrink: 0;
   text-decoration: none;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.95);
   padding: 6px 14px 6px 6px;
   border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: transform var(--transition);
+}
+.navbar-brand:hover {
+  transform: translateY(-1px);
 }
 .brand-logo {
-  width: 40px; height: 40px;
+  width: 38px; height: 38px;
   background: transparent;
   display: flex; align-items: center; justify-content: center;
-  font-size: 18px;
   flex-shrink: 0;
   border-radius: 6px;
   overflow: hidden;
@@ -51,11 +54,11 @@
 .navbar-brand .brand-name {
   font-size: 14px; font-weight: 900;
   font-family: 'Space Grotesk', sans-serif;
-  color: #004d00;
+  color: #075714;
   letter-spacing: -0.01em;
 }
 .navbar-brand .brand-dept {
-  font-size: 9px; color: #2e7d32;
+  font-size: 9px; color: #1b5e20;
   font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
 }
 
@@ -73,31 +76,33 @@
   padding: 8px 16px;
   border-radius: var(--radius-sm);
   font-size: 14px; font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.88);
   transition: all var(--transition);
   text-decoration: none;
+  border: 1px solid transparent;
 }
 .nav-link:hover {
   color: #ffffff;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.15);
 }
 .nav-link.active {
-  color: #004d00;
-  background: #ffffff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  border: none;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   font-weight: 700;
 }
 .nav-icon { font-size: 14px; display: flex; align-items: center; }
 
 /* Actions */
-.navbar-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.navbar-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 
 .user-menu { display: flex; align-items: center; gap: 10px; }
 .user-chip {
   display: flex; align-items: center; gap: 10px;
   padding: 4px 14px 4px 4px;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.14);
   border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: var(--radius-md);
   text-decoration: none;
@@ -113,14 +118,14 @@
   background: #ffffff;
   border-radius: var(--radius-xs);
   display: flex; align-items: center; justify-content: center;
-  font-size: 13px; font-weight: 800; color: #004d00;
+  font-size: 13px; font-weight: 800; color: #075714;
 }
 .user-name { font-size: 13px; font-weight: 700; color: #ffffff; }
 
 .navbar-actions .btn-ghost {
   color: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.3);
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.12);
 }
 .navbar-actions .btn-ghost:hover {
   background: rgba(255, 255, 255, 0.25);
@@ -144,7 +149,7 @@
   .navbar-links {
     position: fixed;
     top: var(--navbar-height); left: 0; right: 0;
-    background: #004d00;
+    background: #064d12;
     border-bottom: 1.5px solid rgba(255, 255, 255, 0.15);
     flex-direction: column;
     padding: 12px;
@@ -154,6 +159,7 @@
     opacity: 0;
     pointer-events: none;
     transition: all var(--transition-slow);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   }
   .navbar-links.open { transform: translateY(0); opacity: 1; pointer-events: all; }
   .nav-link { padding: 12px 14px; }
@@ -166,7 +172,7 @@
 }
 
 .nav-pending-badge {
-  background: #DC2626;
+  background: #dc2626;
   color: #ffffff;
   font-size: 10px;
   font-weight: 800;
