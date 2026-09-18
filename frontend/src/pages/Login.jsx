@@ -363,10 +363,11 @@ export default function Login() {
         }
 
         .intro-artwork {
-          width: 100%;
-          height: 100%;
+          width: 100vw;
+          height: 100vh;
           object-fit: cover;
           object-position: center 30%; /* Shifted slightly up */
+          display: block;
           will-change: transform, opacity;
           transform-origin: 50% 30%;
         }
