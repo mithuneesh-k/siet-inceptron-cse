@@ -23,10 +23,125 @@ export default function Login() {
   const artworkRef = useRef(null);
   const loginStageRef = useRef(null);
   const hintRef = useRef(null);
+  const canvasRef = useRef(null);
 
   const handleEnterPortal = () => {
     targetProgressRef.current = 1;
   };
+
+  // Interactive Dot Grid Canvas (Repels dots when cursor moves over)
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    let width = (canvas.width = window.innerWidth);
+    let height = (canvas.height = window.innerHeight);
+
+    const gap = 28;
+    const particles = [];
+    for (let x = gap / 2; x < width; x += gap) {
+      for (let y = gap / 2; y < height; y += gap) {
+        particles.push({
+          x,
+          y,
+          originX: x,
+          originY: y,
+          radius: 1.5,
+        });
+      }
+    }
+
+    const mouse = { x: -1000, y: -1000, radius: 140 };
+
+    const handleMouseMove = (e) => {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+    };
+
+    const handleMouseLeave = () => {
+      mouse.x = -1000;
+      mouse.y = -1000;
+    };
+
+    const handleTouchMove = (e) => {
+      if (e.touches && e.touches[0]) {
+        mouse.x = e.touches[0].clientX;
+        mouse.y = e.touches[0].clientY;
+      }
+    };
+
+    const handleResize = () => {
+      if (!canvas) return;
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+      particles.length = 0;
+      for (let x = gap / 2; x < width; x += gap) {
+        for (let y = gap / 2; y < height; y += gap) {
+          particles.push({
+            x,
+            y,
+            originX: x,
+            originY: y,
+            radius: 1.5,
+          });
+        }
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseleave', handleMouseLeave);
+    window.addEventListener('touchmove', handleTouchMove);
+    window.addEventListener('resize', handleResize);
+
+    let frameId;
+    const draw = () => {
+      ctx.clearRect(0, 0, width, height);
+
+      const progress = currentProgressRef.current;
+      const canvasOpacity = Math.max(0, 1 - progress * 4);
+      if (canvasRef.current) {
+        canvasRef.current.style.opacity = canvasOpacity;
+      }
+
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        const dx = mouse.x - p.x;
+        const dy = mouse.y - p.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < mouse.radius) {
+          const force = (mouse.radius - distance) / mouse.radius;
+          const angle = Math.atan2(dy, dx);
+          const targetX = p.originX - Math.cos(angle) * force * 45;
+          const targetY = p.originY - Math.sin(angle) * force * 45;
+
+          p.x += (targetX - p.x) * 0.14;
+          p.y += (targetY - p.y) * 0.14;
+        } else {
+          p.x += (p.originX - p.x) * 0.08;
+          p.y += (p.originY - p.y) * 0.08;
+        }
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      frameId = requestAnimationFrame(draw);
+    };
+
+    frameId = requestAnimationFrame(draw);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseleave', handleMouseLeave);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   useEffect(() => {
     // Check prefers-reduced-motion
@@ -179,6 +294,7 @@ export default function Login() {
           alt="SIET Inceptron Artwork"
           className="intro-artwork"
         />
+        <canvas ref={canvasRef} className="intro-particle-canvas" />
         <div ref={hintRef} className="intro-actions-wrapper">
           <button
             type="button"
@@ -370,6 +486,16 @@ export default function Login() {
           display: block;
           will-change: transform, opacity;
           transform-origin: 50% 30%;
+        }
+
+        .intro-particle-canvas {
+          position: absolute;
+          inset: 0;
+          width: 100vw;
+          height: 100vh;
+          pointer-events: none;
+          z-index: 102;
+          transition: opacity 0.3s ease;
         }
 
         .intro-actions-wrapper {
