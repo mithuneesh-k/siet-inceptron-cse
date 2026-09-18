@@ -22,6 +22,10 @@ export default function Login() {
   const loginStageRef = useRef(null);
   const hintRef = useRef(null);
 
+  const handleEnterPortal = () => {
+    targetProgressRef.current = 1;
+  };
+
   useEffect(() => {
     // Check prefers-reduced-motion
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -37,17 +41,18 @@ export default function Login() {
       if (isCompletedRef.current) return;
 
       const diff = targetProgressRef.current - currentProgressRef.current;
-      currentProgressRef.current += diff * 0.08;
+      // Medium speed lerp rate (0.045 for smooth, medium-paced cinematic zoom transition)
+      currentProgressRef.current += diff * 0.045;
 
       const progress = currentProgressRef.current;
 
-      // 1. Zoom Transform targeting inner cube center (50% X, 36% Y)
+      // 1. Zoom Transform targeting inner cube center (slightly higher up at 50% X, 30% Y)
       const scale = 1 + Math.pow(progress, 1.3) * 6.5;
-      const translateY = -progress * 12;
+      const translateY = -progress * 8;
 
       if (artworkRef.current) {
         artworkRef.current.style.transform = `scale(${scale}) translateY(${translateY}%)`;
-        artworkRef.current.style.transformOrigin = '50% 36%';
+        artworkRef.current.style.transformOrigin = '50% 30%';
       }
 
       // 2. Opacity Fades
@@ -69,9 +74,12 @@ export default function Login() {
         loginStageRef.current.style.opacity = Math.min(1, loginOpacity);
       }
 
-      // Scroll hint fades quickly
+      // Actions wrapper & blue button fade out smoothly as zoom starts
       if (hintRef.current) {
-        hintRef.current.style.opacity = Math.max(0, 1 - progress * 15);
+        hintRef.current.style.opacity = Math.max(0, 1 - progress * 4);
+        if (progress > 0.2) {
+          hintRef.current.style.pointerEvents = 'none';
+        }
       }
 
       // Completion check
@@ -122,7 +130,7 @@ export default function Login() {
 
     const handleKeyDown = (e) => {
       if (isCompletedRef.current) return;
-      if (['ArrowDown', 'PageDown', 'Space'].includes(e.key)) {
+      if (['ArrowDown', 'PageDown', 'Space', 'Enter'].includes(e.key)) {
         e.preventDefault();
         targetProgressRef.current = Math.min(1, targetProgressRef.current + 0.25);
       } else if (['ArrowUp', 'PageUp'].includes(e.key)) {
@@ -165,13 +173,24 @@ export default function Login() {
       <div ref={overlayRef} className="intro-viewport">
         <img
           ref={artworkRef}
-          src="/module.png"
+          src="/main.png"
           alt="SIET Inceptron Artwork"
           className="intro-artwork"
         />
-        <div ref={hintRef} className="intro-scroll-hint">
-          <span>Scroll to enter</span>
-          <ChevronDown size={16} className="intro-hint-arrow" />
+        <div ref={hintRef} className="intro-actions-wrapper">
+          <button
+            type="button"
+            className="intro-welcome-btn"
+            onClick={handleEnterPortal}
+            aria-label="Welcome to Portal"
+          >
+            <span>Welcome to Portal</span>
+            <ArrowRight size={20} className="intro-btn-icon" />
+          </button>
+          <div className="intro-scroll-hint">
+            <span>Or scroll to enter</span>
+            <ChevronDown size={14} className="intro-hint-arrow" />
+          </div>
         </div>
       </div>
 
@@ -182,7 +201,7 @@ export default function Login() {
           <div className="auth-07-left-panel">
             {/* LAYER 1: Primary High-Resolution Static Artwork Image (Full Bleed Option A) */}
             <img
-              src="/module.png"
+              src="/main.png"
               alt="SIET Inceptron Halftone Artwork"
               className="auth-07-art-image"
             />
@@ -190,125 +209,243 @@ export default function Login() {
 
           {/* RIGHT PANEL: Authentication Form */}
           <div className="auth-07-form-wrapper">
-        <div className="auth-07-card">
-          {/* Mobile Header */}
-          <div className="auth-07-mobile-header">
-            <img src="/real inceptron.png" alt="SIET Inceptron Logo" className="auth-07-mobile-logo" />
-            <span className="auth-07-mobile-brand">SIET INCEPTRON</span>
-          </div>
-
-          <div className="auth-07-card-header">
-            <h2 className="auth-07-card-title">Welcome Back</h2>
-            <p className="auth-07-card-subtitle">Sign in to your SIET Inceptron account</p>
-          </div>
-
-          {error && (
-            <div className="auth-07-error-alert" role="alert">
-              <AlertCircle size={18} className="auth-07-error-icon" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="auth-07-form">
-            <div className="auth-07-field">
-              <label htmlFor="login-email" className="auth-07-label">
-                REGISTER NO
-              </label>
-              <div className="auth-07-input-wrapper">
-                <User size={18} className="auth-07-input-icon" />
-                <input
-                  id="login-email"
-                  type="text"
-                  className="auth-07-input"
-                  placeholder="714025104173"
-                  value={form.email}
-                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                  required
-                  autoComplete="username"
-                />
+            <div className="auth-07-card">
+              {/* Mobile Header */}
+              <div className="auth-07-mobile-header">
+                <img src="/real inceptron.png" alt="SIET Inceptron Logo" className="auth-07-mobile-logo" />
+                <span className="auth-07-mobile-brand">SIET INCEPTRON</span>
               </div>
-            </div>
 
-            <div className="auth-07-field">
-              <div className="auth-07-label-row">
-                <label htmlFor="login-password" className="auth-07-label">
-                  PASSWORD
-                </label>
+              <div className="auth-07-card-header">
+                <h2 className="auth-07-card-title">Welcome back</h2>
+                <p className="auth-07-card-subtitle">Sign in to pick up right where you left off.</p>
               </div>
-              <div className="auth-07-input-wrapper">
-                <Lock size={18} className="auth-07-input-icon" />
-                <input
-                  id="login-password"
-                  type={showPassword ? 'text' : 'password'}
-                  className="auth-07-input auth-07-input-password"
-                  placeholder="••••••••"
-                  value={form.password}
-                  onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-                  required
-                  autoComplete="current-password"
-                />
-                <button
-                  type="button"
-                  className="auth-07-password-toggle"
-                  onClick={() => setShowPassword(!showPassword)}
-                  tabIndex={-1}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </div>
 
-            <button
-              id="login-submit"
-              type="submit"
-              className="auth-07-submit-btn"
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <span className="auth-07-spinner" />
-                  <span>Signing In...</span>
-                </>
-              ) : (
-                <>
-                  <span>Sign In</span>
-                  <ArrowRight size={18} />
-                </>
+              {error && (
+                <div className="auth-07-error-alert" role="alert">
+                  <AlertCircle size={18} className="auth-07-error-icon" />
+                  <span>{error}</span>
+                </div>
               )}
-            </button>
-          </form>
 
-          {/* Test Credentials Helper */}
-          <div className="auth-07-demo-section">
-            <div className="auth-07-divider">
-              <span>TEST CREDENTIALS</span>
-            </div>
-            <div className="auth-07-demo-buttons">
-              <button
-                type="button"
-                className="auth-07-demo-btn"
-                onClick={() => setForm({ email: 'admin@siet.ac.in', password: 'password123' })}
-              >
-                <span className="auth-07-demo-badge">Admin</span>
-                <span className="auth-07-demo-val">admin@siet.ac.in</span>
-              </button>
-              <button
-                type="button"
-                className="auth-07-demo-btn"
-                onClick={() => setForm({ email: '714025104144', password: '25CS144' })}
-              >
-                <span className="auth-07-demo-badge">Mithuneesh</span>
-                <span className="auth-07-demo-val">714025104144</span>
-              </button>
+              <form onSubmit={handleSubmit} className="auth-07-form">
+                <div className="auth-07-field">
+                  <label htmlFor="login-email" className="auth-07-label">
+                    Register No
+                  </label>
+                  <div className="auth-07-input-wrapper">
+                    <User size={18} className="auth-07-input-icon" />
+                    <input
+                      id="login-email"
+                      type="text"
+                      className="auth-07-input"
+                      placeholder="e.g. 714025104173"
+                      value={form.email}
+                      onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                      required
+                      autoComplete="username"
+                    />
+                  </div>
+                </div>
+
+                <div className="auth-07-field">
+                  <div className="auth-07-label-row">
+                    <label htmlFor="login-password" className="auth-07-label">
+                      Password
+                    </label>
+                    <span className="auth-07-forgot-pass">Forgot password?</span>
+                  </div>
+                  <div className="auth-07-input-wrapper">
+                    <Lock size={18} className="auth-07-input-icon" />
+                    <input
+                      id="login-password"
+                      type={showPassword ? 'text' : 'password'}
+                      className="auth-07-input auth-07-input-password"
+                      placeholder="••••••••••••"
+                      value={form.password}
+                      onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                      required
+                      autoComplete="current-password"
+                    />
+                    <button
+                      type="button"
+                      className="auth-07-password-toggle"
+                      onClick={() => setShowPassword(!showPassword)}
+                      tabIndex={-1}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Keep me signed in toggle */}
+                <div className="auth-07-remember-row">
+                  <label className="auth-07-toggle-switch">
+                    <input type="checkbox" defaultChecked />
+                    <span className="auth-07-toggle-slider"></span>
+                  </label>
+                  <span className="auth-07-remember-label">Keep me signed in for 30 days</span>
+                </div>
+
+                <button
+                  id="login-submit"
+                  type="submit"
+                  className="auth-07-submit-btn"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <span className="auth-07-spinner" />
+                      <span>Signing In...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Sign In</span>
+                      <ArrowRight size={18} />
+                    </>
+                  )}
+                </button>
+              </form>
+
+              {/* Test Credentials Helper */}
+              <div className="auth-07-demo-section">
+                <div className="auth-07-divider">
+                  <span>TEST CREDENTIALS</span>
+                </div>
+                <div className="auth-07-demo-buttons">
+                  <button
+                    type="button"
+                    className="auth-07-demo-btn"
+                    onClick={() => setForm({ email: 'admin@siet.ac.in', password: 'password123' })}
+                  >
+                    <span className="auth-07-demo-badge">Admin</span>
+                    <span className="auth-07-demo-val">admin@siet.ac.in</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="auth-07-demo-btn"
+                    onClick={() => setForm({ email: '714025104144', password: '25CS144' })}
+                  >
+                    <span className="auth-07-demo-badge">Mithuneesh</span>
+                    <span className="auth-07-demo-val">714025104144</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
 
-  <style>{`
+      <style>{`
+        /* Intro Cinematic Viewport Overlay & Actions */
+        .login-experience {
+          position: relative;
+          width: 100vw;
+          min-height: 100vh;
+          background: #09090b;
+          overflow: hidden;
+        }
+
+        .intro-viewport {
+          position: fixed;
+          inset: 0;
+          width: 100vw;
+          height: 100vh;
+          z-index: 100;
+          background: #000000;
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .intro-artwork {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: center 30%; /* Shifted slightly up */
+          will-change: transform, opacity;
+          transform-origin: 50% 30%;
+        }
+
+        .intro-actions-wrapper {
+          position: absolute;
+          bottom: 44px;
+          left: 50%;
+          transform: translateX(-50%);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 14px;
+          z-index: 105;
+          pointer-events: auto;
+          transition: opacity 0.3s ease;
+        }
+
+        .intro-welcome-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 12px;
+          padding: 16px 36px;
+          background: #84cc16;
+          color: #09090b;
+          font-family: 'Space Grotesk', -apple-system, sans-serif;
+          font-size: 16px;
+          font-weight: 700;
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          border-radius: 9999px;
+          cursor: pointer;
+          box-shadow: 
+            0 10px 30px -5px rgba(132, 204, 22, 0.6),
+            0 0 22px rgba(132, 204, 22, 0.45);
+          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+          letter-spacing: 0.03em;
+          text-transform: uppercase;
+        }
+
+        .intro-welcome-btn:hover {
+          background: #93d926;
+          transform: translateY(-3px) scale(1.04);
+          box-shadow: 
+            0 16px 38px -4px rgba(132, 204, 22, 0.75),
+            0 0 35px rgba(132, 204, 22, 0.6);
+        }
+
+        .intro-welcome-btn:active {
+          transform: translateY(0) scale(0.97);
+        }
+
+        .intro-btn-icon {
+          color: #09090b;
+          transition: transform 0.2s ease;
+        }
+
+        .intro-welcome-btn:hover .intro-btn-icon {
+          transform: translateX(4px);
+        }
+
+        .intro-scroll-hint {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          color: rgba(255, 255, 255, 0.65);
+          font-size: 12.5px;
+          font-weight: 500;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+        }
+
+        .intro-hint-arrow {
+          animation: introBounce 1.8s infinite;
+        }
+
+        @keyframes introBounce {
+          0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+          40% { transform: translateY(5px); }
+          60% { transform: translateY(2.5px); }
+        }
+
         /* Auth-07 Dual-Panel Architecture */
         .auth-07-container {
           position: relative;
@@ -316,25 +453,25 @@ export default function Login() {
           height: 100vh;
           width: 100vw;
           max-width: 100%;
-          background-color: #f4f5f7;
+          background-color: #09090b;
           font-family: 'Inter', system-ui, -apple-system, sans-serif;
-          color: #111111;
+          color: #ffffff;
           overflow: hidden;
         }
 
-        /* LEFT PANEL: Halftone Artwork Container (55-60% width) - Full Bleed */
+        /* LEFT PANEL: Artwork Container */
         .auth-07-left-panel {
           position: relative;
           flex: 1.15;
           height: 100vh;
-          background-color: #edeef0;
+          background-color: #000000;
           overflow: hidden;
           padding: 0;
           margin: 0;
-          border-right: 1px solid #e2e4e8;
+          border-right: 1px solid #18181b;
         }
 
-        /* LAYER 1: Primary Static Image (Option A: Full Bleed Cover) */
+        /* LAYER 1: Primary Static Image */
         .auth-07-art-image {
           position: absolute;
           inset: 0;
@@ -349,17 +486,7 @@ export default function Login() {
           filter: contrast(1.05);
         }
 
-        /* LAYER 2: Transparent Hero Canvas Overlay */
-        .auth-07-hero {
-          position: absolute;
-          inset: 0;
-          width: 100%;
-          height: 100%;
-          pointer-events: none;
-          z-index: 2;
-        }
-
-        /* LAYER 3: RIGHT PANEL: Authentication Form Wrapper (40-45% width) */
+        /* LAYER 3: RIGHT PANEL: Authentication Form Wrapper */
         .auth-07-form-wrapper {
           position: relative;
           z-index: 10;
@@ -369,20 +496,18 @@ export default function Login() {
           justify-content: center;
           padding: 40px 48px;
           height: 100vh;
-          background: #ffffff;
+          background: #09090b;
           overflow-y: auto;
         }
 
         .auth-07-card {
           width: 100%;
-          max-width: 440px;
-          background: #ffffff;
-          padding: 40px 36px;
-          border-radius: 20px;
-          border: 1px solid #eaeaea;
-          box-shadow:
-            0 20px 40px -15px rgba(0, 0, 0, 0.07),
-            0 2px 8px rgba(0, 0, 0, 0.04);
+          max-width: 420px;
+          background: #09090b;
+          padding: 20px 0px;
+          border-radius: 0px;
+          border: none;
+          box-shadow: none;
         }
 
         .auth-07-mobile-header {
@@ -403,27 +528,29 @@ export default function Login() {
           font-family: 'Space Grotesk', sans-serif;
           font-weight: 800;
           font-size: 18px;
-          color: #111111;
+          color: #ffffff;
           letter-spacing: -0.01em;
         }
 
         .auth-07-card-header {
-          margin-bottom: 28px;
+          margin-bottom: 32px;
           text-align: left;
         }
 
         .auth-07-card-title {
-          font-family: 'Space Grotesk', sans-serif;
-          font-size: 28px;
-          font-weight: 800;
-          color: #111111;
-          letter-spacing: -0.02em;
-          margin-bottom: 8px;
+          font-family: 'Space Grotesk', -apple-system, sans-serif;
+          font-size: 34px;
+          font-weight: 700;
+          color: #ffffff;
+          letter-spacing: -0.03em;
+          margin-bottom: 10px;
+          line-height: 1.15;
         }
 
         .auth-07-card-subtitle {
-          font-size: 14px;
-          color: #666666;
+          font-size: 15px;
+          color: #94a3b8;
+          font-weight: 400;
         }
 
         /* Error Alert */
@@ -432,10 +559,10 @@ export default function Login() {
           align-items: center;
           gap: 10px;
           padding: 12px 16px;
-          background: #fef2f2;
-          border: 1px solid #fecaca;
-          border-radius: 14px;
-          color: #991b1b;
+          background: rgba(239, 68, 68, 0.1);
+          border: 1px solid rgba(239, 68, 68, 0.3);
+          border-radius: 12px;
+          color: #fca5a5;
           font-size: 13.5px;
           font-weight: 500;
           margin-bottom: 22px;
@@ -444,7 +571,7 @@ export default function Login() {
 
         .auth-07-error-icon {
           flex-shrink: 0;
-          color: #dc2626;
+          color: #ef4444;
         }
 
         @keyframes auth07FadeIn {
@@ -456,27 +583,40 @@ export default function Login() {
         .auth-07-form {
           display: flex;
           flex-direction: column;
-          gap: 20px;
         }
 
         .auth-07-field {
           display: flex;
           flex-direction: column;
+          margin-bottom: 22px;
         }
 
         .auth-07-label-row {
           display: flex;
           justify-content: space-between;
           align-items: center;
+          margin-bottom: 8px;
         }
 
         .auth-07-label {
-          font-size: 11.5px;
-          font-weight: 700;
-          color: #222222;
-          letter-spacing: 0.06em;
-          text-transform: uppercase;
-          margin-bottom: 8px;
+          font-size: 14px;
+          font-weight: 600;
+          color: #ffffff;
+          letter-spacing: 0;
+          text-transform: none;
+        }
+
+        .auth-07-forgot-pass {
+          font-size: 13.5px;
+          font-weight: 600;
+          color: #84cc16;
+          cursor: pointer;
+          transition: opacity 0.2s ease;
+        }
+
+        .auth-07-forgot-pass:hover {
+          opacity: 0.85;
+          text-decoration: underline;
         }
 
         .auth-07-input-wrapper {
@@ -488,19 +628,19 @@ export default function Login() {
         .auth-07-input-icon {
           position: absolute;
           left: 16px;
-          color: #777777;
+          color: #71717a;
           pointer-events: none;
           transition: color 0.2s ease;
         }
 
         .auth-07-input {
           width: 100%;
-          padding: 13px 18px 13px 46px;
-          border: 1.5px solid #e5e5e5;
-          border-radius: 14px;
+          padding: 14px 18px 14px 46px;
+          border: 1px solid #27272a;
+          border-radius: 12px;
           font-size: 15px;
-          color: #111111;
-          background: #ffffff;
+          color: #ffffff;
+          background: #141417;
           transition: all 0.2s ease;
         }
 
@@ -508,8 +648,8 @@ export default function Login() {
         .auth-07-input:-webkit-autofill:hover,
         .auth-07-input:-webkit-autofill:focus,
         .auth-07-input:-webkit-autofill:active {
-          -webkit-box-shadow: 0 0 0 30px #ffffff inset !important;
-          -webkit-text-fill-color: #111111 !important;
+          -webkit-box-shadow: 0 0 0 30px #141417 inset !important;
+          -webkit-text-fill-color: #ffffff !important;
         }
 
         .auth-07-input-password {
@@ -517,19 +657,19 @@ export default function Login() {
         }
 
         .auth-07-input::placeholder {
-          color: #999999;
+          color: #52525b;
           opacity: 1;
         }
 
         .auth-07-input:focus {
           outline: none;
-          border-color: #111111;
-          background: #ffffff;
-          box-shadow: 0 0 0 4px rgba(17, 17, 17, 0.06);
+          border-color: #84cc16;
+          background: #18181c;
+          box-shadow: 0 0 0 3px rgba(132, 204, 22, 0.15);
         }
 
         .auth-07-input-wrapper:focus-within .auth-07-input-icon {
-          color: #111111;
+          color: #84cc16;
         }
 
         .auth-07-password-toggle {
@@ -537,7 +677,7 @@ export default function Login() {
           right: 14px;
           background: transparent;
           border: none;
-          color: #777777;
+          color: #71717a;
           padding: 4px;
           display: flex;
           align-items: center;
@@ -548,38 +688,98 @@ export default function Login() {
         }
 
         .auth-07-password-toggle:hover {
-          color: #111111;
+          color: #ffffff;
+        }
+
+        /* Remember Me Switch */
+        .auth-07-remember-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-top: 2px;
+          margin-bottom: 24px;
+        }
+
+        .auth-07-toggle-switch {
+          position: relative;
+          display: inline-block;
+          width: 44px;
+          height: 24px;
+          flex-shrink: 0;
+        }
+
+        .auth-07-toggle-switch input {
+          opacity: 0;
+          width: 0;
+          height: 0;
+        }
+
+        .auth-07-toggle-slider {
+          position: absolute;
+          cursor: pointer;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: #27272a;
+          transition: 0.3s;
+          border-radius: 24px;
+        }
+
+        .auth-07-toggle-slider:before {
+          position: absolute;
+          content: "";
+          height: 18px;
+          width: 18px;
+          left: 3px;
+          bottom: 3px;
+          background-color: #ffffff;
+          transition: 0.3s;
+          border-radius: 50%;
+        }
+
+        .auth-07-toggle-switch input:checked + .auth-07-toggle-slider {
+          background-color: #3f3f46;
+        }
+
+        .auth-07-toggle-switch input:checked + .auth-07-toggle-slider:before {
+          transform: translateX(20px);
+        }
+
+        .auth-07-remember-label {
+          font-size: 14px;
+          color: #94a3b8;
+          font-weight: 500;
         }
 
         /* Submit Button */
         .auth-07-submit-btn {
           width: 100%;
-          padding: 14px;
-          margin-top: 6px;
-          background: #111111;
-          color: #ffffff;
-          font-size: 15px;
+          padding: 15px;
+          margin-top: 4px;
+          background: #84cc16;
+          color: #09090b;
+          font-size: 16px;
           font-weight: 700;
           border: none;
-          border-radius: 14px;
+          border-radius: 12px;
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 10px;
-          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+          box-shadow: 0 4px 20px rgba(132, 204, 22, 0.25);
           transition: all 0.2s ease;
         }
 
         .auth-07-submit-btn:hover:not(:disabled) {
-          background: #000000;
-          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+          background: #93d926;
+          box-shadow: 0 6px 24px rgba(132, 204, 22, 0.4);
           transform: translateY(-1px);
         }
 
         .auth-07-submit-btn:active:not(:disabled) {
           transform: translateY(0);
-          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
         }
 
         .auth-07-submit-btn:disabled {
@@ -591,8 +791,8 @@ export default function Login() {
         .auth-07-spinner {
           width: 18px;
           height: 18px;
-          border: 2px solid rgba(255, 255, 255, 0.3);
-          border-top-color: #ffffff;
+          border: 2px solid rgba(9, 9, 11, 0.3);
+          border-top-color: #09090b;
           border-radius: 50%;
           animation: auth07Spin 0.7s linear infinite;
         }
@@ -603,29 +803,29 @@ export default function Login() {
 
         /* Demo / Test Credentials Section */
         .auth-07-demo-section {
-          margin-top: 28px;
+          margin-top: 32px;
         }
 
         .auth-07-divider {
           display: flex;
           align-items: center;
           text-align: center;
-          margin-bottom: 18px;
+          margin-bottom: 20px;
         }
 
         .auth-07-divider::before,
         .auth-07-divider::after {
           content: '';
           flex: 1;
-          border-bottom: 1px solid #e5e5e5;
+          border-bottom: 1px solid #27272a;
         }
 
         .auth-07-divider span {
-          padding: 0 12px;
+          padding: 0 14px;
           font-size: 11px;
           font-weight: 700;
-          letter-spacing: 0.08em;
-          color: #888888;
+          letter-spacing: 0.1em;
+          color: #71717a;
           text-transform: uppercase;
         }
 
@@ -639,35 +839,35 @@ export default function Login() {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 10px 14px;
-          background: #f8f8f7;
-          border: 1.5px solid #e5e5e5;
+          padding: 12px 16px;
+          background: #141417;
+          border: 1px solid #27272a;
           border-radius: 12px;
           cursor: pointer;
           transition: all 0.2s ease;
         }
 
         .auth-07-demo-btn:hover {
-          background: #efefed;
-          border-color: #111111;
+          background: #1a1a1e;
+          border-color: #84cc16;
           transform: translateY(-1px);
         }
 
         .auth-07-demo-badge {
           font-size: 12px;
           font-weight: 700;
-          color: #111111;
+          color: #84cc16;
         }
 
         .auth-07-demo-val {
           font-size: 12px;
           font-family: monospace;
-          color: #444444;
+          color: #e4e4e7;
           font-weight: 600;
-          background: #ffffff;
-          padding: 2px 8px;
+          background: #27272a;
+          padding: 3px 8px;
           border-radius: 6px;
-          border: 1px solid #dcdcdc;
+          border: 1px solid #3f3f46;
         }
 
         /* RESPONSIVE DESIGN FOR MOBILE & TABLET */
@@ -692,23 +892,18 @@ export default function Login() {
             min-height: 100vh;
             justify-content: center;
             padding: 24px 16px;
-            background: #f4f5f7;
+            background: #09090b;
           }
 
           .auth-07-card {
-            padding: 36px 24px;
-            border-radius: 20px;
-            background: rgba(255, 255, 255, 0.98);
+            padding: 36px 20px;
+            background: #09090b;
           }
         }
 
         @media (max-width: 480px) {
-          .auth-07-card {
-            padding: 28px 20px;
-          }
-
           .auth-07-card-title {
-            font-size: 24px;
+            font-size: 28px;
           }
 
           .auth-07-demo-btn {
