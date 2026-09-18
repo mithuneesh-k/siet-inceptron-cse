@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Eye, EyeOff, Lock, User, ArrowRight, AlertCircle, ChevronDown } from 'lucide-react';
+import introArtwork from '../assets/login/inceptron-intro-sky.png';
+import loginArtwork from '../assets/login/inceptron-login-artwork.png';
 
 export default function Login() {
   const { login } = useAuth();
@@ -173,7 +175,7 @@ export default function Login() {
       <div ref={overlayRef} className="intro-viewport">
         <img
           ref={artworkRef}
-          src="/main.png"
+          src={introArtwork}
           alt="SIET Inceptron Artwork"
           className="intro-artwork"
         />
@@ -199,9 +201,9 @@ export default function Login() {
         <div className="auth-07-container">
           {/* LEFT PANEL: Halftone Artwork Section */}
           <div className="auth-07-left-panel">
-            {/* LAYER 1: Primary High-Resolution Static Artwork Image (Full Bleed Option A) */}
+            {/* LAYER 1: Primary High-Resolution Static Artwork Image */}
             <img
-              src="/main.png"
+              src={loginArtwork}
               alt="SIET Inceptron Halftone Artwork"
               className="auth-07-art-image"
             />
