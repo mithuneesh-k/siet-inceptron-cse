@@ -609,20 +609,10 @@ router.delete('/faculty/:id', strictAdminMiddleware, async (req, res) => {
     return res.status(400).json({ error: 'Cannot delete your own account' });
   }
 
-  // 2. Execute atomic PostgreSQL RPC function (delete_faculty_member)
+  // 2. Try RPC first if available
   const { data: rpcRes, error: rpcErr } = await supabase.rpc('delete_faculty_member', { p_target_user_id: id });
 
-  // If RPC is missing on unmigrated database (code PGRST202 or 42883), return HTTP 503 Service Unavailable
-  if (rpcErr) {
-    if (rpcErr.code === 'PGRST202' || rpcErr.code === '42883' || rpcErr.message?.includes('could not find the function')) {
-      return res.status(503).json({
-        error: 'Faculty deletion is temporarily unavailable because the required database migration has not been applied.'
-      });
-    }
-    return res.status(500).json({ error: 'Failed to delete faculty member.', details: rpcErr.message });
-  }
-
-  if (rpcRes) {
+  if (!rpcErr && rpcRes) {
     if (rpcRes.success) {
       await cache.del('admin:faculty');
       return res.json({ message: rpcRes.message || 'Faculty deleted successfully.' });
@@ -631,7 +621,58 @@ router.delete('/faculty/:id', strictAdminMiddleware, async (req, res) => {
     return res.status(statusCode).json({ error: rpcRes.message });
   }
 
-  return res.status(500).json({ error: 'Unexpected error during faculty deletion.' });
+  // 3. FALLBACK: Server-Side Deletion Service if RPC is unavailable (PGRST202 or 42883)
+  if (rpcErr && (rpcErr.code === 'PGRST202' || rpcErr.code === '42883' || rpcErr.message?.includes('could not find the function'))) {
+    // Verify target user role & existence in users table
+    const { data: targetUser, error: userFetchErr } = await supabase
+      .from('users')
+      .select('id, role')
+      .eq('id', id)
+      .single();
+
+    if (userFetchErr || !targetUser) {
+      return res.status(404).json({ error: 'Target user not found.' });
+    }
+
+    if (targetUser.role === 'admin') {
+      return res.status(403).json({ error: 'Cannot delete an administrator account.' });
+    }
+
+    if (targetUser.role !== 'faculty') {
+      return res.status(403).json({ error: 'Target user is not a faculty member.' });
+    }
+
+    // Unlink achievements approved by this faculty (approved_by = NULL)
+    await supabase
+      .from('achievements')
+      .update({ approved_by: null })
+      .eq('approved_by', id);
+
+    // Delete faculty profile by user_id
+    const { error: facDelErr } = await supabase
+      .from('faculty')
+      .delete()
+      .eq('user_id', id);
+
+    if (facDelErr) {
+      return res.status(500).json({ error: 'Failed to delete faculty record.', details: facDelErr.message });
+    }
+
+    // Delete user account by id
+    const { error: userDelErr } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', id);
+
+    if (userDelErr) {
+      return res.status(500).json({ error: 'Failed to delete user account.', details: userDelErr.message });
+    }
+
+    await cache.del('admin:faculty');
+    return res.json({ success: true, message: 'Faculty deleted successfully.' });
+  }
+
+  return res.status(500).json({ error: 'Failed to delete faculty member.', details: rpcErr?.message });
 });
 
 // ─── Admin Overview ────────────────────────────────────────────────────────

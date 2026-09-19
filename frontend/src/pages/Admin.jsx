@@ -145,14 +145,14 @@ export default function Admin() {
 
   const handleDeleteFacultyConfirm = async () => {
     if (!deleteFacultyTarget) return;
-    const targetId = deleteFacultyTarget.id;
+    const targetId = deleteFacultyTarget.user_id || deleteFacultyTarget.id;
     setDeleteFacultyTarget(null);
     try {
       await client.delete(`/admin/faculty/${targetId}`);
-      setFaculties(prev => prev.filter(f => f.id !== targetId));
+      setFaculties(prev => prev.filter(f => f.id !== targetId && f.user_id !== targetId));
       showToast('Faculty member deleted successfully.');
     } catch (err) {
-      showToast(err.response?.data?.error || 'Failed to delete faculty.', 'error');
+      showToast(err.response?.data?.error || 'Unable to delete faculty. Please try again.', 'error');
     }
   };
 
