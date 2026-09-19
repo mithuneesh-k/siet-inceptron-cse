@@ -470,30 +470,37 @@ img { max-width: 100%; display: block; }
 .type-certification { background: #FAF5FF; color: #7E22CE; border-color: #E9D5FF; } /* Purple */
 
 /* ─── Dark Theme Badge Fill & Glow Overrides ─── */
-[data-theme="dark"] .badge-violet,
-[data-theme="dark"] .badge-green,
-[data-theme="dark"] .badge-primary {
-  background: linear-gradient(135deg, #76c800 0%, #84cc16 100%) !important;
-  color: #070a0f !important;
-  font-weight: 800 !important;
-  border: none !important;
-  box-shadow: 0 2px 10px rgba(116, 214, 0, 0.4) !important;
+[data-theme="dark"] .badge {
+  background: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-weight: 600;
+  box-shadow: none;
 }
 
-[data-theme="dark"] .badge {
-  background: linear-gradient(135deg, #76c800 0%, #84cc16 100%);
-  color: #070a0f;
-  font-weight: 800;
-  border: none;
-  box-shadow: 0 2px 8px rgba(116, 214, 0, 0.35);
+[data-theme="dark"] .badge-green,
+[data-theme="dark"] .badge-primary {
+  background: rgba(132, 204, 22, 0.15) !important;
+  color: #a3e635 !important;
+  border: 1px solid rgba(132, 204, 22, 0.35) !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .badge-violet {
+  background: rgba(168, 85, 247, 0.15) !important;
+  color: #c084fc !important;
+  border: 1px solid rgba(168, 85, 247, 0.35) !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
 }
 
 [data-theme="dark"] .badge-gold {
-  background: linear-gradient(135deg, #d97706, #fbbf24) !important;
-  color: #070a0f !important;
-  font-weight: 800 !important;
-  border: none !important;
-  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.35) !important;
+  background: rgba(251, 191, 36, 0.15) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(251, 191, 36, 0.35) !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
 }
 
 [data-theme="dark"] .badge-blue {

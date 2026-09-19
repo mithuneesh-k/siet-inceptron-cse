@@ -12,7 +12,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import { 
   Shield, BarChart2, Users, Settings, GraduationCap, Hourglass, 
   Award, TrendingUp, List, RefreshCw, Trash2, Download, Plus, 
-  Edit3, Key, Check, X, ExternalLink, Inbox, Search, CheckCircle, Code
+  Edit3, Key, Check, X, ExternalLink, Inbox, Search, CheckCircle, Code, Send
 } from 'lucide-react';
 
 const CLASSES = ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D', 'CSE-E'];
@@ -52,6 +52,11 @@ export default function Admin() {
   const [platSearch, setPlatSearch] = useState('');
   const [platStatusFilter, setPlatStatusFilter] = useState('all');
   const [platPlatformFilter, setPlatPlatformFilter] = useState('all');
+
+  // Post & Notify state
+  const [notifyForm, setNotifyForm] = useState({ title: '', message: '', target: 'all', priority: 'normal' });
+  const [notifyLoading, setNotifyLoading] = useState(false);
+  const [sentNotifications, setSentNotifications] = useState([]);
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
@@ -246,7 +251,28 @@ export default function Admin() {
     }
   };
 
-  const isFullAdmin = user?.role === 'admin' || user?.designation?.toUpperCase() === 'HOD';
+  const isFullAdmin = Boolean(user && (user.role === 'admin' || user.is_admin || user.is_hod || user.designation?.toUpperCase() === 'HOD'));
+
+  const handleSendNotification = async (e) => {
+    e.preventDefault();
+    if (!notifyForm.title.trim() || !notifyForm.message.trim()) {
+      showToast('Title and message are required.', 'error');
+      return;
+    }
+    setNotifyLoading(true);
+    try {
+      const res = await client.post('/admin/notify', notifyForm);
+      if (res.data?.success) {
+        showToast('Announcement broadcasted successfully! 📢');
+        setSentNotifications(prev => [res.data.notification, ...prev]);
+        setNotifyForm({ title: '', message: '', target: 'all', priority: 'normal' });
+      }
+    } catch (err) {
+      showToast(err.response?.data?.error || 'Failed to send notification.', 'error');
+    } finally {
+      setNotifyLoading(false);
+    }
+  };
 
   // Auto-populate filters for restricted advisors
   useEffect(() => {
@@ -262,6 +288,7 @@ export default function Admin() {
     { id: 'manage', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Settings size={16} /> Manage</span> },
     ...(isFullAdmin ? [{ id: 'faculty', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><GraduationCap size={16} /> Faculty</span> }] : []),
     { id: 'platforms', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Code size={16} /> Platform Verification</span> },
+    ...(isFullAdmin ? [{ id: 'notify', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Send size={16} /> Post & Notify</span> }] : []),
     { id: 'pending', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Hourglass size={16} /> Pending ({achievements.length})</span> },
   ];
 
@@ -499,14 +526,14 @@ export default function Admin() {
                       <span>Class</span>
                       <span>Batch</span>
                       <span>DOB</span>
-                      <span>Actions</span>
+                      <span>Action</span>
                     </div>
 
                     {managedStudents.map((s, i) => (
                       <div
                         key={s.id}
                         className="manage-table-row"
-                        style={{ background: selectedIds.has(s.id) ? 'var(--green-50)' : undefined, animation: `fadeInUp 0.25s ease ${i * 0.015}s both` }}
+                        style={{ background: selectedIds.has(s.id) ? 'rgba(132, 204, 22, 0.08)' : undefined, animation: `fadeInUp 0.25s ease ${i * 0.015}s both` }}
                       >
                         {isFullAdmin ? (
                           <input
@@ -519,29 +546,29 @@ export default function Admin() {
                           <div /> 
                         )}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <div style={{ width: 34, height: 34, background: 'var(--color-green)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#fff', fontSize: 13, flexShrink: 0 }}>
+                          <div style={{ width: 34, height: 34, background: '#84cc16', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#070a0f', fontSize: 13, flexShrink: 0 }}>
                             {s.name[0]}
                           </div>
                           <div style={{ minWidth: 0 }}>
-                            <Link to={`/profile/${s.id}`} style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</Link>
-                            <div style={{ fontSize: 11, color: 'var(--color-text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.email}</div>
+                            <Link to={`/profile/${s.id}`} style={{ fontSize: 14, fontWeight: 700, color: '#f8fafc', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</Link>
+                            <div style={{ fontSize: 11, color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.email}</div>
                           </div>
                         </div>
-                        <span style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--color-text-muted)' }}>{s.roll_no}</span>
+                        <span style={{ fontFamily: 'monospace', fontSize: 12.5, fontWeight: 700, color: '#cbd5e1' }}>{s.roll_no}</span>
                         <span><span className="badge badge-violet">{s.class}</span></span>
                         <span><span className="badge badge-blue">{s.batch}</span></span>
-                        <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{s.date_of_birth || '—'}</span>
-                        <div style={{ display: 'flex', gap: 6, flexWrap: 'nowrap' }}>
-                          <button className="btn btn-ghost btn-sm" title="Edit student" onClick={() => setEditStudent(s)}><Edit3 size={16} /></button>
-                          <button className="btn btn-ghost btn-sm" title="Reset password to default" onClick={() => handleResetPassword(s)}><Key size={16} /></button>
-                          <button className="btn btn-danger btn-sm" title="Delete student" onClick={() => setDeleteConfirm(s)}><Trash2 size={16} /></button>
+                        <span style={{ fontSize: 12, color: '#94a3b8' }}>{s.date_of_birth || '—'}</span>
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'nowrap', position: 'relative', zIndex: 5 }}>
+                          <button className="btn btn-ghost btn-sm" title="Edit student" onClick={() => setEditStudent(s)} style={{ pointerEvents: 'auto', cursor: 'pointer' }}><Edit3 size={16} /></button>
+                          <button className="btn btn-ghost btn-sm" title="Reset password to default" onClick={() => handleResetPassword(s)} style={{ pointerEvents: 'auto', cursor: 'pointer', color: '#60a5fa', borderColor: 'rgba(59, 130, 246, 0.3)' }}><Key size={16} /></button>
+                          <button className="btn btn-danger btn-sm" title="Delete student" onClick={() => setDeleteConfirm(s)} style={{ pointerEvents: 'auto', cursor: 'pointer' }}><Trash2 size={16} /></button>
                         </div>
                       </div>
                     ))}
                   </div>
                 )}
 
-                <div style={{ marginTop: 12, fontSize: 13, color: 'var(--color-text-muted)' }}>
+                <div style={{ marginTop: 12, fontSize: 13, color: '#94a3b8' }}>
                   Showing <strong>{managedStudents.length}</strong> student{managedStudents.length !== 1 ? 's' : ''}
                   {selectedIds.size > 0 && <> · <strong>{selectedIds.size}</strong> selected</>}
                 </div>
@@ -552,8 +579,8 @@ export default function Admin() {
               <div className="animate-fadeIn">
                 <div className="section-header" style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <h3 style={{ fontSize: 18, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}><GraduationCap size={20} /> CSE Faculty & Advisors</h3>
-                    <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Assigned class advisors have admin privileges for their specific class.</p>
+                    <h3 style={{ fontSize: 18, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, color: '#f8fafc' }}><GraduationCap size={20} /> CSE Faculty & Advisors</h3>
+                    <p style={{ fontSize: 13, color: '#94a3b8' }}>Assigned class advisors have admin privileges for their specific class.</p>
                   </div>
                   <button className="btn btn-primary" onClick={() => setShowAddFacModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Plus size={16} /> Add Faculty</button>
                 </div>
@@ -585,15 +612,15 @@ export default function Admin() {
                     </div>
                     {faculties.map((f, i) => (
                       <div key={f.id} className="manage-table-row" style={{ gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr 140px', animation: `fadeInUp 0.3s ease ${i * 0.02}s both` }}>
-                        <div style={{ fontWeight: 600 }}>{f.name}</div>
-                        <div style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{f.designation || '—'}</div>
-                        <div style={{ fontSize: 13 }}>{f.department || 'CSE'}</div>
-                        <div>{f.advising_class ? <span className="badge badge-green">{f.advising_class}</span> : <span style={{ color: 'var(--color-text-faint)' }}>—</span>}</div>
-                        <div>{f.advising_batch ? <span className="badge badge-violet">{f.advising_batch}</span> : <span style={{ color: 'var(--color-text-faint)' }}>—</span>}</div>
-                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                          <button className="btn btn-primary btn-sm" onClick={() => setEditFaculty(f)}>Adjust</button>
-                          {user?.role === 'admin' && f.role !== 'admin' && f.id !== user?.id && (
-                            <button className="btn btn-danger btn-sm" onClick={() => setDeleteFacultyTarget(f)} style={{ padding: '4px 10px', fontSize: 12 }}>Delete</button>
+                        <div style={{ fontWeight: 700, color: '#f8fafc' }}>{f.name}</div>
+                        <div style={{ fontSize: 13, color: '#cbd5e1' }}>{f.designation || '—'}</div>
+                        <div style={{ fontSize: 13, color: '#94a3b8' }}>{f.department || 'CSE'}</div>
+                        <div>{f.advising_class ? <span className="badge badge-green">{f.advising_class}</span> : <span style={{ color: '#64748b' }}>—</span>}</div>
+                        <div>{f.advising_batch ? <span className="badge badge-violet">{f.advising_batch}</span> : <span style={{ color: '#64748b' }}>—</span>}</div>
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center', position: 'relative', zIndex: 5 }}>
+                          <button className="btn btn-primary btn-sm" onClick={() => setEditFaculty(f)} style={{ pointerEvents: 'auto', cursor: 'pointer' }}>Adjust</button>
+                          {isFullAdmin && f.user_id !== user?.id && f.id !== user?.id && (
+                            <button className="btn btn-danger btn-sm" onClick={() => setDeleteFacultyTarget(f)} style={{ padding: '4px 10px', fontSize: 12, pointerEvents: 'auto', cursor: 'pointer' }}>Delete</button>
                           )}
                         </div>
                       </div>
@@ -658,142 +685,269 @@ export default function Admin() {
 
             {/* ── PLATFORM VERIFICATION ── */}
             {tab === 'platforms' && (
-              <div className="card animate-fadeIn" style={{ padding: '24px', borderRadius: 'var(--radius-lg)', background: 'var(--color-card)', border: '1px solid var(--color-border)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
-                  <div>
-                    <h2 style={{ fontSize: 18, fontWeight: 800, margin: 0, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <Code size={20} className="text-gradient" /> Platform Connection Verification
-                    </h2>
-                    <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '4px 0 0' }}>
-                      Review and verify student programming platform connections to enable competitive score contributions.
-                    </p>
+              <div className="animate-fadeIn">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
+                  <div className="card" style={{ padding: '16px 20px', background: 'rgba(15, 23, 42, 0.75)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: 12 }}>
+                    <div style={{ fontSize: 12, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>Total Connections</div>
+                    <div style={{ fontSize: 26, fontWeight: 800, color: '#f8fafc', marginTop: 4 }}>{platformConnections.length}</div>
                   </div>
-
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    <input
-                      type="text"
-                      placeholder="Search student, handle..."
-                      value={platSearch}
-                      onChange={(e) => setPlatSearch(e.target.value)}
-                      className="input input-sm"
-                      style={{ width: 180 }}
-                    />
-                    <select
-                      value={platStatusFilter}
-                      onChange={(e) => setPlatStatusFilter(e.target.value)}
-                      className="input input-sm"
-                      style={{ width: 150 }}
-                    >
-                      <option value="all">All Statuses</option>
-                      <option value="pending">Pending Verification</option>
-                      <option value="verified">Verified</option>
-                    </select>
-                    <select
-                      value={platPlatformFilter}
-                      onChange={(e) => setPlatPlatformFilter(e.target.value)}
-                      className="input input-sm"
-                      style={{ width: 150 }}
-                    >
-                      <option value="all">All Platforms</option>
-                      <option value="codeforces">Codeforces</option>
-                      <option value="leetcode">LeetCode</option>
-                      <option value="hackerrank">HackerRank</option>
-                      <option value="geeksforgeeks">GeeksforGeeks</option>
-                    </select>
+                  <div className="card" style={{ padding: '16px 20px', background: 'rgba(15, 23, 42, 0.75)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: 12 }}>
+                    <div style={{ fontSize: 12, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>Verified Profiles</div>
+                    <div style={{ fontSize: 26, fontWeight: 800, color: '#84cc16', marginTop: 4 }}>{platformConnections.filter(c => c.ownershipVerified).length}</div>
+                  </div>
+                  <div className="card" style={{ padding: '16px 20px', background: 'rgba(15, 23, 42, 0.75)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: 12 }}>
+                    <div style={{ fontSize: 12, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>Active Students</div>
+                    <div style={{ fontSize: 26, fontWeight: 800, color: '#60a5fa', marginTop: 4 }}>{[...new Set(platformConnections.map(c => c.userId))].length}</div>
+                  </div>
+                  <div className="card" style={{ padding: '16px 20px', background: 'rgba(15, 23, 42, 0.75)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: 12 }}>
+                    <div style={{ fontSize: 12, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>Sync Failures</div>
+                    <div style={{ fontSize: 26, fontWeight: 800, color: platformConnections.filter(c => c.status === 'sync_error' || c.status === 'error').length > 0 ? '#ef4444' : '#a3e635', marginTop: 4 }}>
+                      {platformConnections.filter(c => c.status === 'sync_error' || c.status === 'error').length}
+                    </div>
                   </div>
                 </div>
 
-                {platLoading ? (
-                  <div style={{ padding: 32, textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                    Loading platform connections...
+                <div className="card" style={{ padding: '24px', borderRadius: 'var(--radius-lg)', background: 'var(--color-card)', border: '1px solid var(--color-border)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
+                    <div>
+                      <h2 style={{ fontSize: 18, fontWeight: 800, margin: 0, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Code size={20} className="text-gradient" /> Platform Connection Verification
+                      </h2>
+                      <p style={{ fontSize: 13, color: '#94a3b8', margin: '4px 0 0' }}>
+                        Review student programming platform handles, sync health, and competitive score metrics.
+                      </p>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <input
+                        type="text"
+                        placeholder="Search student, handle..."
+                        value={platSearch}
+                        onChange={(e) => setPlatSearch(e.target.value)}
+                        className="form-input"
+                        style={{ width: 180, padding: '8px 12px', fontSize: 13 }}
+                      />
+                      <select
+                        value={platStatusFilter}
+                        onChange={(e) => setPlatStatusFilter(e.target.value)}
+                        className="form-select"
+                        style={{ width: 150, padding: '8px 12px', fontSize: 13 }}
+                      >
+                        <option value="all">All Statuses</option>
+                        <option value="pending">Pending Verification</option>
+                        <option value="verified">Verified</option>
+                      </select>
+                      <select
+                        value={platPlatformFilter}
+                        onChange={(e) => setPlatPlatformFilter(e.target.value)}
+                        className="form-select"
+                        style={{ width: 150, padding: '8px 12px', fontSize: 13 }}
+                      >
+                        <option value="all">All Platforms</option>
+                        <option value="codeforces">Codeforces</option>
+                        <option value="leetcode">LeetCode</option>
+                        <option value="hackerrank">HackerRank</option>
+                        <option value="geeksforgeeks">GeeksforGeeks</option>
+                      </select>
+                    </div>
                   </div>
-                ) : (
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                      <thead>
-                        <tr style={{ borderBottom: '1px solid var(--color-border)', textAlign: 'left', color: 'var(--color-text-muted)' }}>
-                          <th style={{ padding: '10px 12px' }}>Student</th>
-                          <th style={{ padding: '10px 12px' }}>Class / Batch</th>
-                          <th style={{ padding: '10px 12px' }}>Platform</th>
-                          <th style={{ padding: '10px 12px' }}>Handle</th>
-                          <th style={{ padding: '10px 12px' }}>Status</th>
-                          <th style={{ padding: '10px 12px' }}>Last Sync</th>
-                          <th style={{ padding: '10px 12px', textAlign: 'right' }}>Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {platformConnections
-                          .filter(c => {
-                            if (platStatusFilter === 'pending' && c.ownershipVerified) return false;
-                            if (platStatusFilter === 'verified' && !c.ownershipVerified) return false;
-                            if (platPlatformFilter !== 'all' && c.platformCode !== platPlatformFilter) return false;
-                            if (platSearch.trim()) {
-                              const q = platSearch.toLowerCase().trim();
-                              const nameMatch = (c.studentName || '').toLowerCase().includes(q);
-                              const rollMatch = (c.rollNo || '').toLowerCase().includes(q);
-                              const handleMatch = (c.handle || '').toLowerCase().includes(q);
-                              if (!nameMatch && !rollMatch && !handleMatch) return false;
-                            }
-                            return true;
-                          })
-                          .map((conn) => (
-                            <tr key={`${conn.userId}-${conn.platformCode}`} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                              <td style={{ padding: '12px' }}>
-                                <div style={{ fontWeight: 700, color: 'var(--color-text)' }}>{conn.studentName}</div>
-                                <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{conn.rollNo || conn.userId}</div>
-                              </td>
-                              <td style={{ padding: '12px', color: 'var(--color-text-muted)' }}>
-                                {conn.class || '—'} · {conn.batch || '—'}
-                              </td>
-                              <td style={{ padding: '12px', fontWeight: 700, textTransform: 'capitalize' }}>
-                                {conn.platformCode}
-                              </td>
-                              <td style={{ padding: '12px', fontWeight: 600 }}>
-                                @{conn.handle}
-                              </td>
-                              <td style={{ padding: '12px' }}>
-                                {conn.ownershipVerified ? (
-                                  <span className="badge badge-success" style={{ fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                                    <CheckCircle size={12} /> Verified
-                                  </span>
-                                ) : (
-                                  <span className="badge badge-warning" style={{ fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(245, 158, 11, 0.15)', color: '#D97706', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
-                                    Pending verification
-                                  </span>
-                                )}
-                              </td>
-                              <td style={{ padding: '12px', fontSize: 11, color: 'var(--color-text-muted)' }}>
-                                {conn.lastSyncedAt ? new Date(conn.lastSyncedAt).toLocaleString() : 'Never'}
-                              </td>
-                              <td style={{ padding: '12px', textAlign: 'right' }}>
-                                {conn.ownershipVerified ? (
-                                  <button
-                                    className="btn btn-ghost btn-xs"
-                                    onClick={() => handleAdminVerifyPlatform(conn.userId, conn.platformCode, false)}
-                                  >
-                                    Unverify
-                                  </button>
-                                ) : (
-                                  <button
-                                    className="btn btn-primary btn-xs"
-                                    onClick={() => handleAdminVerifyPlatform(conn.userId, conn.platformCode, true)}
-                                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
-                                  >
-                                    <CheckCircle size={12} /> Verify Ownership
-                                  </button>
-                                )}
+
+                  {platLoading ? (
+                    <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>
+                      <RefreshCw size={24} className="spin" style={{ marginBottom: 8 }} />
+                      <div>Loading platform connections...</div>
+                    </div>
+                  ) : (
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid var(--color-border)', textAlign: 'left', color: '#94a3b8' }}>
+                            <th style={{ padding: '10px 12px' }}>Student</th>
+                            <th style={{ padding: '10px 12px' }}>Class / Batch</th>
+                            <th style={{ padding: '10px 12px' }}>Platform</th>
+                            <th style={{ padding: '10px 12px' }}>Handle</th>
+                            <th style={{ padding: '10px 12px' }}>Status</th>
+                            <th style={{ padding: '10px 12px' }}>Last Sync</th>
+                            <th style={{ padding: '10px 12px', textAlign: 'right' }}>Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {platformConnections
+                            .filter(c => {
+                              if (platStatusFilter === 'pending' && c.ownershipVerified) return false;
+                              if (platStatusFilter === 'verified' && !c.ownershipVerified) return false;
+                              if (platPlatformFilter !== 'all' && c.platformCode !== platPlatformFilter) return false;
+                              if (platSearch.trim()) {
+                                const q = platSearch.toLowerCase().trim();
+                                const nameMatch = (c.studentName || '').toLowerCase().includes(q);
+                                const rollMatch = (c.rollNo || '').toLowerCase().includes(q);
+                                const handleMatch = (c.handle || '').toLowerCase().includes(q);
+                                if (!nameMatch && !rollMatch && !handleMatch) return false;
+                              }
+                              return true;
+                            })
+                            .map((conn) => (
+                              <tr key={`${conn.userId}-${conn.platformCode}`} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                                <td style={{ padding: '12px' }}>
+                                  <div style={{ fontWeight: 700, color: '#f8fafc' }}>{conn.studentName}</div>
+                                  <div style={{ fontSize: 11, color: '#cbd5e1' }}>{conn.rollNo || conn.userId}</div>
+                                </td>
+                                <td style={{ padding: '12px', color: '#cbd5e1' }}>
+                                  {conn.class || '—'} · {conn.batch || '—'}
+                                </td>
+                                <td style={{ padding: '12px', fontWeight: 700, textTransform: 'capitalize', color: '#a3e635' }}>
+                                  {conn.platformCode}
+                                </td>
+                                <td style={{ padding: '12px', fontWeight: 600, color: '#60a5fa' }}>
+                                  @{conn.handle}
+                                </td>
+                                <td style={{ padding: '12px' }}>
+                                  {conn.ownershipVerified ? (
+                                    <span className="badge" style={{ fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(132, 204, 22, 0.15)', color: '#a3e635', border: '1px solid rgba(132, 204, 22, 0.3)' }}>
+                                      <CheckCircle size={12} /> Verified
+                                    </span>
+                                  ) : (
+                                    <span className="badge" style={{ fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+                                      Connected
+                                    </span>
+                                  )}
+                                </td>
+                                <td style={{ padding: '12px', fontSize: 11, color: '#94a3b8' }}>
+                                  {conn.lastSyncedAt ? new Date(conn.lastSyncedAt).toLocaleString() : 'Never'}
+                                </td>
+                                <td style={{ padding: '12px', textAlign: 'right' }}>
+                                  {conn.ownershipVerified ? (
+                                    <button
+                                      className="btn btn-ghost btn-xs"
+                                      onClick={() => handleAdminVerifyPlatform(conn.userId, conn.platformCode, false)}
+                                      style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+                                    >
+                                      Unverify
+                                    </button>
+                                  ) : (
+                                    <button
+                                      className="btn btn-primary btn-xs"
+                                      onClick={() => handleAdminVerifyPlatform(conn.userId, conn.platformCode, true)}
+                                      style={{ display: 'inline-flex', alignItems: 'center', gap: 4, pointerEvents: 'auto', cursor: 'pointer' }}
+                                    >
+                                      <CheckCircle size={12} /> Verify Handle
+                                    </button>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          {platformConnections.length === 0 && (
+                            <tr>
+                              <td colSpan={7} style={{ padding: 24, textAlign: 'center', color: '#94a3b8' }}>
+                                No platform connections found.
                               </td>
                             </tr>
-                          ))}
-                        {platformConnections.length === 0 && (
-                          <tr>
-                            <td colSpan={7} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                              No platform connections found.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ── POST & NOTIFY ── */}
+            {tab === 'notify' && isFullAdmin && (
+              <div className="card animate-fadeIn" style={{ padding: '28px', background: '#0b0f17', border: '1px solid #1f293d', borderRadius: '16px' }}>
+                <div style={{ marginBottom: 24 }}>
+                  <h2 style={{ fontSize: 20, fontWeight: 800, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: 10, margin: 0 }}>
+                    <Send size={22} style={{ color: '#84cc16' }} /> Post & Notify Department
+                  </h2>
+                  <p style={{ fontSize: 13.5, color: '#94a3b8', marginTop: 4 }}>
+                    Broadcast departmental announcements, hackathon alerts, or portal notices to students and faculty.
+                  </p>
+                </div>
+
+                <form onSubmit={handleSendNotification} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 16 }}>
+                    <div className="form-group">
+                      <label className="form-label" style={{ color: '#cbd5e1' }}>Announcement Title</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="e.g. SIET CSE Hackathon 2026 Registrations Open"
+                        value={notifyForm.title}
+                        onChange={e => setNotifyForm(prev => ({ ...prev, title: e.target.value }))}
+                        style={{ background: '#111827', borderColor: '#1f293d', color: '#f8fafc' }}
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" style={{ color: '#cbd5e1' }}>Target Audience</label>
+                      <select
+                        className="form-select"
+                        value={notifyForm.target}
+                        onChange={e => setNotifyForm(prev => ({ ...prev, target: e.target.value }))}
+                        style={{ background: '#111827', borderColor: '#1f293d', color: '#f8fafc' }}
+                      >
+                        <option value="all">All Students & Faculty</option>
+                        <option value="students">Students Only</option>
+                        <option value="faculty">Faculty Only</option>
+                        <option value="cse-a">CSE-A Only</option>
+                        <option value="cse-b">CSE-B Only</option>
+                        <option value="cse-c">CSE-C Only</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" style={{ color: '#cbd5e1' }}>Priority Level</label>
+                      <select
+                        className="form-select"
+                        value={notifyForm.priority}
+                        onChange={e => setNotifyForm(prev => ({ ...prev, priority: e.target.value }))}
+                        style={{ background: '#111827', borderColor: '#1f293d', color: '#f8fafc' }}
+                      >
+                        <option value="normal">Normal</option>
+                        <option value="urgent">Urgent Alert</option>
+                        <option value="opportunity">New Opportunity</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label" style={{ color: '#cbd5e1' }}>Announcement Message</label>
+                    <textarea
+                      className="form-input"
+                      rows={5}
+                      placeholder="Write the full announcement details, guidelines, or instructions here..."
+                      value={notifyForm.message}
+                      onChange={e => setNotifyForm(prev => ({ ...prev, message: e.target.value }))}
+                      style={{ background: '#111827', borderColor: '#1f293d', color: '#f8fafc', resize: 'vertical' }}
+                      required
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+                    <button
+                      type="submit"
+                      disabled={notifyLoading}
+                      className="btn btn-primary"
+                      style={{ background: '#84cc16', color: '#070a0f', fontWeight: 800, padding: '12px 24px', display: 'flex', alignItems: 'center', gap: 8, pointerEvents: 'auto', cursor: 'pointer' }}
+                    >
+                      <Send size={16} /> {notifyLoading ? 'Broadcasting...' : 'Post & Broadcast Notification'}
+                    </button>
+                  </div>
+                </form>
+
+                {sentNotifications.length > 0 && (
+                  <div style={{ marginTop: 36, borderTop: '1px solid #1f293d', paddingTop: 24 }}>
+                    <h3 style={{ fontSize: 16, fontWeight: 700, color: '#f8fafc', marginBottom: 16 }}>Recent Broadcasts</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      {sentNotifications.map(n => (
+                        <div key={n.id} style={{ background: '#111827', border: '1px solid #1f293d', borderRadius: 12, padding: 16 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                            <span style={{ fontWeight: 700, color: '#f8fafc' }}>{n.title}</span>
+                            <span className="badge badge-green" style={{ fontSize: 11 }}>{n.target}</span>
+                          </div>
+                          <p style={{ fontSize: 13, color: '#cbd5e1', margin: 0 }}>{n.message}</p>
+                          <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 8 }}>{new Date(n.timestamp).toLocaleString()}</div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

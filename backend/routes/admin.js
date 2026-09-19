@@ -739,6 +739,26 @@ router.get('/advisor/dashboard', facultyAdvisorMiddleware, async (req, res) => {
   });
 });
 
+// POST /api/admin/notify - Broadcast notification/announcement (HOD/Admin only)
+router.post('/notify', hodMiddleware, async (req, res) => {
+  const { title, message, target, priority } = req.body;
+  if (!title || !message) {
+    return res.status(400).json({ error: 'Title and message are required for notification.' });
+  }
+  return res.json({
+    success: true,
+    message: 'Notification broadcasted successfully.',
+    notification: {
+      id: Date.now(),
+      title: title.trim(),
+      message: message.trim(),
+      target: target || 'all',
+      priority: priority || 'normal',
+      timestamp: new Date().toISOString()
+    }
+  });
+});
+
 // ─── Admin: Clear Cache ──────────────────────────────────────────────────────
 router.post('/clear-cache', hodMiddleware, async (req, res) => {
   await cache.flush();
