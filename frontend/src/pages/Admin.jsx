@@ -12,7 +12,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import { 
   Shield, BarChart2, Users, Settings, GraduationCap, Hourglass, 
   Award, TrendingUp, List, RefreshCw, Trash2, Download, Plus, 
-  Edit3, Key, Check, X, ExternalLink, Inbox, Search, CheckCircle, Code, Send
+  Edit3, Key, Check, X, ExternalLink, Inbox, Search, CheckCircle, Code, Send, Image as ImageIcon, Upload
 } from 'lucide-react';
 
 const CLASSES = ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D', 'CSE-E'];
@@ -58,6 +58,9 @@ export default function Admin() {
   const [notifyLoading, setNotifyLoading] = useState(false);
   const [sentNotifications, setSentNotifications] = useState([]);
   const [deleteAnnTarget, setDeleteAnnTarget] = useState(null);
+  const [annImageFile, setAnnImageFile] = useState(null);
+  const [annImagePreview, setAnnImagePreview] = useState(null);
+  const [uploadingAnnImage, setUploadingAnnImage] = useState(false);
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
@@ -180,8 +183,32 @@ export default function Admin() {
       setSentNotifications(prev => prev.filter(n => String(n.id) !== String(targetId)));
       showToast('Announcement deleted successfully.');
     } catch (err) {
-      showToast(err.response?.data?.error || 'Failed to delete announcement.', 'error');
+      showToast(err.response?.data?.error || 'Unable to delete announcement. Please try again.', 'error');
     }
+  };
+
+  const handleAnnImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type.toLowerCase())) {
+      showToast('Invalid file format. Please upload JPEG, PNG, or WEBP image.', 'error');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Image must be 5 MB or smaller.', 'error');
+      return;
+    }
+    setAnnImageFile(file);
+    setAnnImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleRemoveAnnImage = () => {
+    setAnnImageFile(null);
+    if (annImagePreview) {
+      URL.revokeObjectURL(annImagePreview);
+    }
+    setAnnImagePreview(null);
   };
 
   const handleSendNotification = async (e) => {
@@ -191,18 +218,44 @@ export default function Admin() {
       return;
     }
     setNotifyLoading(true);
+    let imageUrl = null;
+    let imageStoragePath = null;
+
     try {
-      const res = await client.post('/announcements', notifyForm);
+      if (annImageFile) {
+        setUploadingAnnImage(true);
+        const formData = new FormData();
+        formData.append('file', annImageFile);
+        const uploadRes = await client.post('/uploads/announcement', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        if (uploadRes.data?.success) {
+          imageUrl = uploadRes.data.url;
+          imageStoragePath = uploadRes.data.storage_ref;
+        } else {
+          throw new Error('Image upload failed.');
+        }
+      }
+
+      const payload = {
+        ...notifyForm,
+        image_url: imageUrl,
+        image_storage_path: imageStoragePath
+      };
+
+      const res = await client.post('/announcements', payload);
       if (res.data?.success) {
         showToast('Announcement broadcasted successfully! 📢');
-        const created = res.data.announcement || { ...notifyForm, id: Date.now(), created_at: new Date().toISOString() };
+        const created = res.data.announcement || { ...payload, id: Date.now(), created_at: new Date().toISOString() };
         setSentNotifications(prev => [created, ...prev.filter(n => String(n.id) !== String(created.id))]);
         setNotifyForm({ title: '', type: 'General', message: '', is_important: false, target: 'all', link: '', expires_at: '' });
+        handleRemoveAnnImage();
       }
     } catch (err) {
-      showToast(err.response?.data?.error || 'Failed to send notification.', 'error');
+      showToast(err.response?.data?.error || err.message || 'Failed to send notification.', 'error');
     } finally {
       setNotifyLoading(false);
+      setUploadingAnnImage(false);
     }
   };
 
@@ -979,7 +1032,65 @@ export default function Admin() {
                     />
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                  {/* ── Photo / Image Attachment Area ── */}
+                  <div className="form-group">
+                    <label className="form-label" style={{ color: 'var(--color-text-muted)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <ImageIcon size={16} color="var(--color-green)" /> Attach Photo / Poster (Optional)
+                    </label>
+
+                    {!annImagePreview ? (
+                      <div
+                        style={{
+                          border: '2px dashed var(--border-strong)',
+                          borderRadius: 12,
+                          padding: '20px',
+                          textAlign: 'center',
+                          background: 'var(--bg-input)',
+                          cursor: 'pointer',
+                          transition: 'all 200ms ease'
+                        }}
+                        onClick={() => document.getElementById('ann-photo-input')?.click()}
+                      >
+                        <input
+                          id="ann-photo-input"
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          onChange={handleAnnImageChange}
+                          style={{ display: 'none' }}
+                        />
+                        <Upload size={24} style={{ color: 'var(--color-green)', marginBottom: 8 }} />
+                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)' }}>Click to upload poster or image</div>
+                        <div style={{ fontSize: 11, color: 'var(--color-text-faint)', marginTop: 4 }}>JPEG, PNG, or WEBP (Max size: 5 MB)</div>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'var(--bg-input)', border: '1px solid var(--border)', padding: 12, borderRadius: 12 }}>
+                        <img
+                          src={annImagePreview}
+                          alt="Announcement Preview"
+                          style={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border-strong)' }}
+                        />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {annImageFile?.name || 'Attached Image'}
+                          </div>
+                          <div style={{ fontSize: 11, color: 'var(--color-text-faint)', marginTop: 2 }}>
+                            {annImageFile ? `${(annImageFile.size / (1024 * 1024)).toFixed(2)} MB` : 'Ready to post'}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          onClick={handleRemoveAnnImage}
+                          style={{ color: '#ef4444', display: 'flex', alignItems: 'center', gap: 4 }}
+                          title="Remove Photo"
+                        >
+                          <X size={16} /> Remove
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginTop: 20 }}>
                     <label className="checkbox-group" style={{ cursor: 'pointer', margin: 0 }}>
                       <input
                         type="checkbox"
@@ -994,11 +1105,11 @@ export default function Admin() {
 
                     <button
                       type="submit"
-                      disabled={notifyLoading}
+                      disabled={notifyLoading || uploadingAnnImage}
                       className="btn btn-primary"
                       style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', gap: 8, pointerEvents: 'auto', cursor: 'pointer' }}
                     >
-                      <Send size={16} /> {notifyLoading ? 'Broadcasting...' : 'Post & Broadcast Notification'}
+                      <Send size={16} /> {uploadingAnnImage ? 'Uploading Image...' : notifyLoading ? 'Broadcasting...' : 'Post & Broadcast Notification'}
                     </button>
                   </div>
                 </form>
@@ -1018,10 +1129,11 @@ export default function Admin() {
                           }}
                         >
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 6 }}>
-                            <div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
                                 <span className="badge badge-green" style={{ fontSize: 11 }}>{n.type || 'General'}</span>
                                 {n.is_important && <span className="badge" style={{ fontSize: 11, background: '#ef4444', color: '#fff' }}>IMPORTANT</span>}
+                                {n.image_url && <span className="badge badge-violet" style={{ fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 3 }}><ImageIcon size={10} /> Photo Attached</span>}
                                 <span style={{ fontSize: 11, color: 'var(--color-text-faint)' }}>Audience: {n.target}</span>
                               </div>
                               <h4 style={{ fontWeight: 800, color: 'var(--color-text)', margin: 0, fontSize: 15 }}>{n.title}</h4>
@@ -1030,12 +1142,22 @@ export default function Admin() {
                             <button
                               className="btn btn-danger btn-sm"
                               onClick={() => setDeleteAnnTarget(n)}
-                              style={{ padding: '4px 10px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}
+                              style={{ padding: '4px 10px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'pointer', flexShrink: 0 }}
                               title="Delete Announcement"
                             >
                               <Trash2 size={13} /> Delete
                             </button>
                           </div>
+
+                          {n.image_url && (
+                            <div style={{ marginTop: 10, marginBottom: 8 }}>
+                              <img
+                                src={n.image_url}
+                                alt={n.title}
+                                style={{ width: '100%', maxHeight: 220, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border)' }}
+                              />
+                            </div>
+                          )}
 
                           <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '6px 0 0', whiteSpace: 'pre-line' }}>{n.message}</p>
                           <div style={{ fontSize: 11, color: 'var(--color-text-faint)', marginTop: 8 }}>

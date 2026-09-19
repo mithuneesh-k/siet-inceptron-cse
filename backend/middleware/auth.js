@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const { supabase } = require('../db/supabase');
 
 const authMiddleware = async (req, res, next) => {
+  if (req.user) return next();
   const authHeader = req.headers['authorization'];
   if (!authHeader) return res.status(401).json({ error: 'No token provided' });
 

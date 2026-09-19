@@ -702,14 +702,43 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
     });
     assert.strictEqual(resCode, 403);
 
-    // 53I. Admin can delete announcement
+    // 53J. Admin creates announcement with attached image metadata
+    await runCall({
+      method: 'POST',
+      url: '/',
+      body: {
+        title: 'Hackathon Poster',
+        message: 'See attached poster for rules',
+        type: 'Hackathon',
+        image_url: 'https://example.com/poster.jpg',
+        image_storage_path: 'storage://department-posts/test-poster.jpg'
+      },
+      user: { id: 'admin1', role: 'admin', is_admin: true }
+    });
+    assert.strictEqual(resCode, 201);
+    assert.strictEqual(resBody.announcement.image_url, 'https://example.com/poster.jpg');
+    assert.strictEqual(resBody.announcement.image_storage_path, 'storage://department-posts/test-poster.jpg');
+    const imageAnnId = resBody.announcement.id;
+
+    // 53K. GET feed returns image_url for image post
+    await runCall({
+      method: 'GET',
+      url: '/',
+      user: { id: 'stu1', role: 'student' }
+    });
+    const foundImageAnn = resBody.announcements.find(a => a.id === imageAnnId);
+    assert.notStrictEqual(foundImageAnn, undefined);
+    assert.strictEqual(foundImageAnn.image_url, 'https://example.com/poster.jpg');
+
+    // 53L. Admin can delete announcement with image cleanup
     await runCall({
       method: 'DELETE',
-      url: `/${importantId}`,
+      url: `/${imageAnnId}`,
       user: { id: 'admin1', role: 'admin', is_admin: true }
     });
     assert.strictEqual(resCode, 200);
     assert.strictEqual(resBody.success, true);
+    assert.strictEqual(resBody.deletedId, imageAnnId);
 
     // Clean up test state
     if (announcementsRouter._resetInMemory) announcementsRouter._resetInMemory();
