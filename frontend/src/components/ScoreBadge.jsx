@@ -1,37 +1,45 @@
 export default function ScoreBadge({ score, size = 'md' }) {
   const tier =
-    score >= 300 ? { label: 'Platinum', color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE', icon: '💎' }
-    : score >= 200 ? { label: 'Gold',    color: '#B38200', bg: '#FFFAE8', border: '#FFD93D', icon: '🏆' }
-    : score >= 100 ? { label: 'Silver',  color: '#2A7D14', bg: '#EEF8E8', border: '#A8D98E', icon: '⭐' }
-    : { label: 'Bronze', color: '#92400E', bg: '#FFF7ED', border: '#FED7AA', icon: '🎯' };
+    score >= 300 ? { label: 'Platinum', key: 'platinum', icon: '💎' }
+    : score >= 200 ? { label: 'Gold',    key: 'gold',     icon: '🏆' }
+    : score >= 100 ? { label: 'Silver',  key: 'silver',   icon: '⭐' }
+    : { label: 'Bronze', key: 'bronze',   icon: '🎯' };
 
   const isLarge = size === 'lg';
 
   return (
-    <div style={{
-      display: 'inline-flex', alignItems: 'center', gap: isLarge ? '10px' : '7px',
-      padding: isLarge ? '10px 18px' : '5px 12px',
-      background: tier.bg,
-      border: `1.5px solid ${tier.border}`,
-      borderRadius: '6px',
-    }}>
+    <div
+      className={`score-badge-box score-badge-${tier.key}`}
+      style={{
+        gap: isLarge ? '10px' : '7px',
+        padding: isLarge ? '10px 18px' : '5px 12px',
+      }}
+    >
       <span style={{ fontSize: isLarge ? '20px' : '14px' }}>{tier.icon}</span>
       <div>
-        <div style={{
-          fontSize: isLarge ? '26px' : '16px',
-          fontWeight: 900,
-          color: tier.color,
-          lineHeight: 1,
-          fontFamily: "'Space Grotesk', sans-serif",
-        }}>
+        <div
+          className="score-badge-val"
+          style={{
+            fontSize: isLarge ? '26px' : '16px',
+            fontWeight: 900,
+            lineHeight: 1,
+            fontFamily: "'Space Grotesk', sans-serif",
+          }}
+        >
           {score.toLocaleString()}
         </div>
         {isLarge && (
-          <div style={{
-            fontSize: '10px', color: tier.color, marginTop: '3px',
-            letterSpacing: '0.1em', textTransform: 'uppercase',
-            fontWeight: 700, opacity: 0.75,
-          }}>
+          <div
+            className="score-badge-label"
+            style={{
+              fontSize: '10px',
+              marginTop: '3px',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              fontWeight: 700,
+              opacity: 0.85,
+            }}
+          >
             {tier.label} Tier
           </div>
         )}
@@ -39,3 +47,4 @@ export default function ScoreBadge({ score, size = 'md' }) {
     </div>
   );
 }
+

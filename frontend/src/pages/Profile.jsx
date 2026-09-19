@@ -316,7 +316,7 @@ export default function Profile() {
             <div className="profile-info">
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                 <h1 className="profile-name">{user.name}</h1>
-                {user.role === 'student' && <span className="badge badge-violet">{rank} Tier</span>}
+                {user.role === 'student' && <span className={`badge tier-${(rank || 'bronze').toLowerCase()}`}>{rank} Tier</span>}
                 {user.is_admin && <span className="badge badge-gold" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Shield size={14} /> {user.role === 'admin' ? 'Admin' : 'Faculty'}</span>}
               </div>
               <div className="profile-meta">

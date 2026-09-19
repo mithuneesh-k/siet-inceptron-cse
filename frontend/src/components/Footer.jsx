@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { MapPin, Mail, Globe, Phone } from "lucide-react";
+import { useTheme } from "../contexts/ThemeContext";
 
 const Footer = () => {
+  const { theme } = useTheme();
   const [showTop, setShowTop] = useState(false);
 
   useEffect(() => {
@@ -46,10 +48,10 @@ const Footer = () => {
     <>
       <style>{`
         .siet-footer {
-          background: #1a2e1a;
-          color: #c8d8c8;
-          font-family: 'Segoe UI', system-ui, sans-serif;
-          border-top: 3px solid #2d7a2d;
+          background: var(--footer-bg);
+          color: var(--color-text-muted);
+          font-family: 'Inter', system-ui, sans-serif;
+          border-top: 1px solid var(--footer-border);
         }
         .footer-main {
           max-width: 1200px;
@@ -72,29 +74,15 @@ const Footer = () => {
           gap: 10px;
           margin-bottom: 14px;
         }
-        .logo-icon {
-          width: 36px;
-          height: 36px;
-          background: #2d7a2d;
-          border-radius: 8px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 18px;
-          font-weight: 700;
-          color: #fff;
-          letter-spacing: -1px;
-          flex-shrink: 0;
-        }
         .brand-name {
           font-size: 18px;
-          font-weight: 700;
-          color: #ffffff;
+          font-weight: 800;
+          color: var(--color-text);
           letter-spacing: -0.3px;
         }
         .brand-sub {
           font-size: 11px;
-          color: #6a8f6a;
+          color: var(--color-green);
           text-transform: uppercase;
           letter-spacing: 0.08em;
           display: block;
@@ -102,7 +90,7 @@ const Footer = () => {
         .footer-desc {
           font-size: 13.5px;
           line-height: 1.75;
-          color: #8aaa8a;
+          color: var(--color-text-muted);
           margin: 0 0 20px;
           max-width: 320px;
         }
@@ -111,30 +99,31 @@ const Footer = () => {
           gap: 10px;
         }
         .social-btn {
-          width: 34px;
-          height: 34px;
+          width: 36px;
+          height: 36px;
           border-radius: 8px;
-          background: #243524;
-          border: 1px solid #2d4a2d;
-          color: #7aaa7a;
+          background: var(--bg-card);
+          border: 1px solid var(--border-strong);
+          color: var(--color-green);
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
           text-decoration: none;
-          transition: background 0.18s, color 0.18s, border-color 0.18s;
+          transition: all 0.18s ease;
         }
         .social-btn:hover {
-          background: #2d7a2d;
-          color: #fff;
-          border-color: #2d7a2d;
+          background: var(--btn-primary-bg);
+          color: var(--btn-primary-color);
+          border-color: var(--color-green);
+          box-shadow: 0 0 16px rgba(132, 204, 22, 0.4);
         }
         .footer-col-title {
           font-size: 12px;
-          font-weight: 600;
+          font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.1em;
-          color: #ffffff;
+          color: var(--color-text);
           margin: 0 0 18px;
         }
         .footer-links {
@@ -147,21 +136,22 @@ const Footer = () => {
         }
         .footer-links a {
           font-size: 13.5px;
-          color: #8aaa8a;
+          color: var(--color-text-muted);
           text-decoration: none;
           transition: color 0.15s;
           display: flex;
           align-items: center;
           gap: 6px;
         }
-        .footer-links a:hover { color: #5dc85d; }
+        .footer-links a:hover { color: var(--color-green); }
         .footer-links a::before {
           content: '';
           width: 4px;
           height: 4px;
           border-radius: 50%;
-          background: #2d7a2d;
+          background: var(--color-green);
           flex-shrink: 0;
+          box-shadow: 0 0 6px var(--color-green);
         }
         .contact-item {
           display: flex;
@@ -169,13 +159,15 @@ const Footer = () => {
           gap: 10px;
           margin-bottom: 13px;
           font-size: 13.5px;
-          color: #8aaa8a;
+          color: var(--color-text-muted);
           line-height: 1.5;
         }
         .contact-icon {
           width: 28px;
           height: 28px;
-          background: #243524;
+          background: var(--bg-card);
+          border: 1px solid var(--border-strong);
+          color: var(--color-green);
           border-radius: 6px;
           display: flex;
           align-items: center;
@@ -185,7 +177,7 @@ const Footer = () => {
         }
         .footer-divider {
           border: none;
-          border-top: 1px solid #243524;
+          border-top: 1px solid var(--border);
           margin: 0;
         }
         .footer-bottom {
@@ -203,46 +195,46 @@ const Footer = () => {
         }
         .footer-copy {
           font-size: 12.5px;
-          color: #4d6a4d;
+          color: var(--color-text-faint);
         }
         .footer-made {
           font-size: 12px;
-          color: #4d6a4d;
+          color: var(--color-text-faint);
           display: flex;
           align-items: center;
           gap: 5px;
         }
         .heart {
-          color: #e05555;
+          color: #ef4444;
           font-size: 13px;
         }
         .back-to-top {
           position: fixed;
           bottom: 28px;
           right: 28px;
-          width: 40px;
-          height: 40px;
-          background: #2d7a2d;
+          width: 42px;
+          height: 42px;
+          background: var(--btn-primary-bg);
           border: none;
           border-radius: 10px;
-          color: #fff;
+          color: var(--btn-primary-color);
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 4px 14px rgba(45,122,45,0.35);
-          transition: opacity 0.2s, transform 0.2s, background 0.15s;
+          box-shadow: 0 6px 20px rgba(116, 214, 0, 0.4);
+          transition: all 0.2s ease;
           z-index: 999;
         }
-        .back-to-top:hover { background: #3a9a3a; transform: translateY(-2px); }
+        .back-to-top:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(116, 214, 0, 0.6); }
         .back-to-top.hidden { opacity: 0; pointer-events: none; transform: translateY(8px); }
         .dept-badge {
           display: inline-block;
           margin-top: 10px;
           font-size: 11px;
-          color: #4d8a4d;
-          background: #1e2e1e;
-          border: 1px solid #2a3f2a;
+          color: var(--color-green);
+          background: var(--bg-card);
+          border: 1px solid var(--border-strong);
           padding: 4px 10px;
           border-radius: 20px;
           letter-spacing: 0.04em;
@@ -255,7 +247,7 @@ const Footer = () => {
           {/* Brand column */}
           <div>
             <div className="footer-brand-logo">
-              <img src="/inceptron-logo.png" alt="Inceptron Logo" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} />
+              <img src={theme === 'dark' ? '/dark-transparent.png' : '/light-transparent.png'} alt="Inceptron Logo" className="footer-logo-img logo-blend" style={{ height: '52px', width: 'auto', objectFit: 'contain' }} />
               <div>
                 <span className="brand-name">SIET Inceptron</span>
                 <span className="brand-sub">CSE Department Portal</span>

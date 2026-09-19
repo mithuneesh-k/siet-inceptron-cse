@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import client from '../api/client';
-import { Home, Zap, Trophy, GraduationCap, Users, User, Shield, CheckCircle, Code } from 'lucide-react';
+import { Home, Zap, Trophy, GraduationCap, Users, User, Shield, CheckCircle, Code, Sun, Moon } from 'lucide-react';
 import { subscribeAchievementEvents } from '../utils/achievementEvents';
 import './Navbar.css';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -71,10 +73,10 @@ export default function Navbar() {
       <div className="navbar-inner">
         <Link to="/" className="navbar-brand">
           <div className="brand-logo">
-            <img src="/inceptron-logo.png" alt="Inceptron Logo" className="brand-logo-img" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            <img src={theme === 'dark' ? '/dark-transparent.png' : '/light-transparent.png'} alt="Inceptron Logo" className="brand-logo-img" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <div className="brand-text">
-            <span className="brand-name">SIET Inceptron</span>
+            <span className="brand-name">SIET <span className="brand-highlight">Inceptron</span></span>
             <span className="brand-dept">CSE Department Portal</span>
           </div>
         </Link>
@@ -110,6 +112,14 @@ export default function Navbar() {
         </div>
 
         <div className="navbar-actions">
+          <button
+            className="theme-toggle-btn"
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+            aria-label="Toggle Theme"
+          >
+            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
           {user && (
             <div className="user-menu">
               <Link to={`/profile/${user.id}`} className="user-chip">

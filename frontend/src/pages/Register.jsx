@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
+import { Sun, Moon } from 'lucide-react';
 import CustomSelect from '../components/CustomSelect';
 
 const CLASSES = ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D', 'CSE-E'];
@@ -13,6 +15,7 @@ const getBatchString = (year) => {
 
 export default function Register() {
   const { register } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [form, setForm] = useState({ 
     name: '', 
@@ -51,6 +54,16 @@ export default function Register() {
 
   return (
     <div className="auth-page">
+      <button
+        type="button"
+        className="login-theme-toggle"
+        onClick={toggleTheme}
+        title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+        aria-label="Toggle Theme"
+      >
+        {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+      </button>
+
       <div className="auth-bg">
         <div className="auth-orb auth-orb-1" />
         <div className="auth-orb auth-orb-2" />
@@ -59,7 +72,7 @@ export default function Register() {
       <div className="auth-card card animate-fadeInUp" style={{ maxWidth: '520px' }}>
         <div className="auth-logo">
           <div style={{ width: 140, height: 140, margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <img src="/inceptron-logo.png" alt="Inceptron Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            <img src={theme === 'dark' ? '/dark-transparent.png' : '/light-transparent.png'} alt="Inceptron Logo" className="logo-blend" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <h1 className="auth-title">Join SIET CSE Portal</h1>
           <p className="auth-subtitle">Create your achievement profile</p>
@@ -149,14 +162,16 @@ export default function Register() {
       </div>
 
       <style>{`
-        .auth-page { min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 80px 24px 40px; position: relative; }
-        .auth-bg { position: fixed; inset: 0; background: linear-gradient(to right, #004d00 50%, #fde02f 50%); z-index: -1; }
-        .auth-card { width: 100%; padding: 40px 36px; background: #ffffff; border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.18); }
+        .auth-page { min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 80px 24px 40px; position: relative; background: var(--bg-primary); color: var(--color-text); }
+        .login-theme-toggle { position: fixed; top: 24px; right: 24px; z-index: 200; width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid var(--border-strong); background: var(--bg-card); color: var(--color-green); display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(10px); box-shadow: 0 4px 16px rgba(0,0,0,0.2); transition: all 0.25s ease; }
+        .login-theme-toggle:hover { transform: scale(1.08) rotate(12deg); border-color: var(--color-green); }
+        .auth-bg { position: fixed; inset: 0; background: var(--bg-primary); z-index: -1; }
+        .auth-card { width: 100%; padding: 40px 36px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.25); }
         .auth-logo { text-align: center; margin-bottom: 28px; }
-        .auth-title { font-size: 26px; font-weight: 800; font-family: 'Space Grotesk', sans-serif; margin-bottom: 6px; }
+        .auth-title { font-size: 26px; font-weight: 800; font-family: 'Space Grotesk', sans-serif; margin-bottom: 6px; color: var(--color-text); }
         .auth-subtitle { font-size: 14px; color: var(--color-text-muted); }
         .auth-link { text-align: center; font-size: 14px; color: var(--color-text-muted); margin-top: 20px; }
-        .auth-link a { color: var(--color-violet-light); font-weight: 600; }
+        .auth-link a { color: var(--color-green); font-weight: 600; }
       `}</style>
     </div>
   );

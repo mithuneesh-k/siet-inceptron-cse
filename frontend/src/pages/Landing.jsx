@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import client from '../api/client';
 import ScoreBadge from '../components/ScoreBadge';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { Users, Award, Trophy, Briefcase, Star, Zap, BookOpen, Rocket, Medal, Target } from 'lucide-react';
 
 const RANK_ICONS = [
@@ -78,6 +79,7 @@ function AchievementCarousel({ topStudents }) {
 
 export default function Landing() {
   const { user } = useAuth();
+  const { theme } = useTheme();
   const [stats, setStats] = useState({ totalStudents: 0, totalAchievements: 0, totalHackathonWins: 0, totalInternships: 0 });
   const [topStudents, setTopStudents] = useState([]);
 
@@ -96,18 +98,30 @@ export default function Landing() {
     return (
       <div className="lp">
         <section className="lp-hero" style={{ padding: '40px 0', minHeight: 'calc(100vh - 84px)', display: 'flex', alignItems: 'center' }}>
-          <div className="container" style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto' }}>
-            <div className="lp-pill" style={{ margin: '0 auto 24px' }}>
-              <span className="lp-pill-dot" />
-              Sri Shakthi Institute of Engineering and Technology, Coimbatore
+          <div className="container">
+            <div className="lp-hero-inner animate-fadeInUp">
+              <div className="lp-hero-logo-col">
+                <img src={theme === 'dark' ? '/dark-transparent.png' : '/light-transparent.png'} alt="Inceptron Logo" className="lp-hero-logo-img" />
+              </div>
+              <div className="lp-hero-text">
+                <div className="lp-pill">
+                  <span className="lp-pill-dot" />
+                  Sri Shakthi Institute of Engineering and Technology, Coimbatore
+                </div>
+                <h1 className="lp-h1">
+                  Inceptron<br />
+                  <span className="lp-h1-accent">Achievement Hub</span>
+                </h1>
+                <p className="lp-sub">
+                  The exclusive achievement hub for SIET CSE Department. Track your progress, discover opportunities, and climb the leaderboard.
+                </p>
+                <div className="lp-ctas">
+                  <Link to="/login" className="btn btn-primary btn-lg" style={{ padding: '14px 28px' }}>
+                    <Rocket size={18} /> Sign In to Portal →
+                  </Link>
+                </div>
+              </div>
             </div>
-            <h1 className="lp-h1" style={{ marginBottom: '16px', fontSize: 'clamp(36px, 5vw, 56px)' }}>
-              Welcome to <br/><span className="lp-h1-accent">Inceptron Hub</span>
-            </h1>
-            <p className="lp-sub" style={{ margin: '0 auto 40px', fontSize: '18px' }}>
-              The exclusive achievement hub for SIET CSE Department. Track your progress, discover opportunities, and climb the leaderboard.
-            </p>
-            <Link to="/login" className="btn btn-primary btn-lg" style={{ padding: '16px 32px', fontSize: '16px' }}>Sign In to Portal →</Link>
           </div>
         </section>
       </div>
@@ -122,7 +136,7 @@ export default function Landing() {
         <div className="container">
           <div className="lp-hero-inner animate-fadeInUp">
             <div className="lp-hero-logo-col">
-              <img src="/inceptron-logo.png" alt="Inceptron Logo" className="lp-hero-logo-img" />
+              <img src={theme === 'dark' ? '/dark-transparent.png' : '/light-transparent.png'} alt="Inceptron Logo" className="lp-hero-logo-img" />
             </div>
             <div className="lp-hero-text">
               <div className="lp-pill">
@@ -227,29 +241,29 @@ export default function Landing() {
 
         /* ── Hero ── */
         .lp-hero {
-          background: #FFFFFF;
+          background: var(--hero-bg);
           border-bottom: 2px solid var(--border);
           padding: calc(var(--navbar-height) + 56px) 0 64px;
         }
         .lp-hero-inner {
           display: flex;
           align-items: center;
-          gap: 48px;
-          max-width: 860px;
+          gap: 52px;
+          max-width: 1040px;
           margin: 0 auto;
         }
         .lp-hero-logo-col {
-          flex: 0 0 360px;
+          flex: 0 0 440px;
           display: flex;
           align-items: center;
           justify-content: center;
         }
         .lp-hero-logo-img {
           width: 100%;
-          max-width: 340px;
+          max-width: 440px;
           height: auto;
           display: block;
-          filter: drop-shadow(0 20px 40px rgba(0,0,0,0.18));
+          filter: drop-shadow(0 20px 40px rgba(0,0,0,0.25));
           transition: transform 0.3s ease;
         }
         .lp-hero-logo-img:hover {

@@ -258,7 +258,7 @@ export default function Leaderboard() {
         /* Podium — flat 2D */
         .podium { display: flex; justify-content: center; align-items: flex-end; gap: 16px; margin-bottom: 40px; }
         .podium-col { display: flex; flex-direction: column; align-items: center; }
-        .podium-student { padding: 16px 14px; border: 2px solid var(--border); border-radius: var(--radius-lg); text-align: center; text-decoration: none; color: inherit; transition: border-color var(--transition); min-width: 130px; background: #fff; }
+        .podium-student { padding: 16px 14px; border: 2px solid var(--border); border-radius: var(--radius-lg); text-align: center; text-decoration: none; color: inherit; transition: border-color var(--transition); min-width: 130px; background: var(--bg-card); }
         .podium-student:hover { border-color: var(--color-green); }
         .podium-ava { width: 60px; height: 60px; background: var(--color-green); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; color: #fff; margin: 0 auto 8px; }
         .podium-sname { font-size: 14px; font-weight: 700; margin-bottom: 2px; color: var(--color-text); }
