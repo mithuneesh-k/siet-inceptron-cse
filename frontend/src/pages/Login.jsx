@@ -461,17 +461,19 @@ export default function Login() {
           position: relative;
           width: 100vw;
           min-height: 100vh;
-          background: #09090b;
+          background: #05070b;
           overflow: hidden;
+          padding-top: var(--navbar-height, 64px);
         }
 
         .intro-viewport {
           position: fixed;
-          inset: 0;
+          top: var(--navbar-height, 64px);
+          left: 0; right: 0; bottom: 0;
           width: 100vw;
-          height: 100vh;
+          height: calc(100vh - var(--navbar-height, 64px));
           z-index: 100;
-          background: #000000;
+          background: #05070b;
           overflow: hidden;
           display: flex;
           align-items: center;
@@ -480,9 +482,9 @@ export default function Login() {
 
         .intro-artwork {
           width: 100vw;
-          height: 100vh;
+          height: 100%;
           object-fit: cover;
-          object-position: center 30%; /* Shifted slightly up */
+          object-position: center 30%;
           display: block;
           will-change: transform, opacity;
           transform-origin: 50% 30%;
@@ -492,7 +494,7 @@ export default function Login() {
           position: absolute;
           inset: 0;
           width: 100vw;
-          height: 100vh;
+          height: 100%;
           pointer-events: none;
           z-index: 102;
           transition: opacity 0.3s ease;
@@ -518,7 +520,7 @@ export default function Login() {
           gap: 12px;
           padding: 16px 36px;
           background: #84cc16;
-          color: #09090b;
+          color: #0a0a0a;
           font-family: 'Space Grotesk', -apple-system, sans-serif;
           font-size: 16px;
           font-weight: 700;
@@ -546,7 +548,7 @@ export default function Login() {
         }
 
         .intro-btn-icon {
-          color: #09090b;
+          color: #0a0a0a;
           transition: transform 0.2s ease;
         }
 
@@ -579,10 +581,10 @@ export default function Login() {
         .auth-07-container {
           position: relative;
           display: flex;
-          height: 100vh;
+          height: calc(100vh - var(--navbar-height, 64px));
           width: 100vw;
           max-width: 100%;
-          background-color: #09090b;
+          background-color: #05070b;
           font-family: 'Inter', system-ui, -apple-system, sans-serif;
           color: #ffffff;
           overflow: hidden;
@@ -592,15 +594,15 @@ export default function Login() {
         .auth-07-left-panel {
           position: relative;
           flex: 1.15;
-          height: 100vh;
-          background-color: #000000;
+          height: 100%;
+          background-color: #05070b;
           overflow: hidden;
           padding: 0;
           margin: 0;
-          border-right: 1px solid #18181b;
+          border-right: 1px solid rgba(255, 255, 255, 0.08);
         }
 
-        /* LAYER 1: Primary Static Image */
+        /* Primary Static Image */
         .auth-07-art-image {
           position: absolute;
           inset: 0;
@@ -615,7 +617,7 @@ export default function Login() {
           filter: contrast(1.05);
         }
 
-        /* LAYER 3: RIGHT PANEL: Authentication Form Wrapper */
+        /* RIGHT PANEL: Authentication Form Wrapper */
         .auth-07-form-wrapper {
           position: relative;
           z-index: 10;
@@ -623,20 +625,21 @@ export default function Login() {
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 40px 48px;
-          height: 100vh;
-          background: #09090b;
+          padding: 32px;
+          height: 100%;
+          background: #05070b;
           overflow-y: auto;
         }
 
+        /* Dark Premium Card Panel */
         .auth-07-card {
           width: 100%;
-          max-width: 420px;
-          background: #09090b;
-          padding: 20px 0px;
-          border-radius: 0px;
-          border: none;
-          box-shadow: none;
+          max-width: 440px;
+          background: #0b0f15;
+          padding: 36px 32px;
+          border-radius: 20px;
+          border: 1px solid #1f2430;
+          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 1px rgba(255, 255, 255, 0.08);
         }
 
         .auth-07-mobile-header {
@@ -644,7 +647,7 @@ export default function Login() {
           align-items: center;
           justify-content: center;
           gap: 12px;
-          margin-bottom: 28px;
+          margin-bottom: 24px;
         }
 
         .auth-07-mobile-logo {
@@ -662,23 +665,23 @@ export default function Login() {
         }
 
         .auth-07-card-header {
-          margin-bottom: 32px;
+          margin-bottom: 28px;
           text-align: left;
         }
 
         .auth-07-card-title {
           font-family: 'Space Grotesk', -apple-system, sans-serif;
-          font-size: 34px;
-          font-weight: 700;
+          font-size: 32px;
+          font-weight: 800;
           color: #ffffff;
           letter-spacing: -0.03em;
-          margin-bottom: 10px;
+          margin-bottom: 8px;
           line-height: 1.15;
         }
 
         .auth-07-card-subtitle {
-          font-size: 15px;
-          color: #94a3b8;
+          font-size: 14.5px;
+          color: #9ca3af;
           font-weight: 400;
         }
 
@@ -688,7 +691,7 @@ export default function Login() {
           align-items: center;
           gap: 10px;
           padding: 12px 16px;
-          background: rgba(239, 68, 68, 0.1);
+          background: rgba(239, 68, 68, 0.12);
           border: 1px solid rgba(239, 68, 68, 0.3);
           border-radius: 12px;
           color: #fca5a5;
@@ -717,7 +720,7 @@ export default function Login() {
         .auth-07-field {
           display: flex;
           flex-direction: column;
-          margin-bottom: 22px;
+          margin-bottom: 20px;
         }
 
         .auth-07-label-row {
@@ -757,7 +760,7 @@ export default function Login() {
         .auth-07-input-icon {
           position: absolute;
           left: 16px;
-          color: #71717a;
+          color: #6b7280;
           pointer-events: none;
           transition: color 0.2s ease;
         }
@@ -765,11 +768,11 @@ export default function Login() {
         .auth-07-input {
           width: 100%;
           padding: 14px 18px 14px 46px;
-          border: 1px solid #27272a;
+          border: 1px solid #232833;
           border-radius: 12px;
           font-size: 15px;
           color: #ffffff;
-          background: #141417;
+          background: #11141c;
           transition: all 0.2s ease;
         }
 
@@ -777,7 +780,7 @@ export default function Login() {
         .auth-07-input:-webkit-autofill:hover,
         .auth-07-input:-webkit-autofill:focus,
         .auth-07-input:-webkit-autofill:active {
-          -webkit-box-shadow: 0 0 0 30px #141417 inset !important;
+          -webkit-box-shadow: 0 0 0 30px #11141c inset !important;
           -webkit-text-fill-color: #ffffff !important;
         }
 
@@ -786,15 +789,15 @@ export default function Login() {
         }
 
         .auth-07-input::placeholder {
-          color: #52525b;
+          color: #6b7280;
           opacity: 1;
         }
 
         .auth-07-input:focus {
           outline: none;
           border-color: #84cc16;
-          background: #18181c;
-          box-shadow: 0 0 0 3px rgba(132, 204, 22, 0.15);
+          background: #151924;
+          box-shadow: 0 0 0 3px rgba(132, 204, 22, 0.2);
         }
 
         .auth-07-input-wrapper:focus-within .auth-07-input-icon {
@@ -806,7 +809,7 @@ export default function Login() {
           right: 14px;
           background: transparent;
           border: none;
-          color: #71717a;
+          color: #6b7280;
           padding: 4px;
           display: flex;
           align-items: center;
@@ -826,7 +829,7 @@ export default function Login() {
           align-items: center;
           gap: 12px;
           margin-top: 2px;
-          margin-bottom: 24px;
+          margin-bottom: 22px;
         }
 
         .auth-07-toggle-switch {
@@ -850,7 +853,7 @@ export default function Login() {
           left: 0;
           right: 0;
           bottom: 0;
-          background-color: #27272a;
+          background-color: #232833;
           transition: 0.3s;
           border-radius: 24px;
         }
@@ -868,16 +871,17 @@ export default function Login() {
         }
 
         .auth-07-toggle-switch input:checked + .auth-07-toggle-slider {
-          background-color: #3f3f46;
+          background-color: #84cc16;
         }
 
         .auth-07-toggle-switch input:checked + .auth-07-toggle-slider:before {
           transform: translateX(20px);
+          background-color: #0a0a0a;
         }
 
         .auth-07-remember-label {
           font-size: 14px;
-          color: #94a3b8;
+          color: #9ca3af;
           font-weight: 500;
         }
 
@@ -887,7 +891,7 @@ export default function Login() {
           padding: 15px;
           margin-top: 4px;
           background: #84cc16;
-          color: #09090b;
+          color: #0a0a0a;
           font-size: 16px;
           font-weight: 700;
           border: none;
@@ -897,13 +901,13 @@ export default function Login() {
           align-items: center;
           justify-content: center;
           gap: 10px;
-          box-shadow: 0 4px 20px rgba(132, 204, 22, 0.25);
+          box-shadow: 0 4px 20px rgba(132, 204, 22, 0.35);
           transition: all 0.2s ease;
         }
 
         .auth-07-submit-btn:hover:not(:disabled) {
           background: #93d926;
-          box-shadow: 0 6px 24px rgba(132, 204, 22, 0.4);
+          box-shadow: 0 6px 28px rgba(132, 204, 22, 0.5);
           transform: translateY(-1px);
         }
 
@@ -920,8 +924,8 @@ export default function Login() {
         .auth-07-spinner {
           width: 18px;
           height: 18px;
-          border: 2px solid rgba(9, 9, 11, 0.3);
-          border-top-color: #09090b;
+          border: 2px solid rgba(10, 10, 10, 0.3);
+          border-top-color: #0a0a0a;
           border-radius: 50%;
           animation: auth07Spin 0.7s linear infinite;
         }
@@ -932,21 +936,21 @@ export default function Login() {
 
         /* Demo / Test Credentials Section */
         .auth-07-demo-section {
-          margin-top: 32px;
+          margin-top: 28px;
         }
 
         .auth-07-divider {
           display: flex;
           align-items: center;
           text-align: center;
-          margin-bottom: 20px;
+          margin-bottom: 18px;
         }
 
         .auth-07-divider::before,
         .auth-07-divider::after {
           content: '';
           flex: 1;
-          border-bottom: 1px solid #27272a;
+          border-bottom: 1px solid #232833;
         }
 
         .auth-07-divider span {
@@ -954,7 +958,7 @@ export default function Login() {
           font-size: 11px;
           font-weight: 700;
           letter-spacing: 0.1em;
-          color: #71717a;
+          color: #6b7280;
           text-transform: uppercase;
         }
 
@@ -969,15 +973,15 @@ export default function Login() {
           align-items: center;
           justify-content: space-between;
           padding: 12px 16px;
-          background: #141417;
-          border: 1px solid #27272a;
+          background: #11141c;
+          border: 1px solid #232833;
           border-radius: 12px;
           cursor: pointer;
           transition: all 0.2s ease;
         }
 
         .auth-07-demo-btn:hover {
-          background: #1a1a1e;
+          background: #161a26;
           border-color: #84cc16;
           transform: translateY(-1px);
         }
@@ -991,19 +995,19 @@ export default function Login() {
         .auth-07-demo-val {
           font-size: 12px;
           font-family: monospace;
-          color: #e4e4e7;
+          color: #f3f4f6;
           font-weight: 600;
-          background: #27272a;
-          padding: 3px 8px;
+          background: #1a1e2b;
+          padding: 4px 10px;
           border-radius: 6px;
-          border: 1px solid #3f3f46;
+          border: 1px solid #2d3345;
         }
 
         /* RESPONSIVE DESIGN FOR MOBILE & TABLET */
         @media (max-width: 868px) {
           .auth-07-container {
             height: auto;
-            min-height: 100vh;
+            min-height: calc(100vh - var(--navbar-height, 64px));
             overflow-y: auto;
           }
 
@@ -1018,27 +1022,28 @@ export default function Login() {
           .auth-07-form-wrapper {
             width: 100%;
             height: auto;
-            min-height: 100vh;
+            min-height: calc(100vh - var(--navbar-height, 64px));
             justify-content: center;
             padding: 24px 16px;
-            background: #09090b;
+            background: #05070b;
           }
 
           .auth-07-card {
-            padding: 36px 20px;
-            background: #09090b;
+            padding: 28px 20px;
+            background: #0b0f15;
+            border-radius: 16px;
           }
         }
 
         @media (max-width: 480px) {
           .auth-07-card-title {
-            font-size: 28px;
+            font-size: 26px;
           }
 
           .auth-07-demo-btn {
             flex-direction: column;
             align-items: flex-start;
-            gap: 4px;
+            gap: 6px;
           }
 
           .auth-07-demo-val {
