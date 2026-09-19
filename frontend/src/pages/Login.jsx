@@ -375,21 +375,23 @@ export default function Login() {
       {/* LOGIN STAGE: DUAL PANEL LAYOUT */}
       <div ref={loginStageRef} className="login-stage" style={{ opacity: 0, pointerEvents: 'none' }}>
         <div className="auth-07-container">
-          {/* LEFT PANEL: Dual-Artwork Theme Crossfade Logo */}
+          {/* LEFT PANEL: Dual-Artwork Full Screen Cover Panel */}
           <div className="auth-07-left-panel">
+            <div className="auth-07-panel-artwork-bg">
+              <img
+                src="/real inceptron widescreen.png"
+                alt="SIET Inceptron Dark Artwork"
+                className={`auth-07-bg-img auth-07-bg-dark ${theme === 'dark' ? 'active' : ''}`}
+              />
+              <img
+                src="/2 nd photo.png"
+                alt="SIET Inceptron Light Artwork"
+                className={`auth-07-bg-img auth-07-bg-light ${theme === 'light' ? 'active' : ''}`}
+              />
+              <div className="auth-07-panel-gradient-overlay" />
+            </div>
+
             <div className="auth-07-logo-wrapper">
-              <div className="auth-07-logo-stack">
-                <img
-                  src="/real inceptron.png"
-                  alt="SIET Inceptron Dark Logo"
-                  className={`auth-07-left-logo auth-07-left-logo-dark ${theme === 'dark' ? 'active' : ''}`}
-                />
-                <img
-                  src="/module.png"
-                  alt="SIET Inceptron Light Logo"
-                  className={`auth-07-left-logo auth-07-left-logo-light ${theme === 'light' ? 'active' : ''}`}
-                />
-              </div>
               <h2 className="auth-07-left-heading">SIET INCEPTRON</h2>
               <p className="auth-07-left-subheading">Department of Computer Science & Engineering</p>
             </div>
@@ -842,89 +844,98 @@ export default function Login() {
           transition: background-color 0.45s ease, color 0.45s ease;
         }
 
-        /* LEFT PANEL: Medium Size Logo Container */
+        /* LEFT PANEL: Full Screen Cover Artwork Panel */
         .auth-07-left-panel {
           position: relative;
-          flex: 1;
+          flex: 1.15;
           height: 100%;
           background-color: #070a0f;
           display: flex;
+          flex-direction: column;
           align-items: center;
-          justify-content: center;
-          padding: 48px 32px;
+          justify-content: flex-end;
+          padding: 56px 40px;
           border-right: 1px solid rgba(255, 255, 255, 0.08);
+          overflow: hidden;
           transition: background-color 0.45s ease, border-color 0.45s ease;
         }
 
-        .auth-07-logo-wrapper {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          text-align: center;
-          max-width: 420px;
-          width: 100%;
-        }
-
-        .auth-07-logo-stack {
-          position: relative;
-          width: 100%;
-          max-width: 280px;
-          height: 280px;
-          margin-bottom: 24px;
-        }
-
-        .auth-07-left-logo {
+        .auth-07-panel-artwork-bg {
           position: absolute;
           inset: 0;
           width: 100%;
           height: 100%;
-          object-fit: contain;
+          z-index: 1;
+        }
+
+        .auth-07-bg-img {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: center center;
           opacity: 0;
-          transition: opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1), transform 0.3s ease, filter 0.3s ease;
+          transition: opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1), transform 0.4s ease;
           pointer-events: none;
         }
 
-        .auth-07-left-logo.active {
+        .auth-07-bg-img.active {
           opacity: 1;
           pointer-events: auto;
         }
 
-        [data-theme="dark"] .auth-07-left-logo {
-          filter: drop-shadow(0 0 28px rgba(132, 204, 22, 0.35));
+        .auth-07-panel-gradient-overlay {
+          position: absolute;
+          inset: 0;
+          z-index: 2;
+          background: linear-gradient(to top, rgba(5, 7, 11, 0.92) 0%, rgba(5, 7, 11, 0.35) 45%, rgba(5, 7, 11, 0.05) 100%);
+          transition: background 0.45s ease;
         }
 
-        [data-theme="light"] .auth-07-left-logo {
-          filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.12));
+        [data-theme="light"] .auth-07-panel-gradient-overlay {
+          background: linear-gradient(to top, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.35) 45%, rgba(255, 255, 255, 0.05) 100%) !important;
         }
 
-        .auth-07-left-logo:hover {
-          transform: scale(1.04);
+        .auth-07-logo-wrapper {
+          position: relative;
+          z-index: 5;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+          max-width: 440px;
+          width: 100%;
         }
 
         .auth-07-left-heading {
           font-family: 'Space Grotesk', -apple-system, sans-serif;
-          font-size: 26px;
-          font-weight: 800;
+          font-size: 28px;
+          font-weight: 900;
           color: #ffffff;
           letter-spacing: -0.02em;
-          margin-bottom: 8px;
+          margin-bottom: 6px;
+          text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
           transition: color 0.45s ease;
         }
 
         [data-theme="light"] .auth-07-left-heading {
           color: #0f172a !important;
+          text-shadow: 0 1px 4px rgba(255, 255, 255, 0.8) !important;
         }
 
         .auth-07-left-subheading {
-          font-size: 14px;
-          color: #94a3b8;
-          font-weight: 500;
+          font-size: 14.5px;
+          color: rgba(255, 255, 255, 0.85);
+          font-weight: 600;
           line-height: 1.5;
+          text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
           transition: color 0.45s ease;
         }
 
         [data-theme="light"] .auth-07-left-subheading {
-          color: #64748b !important;
+          color: #334155 !important;
+          text-shadow: 0 1px 4px rgba(255, 255, 255, 0.8) !important;
         }
 
         /* RIGHT PANEL: Authentication Form Wrapper */
