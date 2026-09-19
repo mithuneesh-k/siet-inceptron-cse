@@ -101,7 +101,7 @@ export default function Landing() {
           <div className="container">
             <div className="lp-hero-inner animate-fadeInUp">
               <div className="lp-hero-logo-col">
-                <img src={theme === 'dark' ? '/dark-transparent.png' : '/light-transparent.png'} alt="Inceptron Logo" className="lp-hero-logo-img" />
+                <img src={theme === 'dark' ? '/dark.png' : '/Screenshot 2026-09-19 162820.png'} alt="Inceptron Logo" className="lp-hero-logo-img" />
               </div>
               <div className="lp-hero-text">
                 <div className="lp-pill">
@@ -136,7 +136,7 @@ export default function Landing() {
         <div className="container">
           <div className="lp-hero-inner animate-fadeInUp">
             <div className="lp-hero-logo-col">
-              <img src={theme === 'dark' ? '/dark-transparent.png' : '/light-transparent.png'} alt="Inceptron Logo" className="lp-hero-logo-img" />
+              <img src={theme === 'dark' ? '/dark.png' : '/Screenshot 2026-09-19 162820.png'} alt="Inceptron Logo" className="lp-hero-logo-img" />
             </div>
             <div className="lp-hero-text">
               <div className="lp-pill">

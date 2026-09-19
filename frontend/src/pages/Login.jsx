@@ -379,12 +379,12 @@ export default function Login() {
           <div className="auth-07-left-panel">
             <div className="auth-07-panel-artwork-bg">
               <img
-                src="/real inceptron widescreen.png"
+                src="/real inceptron.png"
                 alt="SIET Inceptron Dark Artwork"
                 className={`auth-07-bg-img auth-07-bg-dark ${theme === 'dark' ? 'active' : ''}`}
               />
               <img
-                src="/2 nd photo.png"
+                src="/Screenshot 2026-09-19 162820.png"
                 alt="SIET Inceptron Light Artwork"
                 className={`auth-07-bg-img auth-07-bg-light ${theme === 'light' ? 'active' : ''}`}
               />
@@ -403,7 +403,7 @@ export default function Login() {
               {/* Mobile Header */}
               <div className="auth-07-mobile-header">
                 <img
-                  src={theme === 'dark' ? '/real inceptron.png' : '/module.png'}
+                  src={theme === 'dark' ? '/real inceptron.png' : '/Screenshot 2026-09-19 162820.png'}
                   alt="SIET Inceptron Logo"
                   className="auth-07-mobile-logo"
                 />
