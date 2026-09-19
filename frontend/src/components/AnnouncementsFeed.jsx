@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import client from '../api/client';
 import { useTheme } from '../contexts/ThemeContext';
+import { AnnouncementImage } from '../utils/announcementHelpers';
 import {
   Bell, Trophy, Briefcase, Award, BookOpen, Calendar, AlertCircle, ChevronLeft, ChevronRight, ExternalLink, X, Maximize2
 } from 'lucide-react';
@@ -165,7 +166,7 @@ export default function AnnouncementsFeed() {
                     background: cardBg,
                     border: `1.5px solid ${cardBorder}`,
                     borderRadius: 16,
-                    padding: ann.image_url ? 0 : '20px 22px',
+                    padding: 0,
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'space-between',
@@ -174,40 +175,38 @@ export default function AnnouncementsFeed() {
                     boxShadow: isImportant ? '0 4px 20px rgba(239, 68, 68, 0.15)' : 'var(--shadow-sm)'
                   }}
                 >
-                  {/* Optional Top Image */}
-                  {ann.image_url && (
+                  {/* Top Image Banner with module.png fallback */}
+                  <div
+                    style={{ position: 'relative', width: '100%', aspectRatio: '16 / 9', overflow: 'hidden', cursor: 'pointer', background: '#0a0d14' }}
+                    onClick={() => setActiveImageModal(ann)}
+                    title="Click to view photo in full size"
+                  >
+                    <AnnouncementImage
+                      announcement={ann}
+                      alt={ann.title}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform 300ms ease' }}
+                    />
                     <div
-                      style={{ position: 'relative', width: '100%', aspectRatio: '16 / 9', overflow: 'hidden', cursor: 'pointer', background: '#0a0d14' }}
-                      onClick={() => setActiveImageModal(ann)}
-                      title="Click to view photo in full size"
+                      style={{
+                        position: 'absolute',
+                        top: 10,
+                        right: 10,
+                        background: 'rgba(0,0,0,0.65)',
+                        color: '#ffffff',
+                        padding: '4px 8px',
+                        borderRadius: 6,
+                        fontSize: 11,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        backdropFilter: 'blur(4px)'
+                      }}
                     >
-                      <img
-                        src={ann.image_url}
-                        alt={ann.title}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform 300ms ease' }}
-                      />
-                      <div
-                        style={{
-                          position: 'absolute',
-                          top: 10,
-                          right: 10,
-                          background: 'rgba(0,0,0,0.65)',
-                          color: '#ffffff',
-                          padding: '4px 8px',
-                          borderRadius: 6,
-                          fontSize: 11,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 4,
-                          backdropFilter: 'blur(4px)'
-                        }}
-                      >
-                        <Maximize2 size={12} /> Expand
-                      </div>
+                      <Maximize2 size={12} /> Expand
                     </div>
-                  )}
+                  </div>
 
-                  <div style={{ padding: ann.image_url ? '18px 20px 0' : 0 }}>
+                  <div style={{ padding: '18px 20px 0' }}>
                     {/* Header Badges */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 12 }}>
                       <span
@@ -264,7 +263,7 @@ export default function AnnouncementsFeed() {
                   </div>
 
                   {/* Footer Info & Action */}
-                  <div style={{ padding: ann.image_url ? '16px 20px 18px' : 0, marginTop: ann.image_url ? 12 : 18, paddingTop: ann.image_url ? 12 : 12, borderTop: `1px solid ${isImportant ? 'rgba(239, 68, 68, 0.2)' : 'var(--border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                  <div style={{ padding: '16px 20px 18px', marginTop: 12, borderTop: `1px solid ${isImportant ? 'rgba(239, 68, 68, 0.2)' : 'var(--border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                     <span style={{ fontSize: 11.5, color: isImportant ? (isLight ? '#7f1d1d' : '#fca5a5') : 'var(--color-text-faint)', fontWeight: 500 }}>
                       {ann.created_at ? new Date(ann.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recent'}
                     </span>

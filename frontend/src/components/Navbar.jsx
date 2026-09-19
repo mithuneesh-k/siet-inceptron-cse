@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import client from '../api/client';
-import { Home, Zap, Trophy, GraduationCap, Users, User, Shield, CheckCircle, Code, Sun, Moon } from 'lucide-react';
+import { Home, Zap, Trophy, GraduationCap, Users, User, Shield, CheckCircle, Code, Sun, Moon, Bell, AlertCircle, ChevronRight } from 'lucide-react';
 import { subscribeAchievementEvents } from '../utils/achievementEvents';
+import { AnnouncementImage } from '../utils/announcementHelpers';
 import './Navbar.css';
 
 export default function Navbar() {
@@ -16,6 +17,11 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
 
+  // News Hover Popover State
+  const [newsHoverOpen, setNewsHoverOpen] = useState(false);
+  const [latestAnnouncements, setLatestAnnouncements] = useState([]);
+  const newsHoverTimerRef = useRef(null);
+
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 60);
@@ -23,6 +29,17 @@ export default function Navbar() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    // Fetch latest announcements for News hover preview
+    client.get('/announcements')
+      .then(res => {
+        if (res.data?.success) {
+          setLatestAnnouncements((res.data.announcements || []).slice(0, 3));
+        }
+      })
+      .catch(() => setLatestAnnouncements([]));
+  }, [location.pathname]);
 
   useEffect(() => {
     const isAdmin = Boolean(user && (user.is_admin || user.role === 'admin' || user.role === 'faculty'));
@@ -59,9 +76,21 @@ export default function Navbar() {
     setMenuOpen(false);
   };
 
+  const handleNewsMouseEnter = () => {
+    if (newsHoverTimerRef.current) clearTimeout(newsHoverTimerRef.current);
+    setNewsHoverOpen(true);
+  };
+
+  const handleNewsMouseLeave = () => {
+    newsHoverTimerRef.current = setTimeout(() => {
+      setNewsHoverOpen(false);
+    }, 160);
+  };
+
   const navLinks = [
     { to: '/', label: 'Home', icon: <Home size={18} /> },
     { to: '/updates', label: 'Updates', icon: <Zap size={18} />, studentOnly: true },
+    { to: '/news', label: 'News', icon: <Bell size={18} />, isNews: true },
     { to: '/leaderboard', label: 'Leaderboard', icon: <Trophy size={18} /> },
     { to: '/competitive-leaderboard', label: 'Competitive Leaderboard', icon: <Trophy size={18} /> },
     { to: '/platforms', label: 'Platforms', icon: <Code size={18} /> },
@@ -85,6 +114,90 @@ export default function Navbar() {
           {navLinks.map(link => {
             // Hide student-only links from non-student accounts (Faculty / Admin)
             if (link.studentOnly && (user?.is_admin || (user?.role && user?.role !== 'student'))) return null;
+
+            if (link.isNews) {
+              return (
+                <div
+                  key={link.to}
+                  className="nav-item-news-container"
+                  onMouseEnter={handleNewsMouseEnter}
+                  onMouseLeave={handleNewsMouseLeave}
+                  style={{ position: 'relative' }}
+                >
+                  <Link
+                    to={link.to}
+                    className={`nav-link ${isActive(link.to) ? 'active' : ''}`}
+                    onClick={() => { setMenuOpen(false); setNewsHoverOpen(false); }}
+                    onFocus={handleNewsMouseEnter}
+                    onBlur={handleNewsMouseLeave}
+                  >
+                    <span className="nav-icon">{link.icon}</span>
+                    {link.label}
+                  </Link>
+
+                  {/* News Desktop Hover Popover Panel */}
+                  {newsHoverOpen && (
+                    <div
+                      className="news-hover-popover animate-fadeIn"
+                      onMouseEnter={handleNewsMouseEnter}
+                      onMouseLeave={handleNewsMouseLeave}
+                    >
+                      <div className="news-popover-header">
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, fontSize: 13 }}>
+                          <Bell size={14} color="var(--color-green)" /> Latest Announcements
+                        </span>
+                      </div>
+
+                      {latestAnnouncements.length === 0 ? (
+                        <div className="news-popover-empty">
+                          No active announcements right now.
+                        </div>
+                      ) : (
+                        <div className="news-popover-list">
+                          {latestAnnouncements.map(ann => (
+                            <Link
+                              key={ann.id}
+                              to="/news"
+                              className="news-popover-item"
+                              onClick={() => setNewsHoverOpen(false)}
+                            >
+                              <div className="news-popover-thumb">
+                                <AnnouncementImage
+                                  announcement={ann}
+                                  alt={ann.title}
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                />
+                              </div>
+                              <div className="news-popover-info">
+                                <div className="news-popover-badges">
+                                  <span className="news-badge">{ann.type || 'General'}</span>
+                                  {ann.is_important && <span className="news-badge-important">IMPORTANT</span>}
+                                </div>
+                                <div className="news-popover-title">{ann.title}</div>
+                                <div className="news-popover-date">
+                                  {ann.created_at ? new Date(ann.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Recent'}
+                                </div>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="news-popover-footer">
+                        <Link
+                          to="/news"
+                          className="news-popover-all-btn"
+                          onClick={() => setNewsHoverOpen(false)}
+                        >
+                          View All News <ChevronRight size={14} />
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
             return (
               <Link
                 key={link.to}
