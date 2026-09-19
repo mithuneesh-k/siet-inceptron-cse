@@ -132,20 +132,32 @@
 
 /* ─── Reset ─────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; background: var(--bg-primary); }
+html, body, #root {
+  scroll-behavior: smooth;
+  background-color: var(--bg-primary);
+  color: var(--color-text);
+  transition: background-color 750ms cubic-bezier(0.22, 1, 0.36, 1), color 550ms ease;
+}
 
 body {
   font-family: 'Inter', system-ui, sans-serif;
-  background: var(--bg-primary);
-  color: var(--color-text);
   min-height: 100vh;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
 
-a { text-decoration: none; color: inherit; }
-button { font-family: inherit; cursor: pointer; border: none; background: none; }
-input, textarea, select { font-family: inherit; }
+.card, .auth-card, .modal-content {
+  transition: background-color 650ms cubic-bezier(0.22, 1, 0.36, 1), border-color 650ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 650ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+input, textarea, select {
+  font-family: inherit;
+  transition: background-color 650ms cubic-bezier(0.22, 1, 0.36, 1), border-color 650ms cubic-bezier(0.22, 1, 0.36, 1), color 550ms ease;
+}
+
+h1, h2, h3, h4, h5, h6, p, label {
+  transition: color 550ms ease;
+}
 img { max-width: 100%; display: block; }
 
 /* ─── Scrollbar ──────────────────────────────── */

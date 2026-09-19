@@ -114,6 +114,8 @@ export default function Login() {
     window.addEventListener('resize', handleResize);
 
     let frameId;
+    let dotColorFactor = document.documentElement.getAttribute('data-theme') === 'light' ? 1 : 0;
+
     const draw = () => {
       ctx.clearRect(0, 0, width, height);
 
@@ -124,7 +126,14 @@ export default function Login() {
       }
 
       const isLight = document.documentElement.getAttribute('data-theme') === 'light';
-      ctx.fillStyle = isLight ? 'rgba(15, 23, 42, 0.22)' : 'rgba(255, 255, 255, 0.22)';
+      const targetFactor = isLight ? 1 : 0;
+      dotColorFactor += (targetFactor - dotColorFactor) * 0.07; // ~600ms lerp
+
+      const r = Math.round(255 + (15 - 255) * dotColorFactor);
+      const g = Math.round(255 + (23 - 255) * dotColorFactor);
+      const b = Math.round(255 + (42 - 255) * dotColorFactor);
+      const alpha = 0.18 + (0.02) * dotColorFactor;
+      ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(3)})`;
 
       const spring = 0.06;
       const friction = 0.88;
@@ -335,7 +344,8 @@ export default function Login() {
         aria-label="Toggle Theme"
       >
         <span className="theme-toggle-icon-wrap">
-          {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+          <Sun size={20} className="theme-icon sun-icon" />
+          <Moon size={20} className="theme-icon moon-icon" />
         </span>
       </button>
 
@@ -550,7 +560,7 @@ export default function Login() {
           background: var(--bg-primary, #05070b);
           color: var(--color-text, #ffffff);
           overflow: hidden;
-          transition: background-color 0.45s cubic-bezier(0.22, 1, 0.36, 1), color 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+          transition: background-color 750ms cubic-bezier(0.22, 1, 0.36, 1), color 550ms ease;
         }
 
         /* Micro-animated Floating Theme Toggle Button */
@@ -571,24 +581,51 @@ export default function Login() {
           cursor: pointer;
           backdrop-filter: blur(10px);
           box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-          transition: transform 0.3s ease, border-color 0.4s ease, background-color 0.4s ease, color 0.4s ease;
+          transition: transform 0.25s ease, border-color 650ms cubic-bezier(0.22, 1, 0.36, 1), background-color 650ms cubic-bezier(0.22, 1, 0.36, 1), color 550ms ease, box-shadow 650ms cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         .login-theme-toggle .theme-toggle-icon-wrap {
+          position: relative;
+          width: 20px;
+          height: 20px;
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .login-theme-toggle .theme-icon {
+          position: absolute;
+          inset: 0;
+          transition: opacity 400ms cubic-bezier(0.22, 1, 0.36, 1), transform 400ms cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .login-theme-toggle.dark .sun-icon {
+          opacity: 1;
+          transform: rotate(0deg) scale(1);
+          color: #fbbf24;
+        }
+
+        .login-theme-toggle.dark .moon-icon {
+          opacity: 0;
+          transform: rotate(-90deg) scale(0.7);
+          pointer-events: none;
+        }
+
+        .login-theme-toggle.light .sun-icon {
+          opacity: 0;
+          transform: rotate(90deg) scale(0.7);
+          pointer-events: none;
+        }
+
+        .login-theme-toggle.light .moon-icon {
+          opacity: 1;
+          transform: rotate(0deg) scale(1);
+          color: #0f172a;
         }
 
         .login-theme-toggle:hover {
           transform: scale(1.08);
-          border-color: var(--color-green, #84cc16);
           box-shadow: 0 0 20px rgba(132, 204, 22, 0.4);
-        }
-
-        .login-theme-toggle:active .theme-toggle-icon-wrap {
-          transform: rotate(180deg) scale(0.85);
         }
 
         /* Light Theme Overrides with Smooth Intermittent Transitions */
@@ -609,7 +646,7 @@ export default function Login() {
         }
 
         [data-theme="light"] .auth-07-container {
-          background-color: #ffffff !important;
+          background-color: #f8fafc !important;
           color: #0f172a !important;
         }
 
@@ -619,7 +656,7 @@ export default function Login() {
         }
 
         [data-theme="light"] .auth-07-form-wrapper {
-          background: #ffffff !important;
+          background: #f8fafc !important;
         }
 
         [data-theme="light"] .auth-07-card {
@@ -710,7 +747,7 @@ export default function Login() {
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: background-color 0.45s ease;
+          transition: background-color 750ms cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         .intro-artwork-container {
@@ -722,7 +759,7 @@ export default function Login() {
           transform-origin: 50% 30%;
         }
 
-        /* Dual-Artwork Crossfade Layering */
+        /* Dual-Artwork Crossfade Layering with 800ms Smooth Transition */
         .intro-artwork {
           position: absolute;
           inset: 0;
@@ -732,13 +769,17 @@ export default function Login() {
           object-position: center 30%;
           display: block;
           opacity: 0;
-          transition: opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+          transform: scale(1.018);
+          transition: opacity 800ms cubic-bezier(0.22, 1, 0.36, 1), transform 800ms cubic-bezier(0.22, 1, 0.36, 1), filter 700ms ease;
           pointer-events: none;
+          will-change: opacity, transform;
         }
 
         .intro-artwork.active {
           opacity: 1;
+          transform: scale(1);
           pointer-events: auto;
+          filter: blur(0);
         }
 
         .intro-particle-canvas {
@@ -781,7 +822,7 @@ export default function Login() {
           box-shadow: 
             0 10px 30px -5px rgba(132, 204, 22, 0.6),
             0 0 22px rgba(132, 204, 22, 0.45);
-          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+          transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease, box-shadow 0.3s ease;
           letter-spacing: 0.03em;
           text-transform: uppercase;
         }
@@ -818,10 +859,12 @@ export default function Login() {
           letter-spacing: 0.08em;
           text-transform: uppercase;
           text-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+          transition: color 550ms ease;
         }
 
         .intro-hint-arrow {
           color: var(--intro-hint-accent);
+          transition: color 550ms ease;
           animation: introFloat 1.8s ease-in-out infinite;
         }
 
@@ -841,7 +884,7 @@ export default function Login() {
           font-family: 'Inter', system-ui, -apple-system, sans-serif;
           color: #ffffff;
           overflow: hidden;
-          transition: background-color 0.45s ease, color 0.45s ease;
+          transition: background-color 750ms cubic-bezier(0.22, 1, 0.36, 1), color 550ms ease;
         }
 
         /* LEFT PANEL: Full Screen Cover Artwork Panel */
@@ -857,7 +900,7 @@ export default function Login() {
           padding: 56px 40px;
           border-right: 1px solid rgba(255, 255, 255, 0.08);
           overflow: hidden;
-          transition: background-color 0.45s ease, border-color 0.45s ease;
+          transition: background-color 750ms cubic-bezier(0.22, 1, 0.36, 1), border-color 650ms cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         .auth-07-panel-artwork-bg {
@@ -876,13 +919,17 @@ export default function Login() {
           object-fit: cover;
           object-position: center center;
           opacity: 0;
-          transition: opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1), transform 0.4s ease;
+          transform: scale(1.018);
+          transition: opacity 800ms cubic-bezier(0.22, 1, 0.36, 1), transform 800ms cubic-bezier(0.22, 1, 0.36, 1), filter 700ms ease;
           pointer-events: none;
+          will-change: opacity, transform;
         }
 
         .auth-07-bg-img.active {
           opacity: 1;
+          transform: scale(1);
           pointer-events: auto;
+          filter: blur(0);
         }
 
         .auth-07-panel-gradient-overlay {
@@ -890,11 +937,11 @@ export default function Login() {
           inset: 0;
           z-index: 2;
           background: linear-gradient(to top, rgba(5, 7, 11, 0.92) 0%, rgba(5, 7, 11, 0.35) 45%, rgba(5, 7, 11, 0.05) 100%);
-          transition: background 0.45s ease;
+          transition: background 750ms cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         [data-theme="light"] .auth-07-panel-gradient-overlay {
-          background: linear-gradient(to top, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.35) 45%, rgba(255, 255, 255, 0.05) 100%) !important;
+          background: linear-gradient(to top, rgba(15, 23, 42, 0.65) 0%, rgba(15, 23, 42, 0.15) 45%, transparent 100%) !important;
         }
 
         .auth-07-logo-wrapper {
@@ -916,12 +963,12 @@ export default function Login() {
           letter-spacing: -0.02em;
           margin-bottom: 6px;
           text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
-          transition: color 0.45s ease;
+          transition: color 550ms ease;
         }
 
         [data-theme="light"] .auth-07-left-heading {
-          color: #0f172a !important;
-          text-shadow: 0 1px 4px rgba(255, 255, 255, 0.8) !important;
+          color: #ffffff !important;
+          text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7) !important;
         }
 
         .auth-07-left-subheading {
@@ -930,12 +977,12 @@ export default function Login() {
           font-weight: 600;
           line-height: 1.5;
           text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
-          transition: color 0.45s ease;
+          transition: color 550ms ease;
         }
 
         [data-theme="light"] .auth-07-left-subheading {
-          color: #334155 !important;
-          text-shadow: 0 1px 4px rgba(255, 255, 255, 0.8) !important;
+          color: rgba(255, 255, 255, 0.9) !important;
+          text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7) !important;
         }
 
         /* RIGHT PANEL: Authentication Form Wrapper */
@@ -950,7 +997,7 @@ export default function Login() {
           height: 100%;
           background: #05070b;
           overflow-y: auto;
-          transition: background-color 0.45s ease;
+          transition: background-color 750ms cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         /* Dark Premium Card Panel */
