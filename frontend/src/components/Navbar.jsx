@@ -73,7 +73,7 @@ export default function Navbar() {
       <div className="navbar-inner">
         <Link to="/" className="navbar-brand">
           <div className="brand-logo">
-            <img src={theme === 'dark' ? '/dark.png' : '/Screenshot 2026-09-19 162820.png'} alt="Inceptron Logo" className="brand-logo-img" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            <img src={theme === 'dark' ? '/dark.png' : '/inceptron-logo.jpeg'} alt="Inceptron Logo" className="brand-logo-img" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <div className="brand-text">
             <span className="brand-name">SIET <span className="brand-highlight">Inceptron</span></span>

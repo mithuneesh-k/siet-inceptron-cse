@@ -247,7 +247,7 @@ const Footer = () => {
           {/* Brand column */}
           <div>
             <div className="footer-brand-logo">
-              <img src={theme === 'dark' ? '/dark.png' : '/Screenshot 2026-09-19 162820.png'} alt="Inceptron Logo" className="footer-logo-img logo-blend" style={{ height: '52px', width: 'auto', objectFit: 'contain' }} />
+              <img src={theme === 'dark' ? '/dark.png' : '/inceptron-logo.jpeg'} alt="Inceptron Logo" className="footer-logo-img logo-blend" style={{ height: '52px', width: 'auto', objectFit: 'contain' }} />
               <div>
                 <span className="brand-name">SIET Inceptron</span>
                 <span className="brand-sub">CSE Department Portal</span>

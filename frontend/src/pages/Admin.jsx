@@ -853,12 +853,12 @@ export default function Admin() {
 
             {/* ── POST & NOTIFY ── */}
             {tab === 'notify' && isFullAdmin && (
-              <div className="card animate-fadeIn" style={{ padding: '28px', background: '#0b0f17', border: '1px solid #1f293d', borderRadius: '16px' }}>
+              <div className="card animate-fadeIn" style={{ padding: '28px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '16px', boxShadow: 'var(--shadow-md)' }}>
                 <div style={{ marginBottom: 24 }}>
-                  <h2 style={{ fontSize: 20, fontWeight: 800, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: 10, margin: 0 }}>
-                    <Send size={22} style={{ color: '#84cc16' }} /> Post & Notify Department
+                  <h2 style={{ fontSize: 20, fontWeight: 800, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 10, margin: 0 }}>
+                    <Send size={22} style={{ color: 'var(--color-green)' }} /> Post & Notify Department
                   </h2>
-                  <p style={{ fontSize: 13.5, color: '#94a3b8', marginTop: 4 }}>
+                  <p style={{ fontSize: 13.5, color: 'var(--color-text-muted)', marginTop: 4 }}>
                     Broadcast departmental announcements, hackathon alerts, or portal notices to students and faculty.
                   </p>
                 </div>
@@ -866,24 +866,24 @@ export default function Admin() {
                 <form onSubmit={handleSendNotification} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 16 }}>
                     <div className="form-group">
-                      <label className="form-label" style={{ color: '#cbd5e1' }}>Announcement Title</label>
+                      <label className="form-label" style={{ color: 'var(--color-text-muted)', fontWeight: 700 }}>Announcement Title</label>
                       <input
                         type="text"
                         className="form-input"
                         placeholder="e.g. SIET CSE Hackathon 2026 Registrations Open"
                         value={notifyForm.title}
                         onChange={e => setNotifyForm(prev => ({ ...prev, title: e.target.value }))}
-                        style={{ background: '#111827', borderColor: '#1f293d', color: '#f8fafc' }}
+                        style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--color-text)' }}
                         required
                       />
                     </div>
                     <div className="form-group">
-                      <label className="form-label" style={{ color: '#cbd5e1' }}>Target Audience</label>
+                      <label className="form-label" style={{ color: 'var(--color-text-muted)', fontWeight: 700 }}>Target Audience</label>
                       <select
                         className="form-select"
                         value={notifyForm.target}
                         onChange={e => setNotifyForm(prev => ({ ...prev, target: e.target.value }))}
-                        style={{ background: '#111827', borderColor: '#1f293d', color: '#f8fafc' }}
+                        style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--color-text)' }}
                       >
                         <option value="all">All Students & Faculty</option>
                         <option value="students">Students Only</option>
@@ -894,12 +894,12 @@ export default function Admin() {
                       </select>
                     </div>
                     <div className="form-group">
-                      <label className="form-label" style={{ color: '#cbd5e1' }}>Priority Level</label>
+                      <label className="form-label" style={{ color: 'var(--color-text-muted)', fontWeight: 700 }}>Priority Level</label>
                       <select
                         className="form-select"
                         value={notifyForm.priority}
                         onChange={e => setNotifyForm(prev => ({ ...prev, priority: e.target.value }))}
-                        style={{ background: '#111827', borderColor: '#1f293d', color: '#f8fafc' }}
+                        style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--color-text)' }}
                       >
                         <option value="normal">Normal</option>
                         <option value="urgent">Urgent Alert</option>
@@ -909,14 +909,14 @@ export default function Admin() {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label" style={{ color: '#cbd5e1' }}>Announcement Message</label>
+                    <label className="form-label" style={{ color: 'var(--color-text-muted)', fontWeight: 700 }}>Announcement Message</label>
                     <textarea
                       className="form-input"
                       rows={5}
                       placeholder="Write the full announcement details, guidelines, or instructions here..."
                       value={notifyForm.message}
                       onChange={e => setNotifyForm(prev => ({ ...prev, message: e.target.value }))}
-                      style={{ background: '#111827', borderColor: '#1f293d', color: '#f8fafc', resize: 'vertical' }}
+                      style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--color-text)', resize: 'vertical' }}
                       required
                     />
                   </div>
@@ -926,7 +926,7 @@ export default function Admin() {
                       type="submit"
                       disabled={notifyLoading}
                       className="btn btn-primary"
-                      style={{ background: '#84cc16', color: '#070a0f', fontWeight: 800, padding: '12px 24px', display: 'flex', alignItems: 'center', gap: 8, pointerEvents: 'auto', cursor: 'pointer' }}
+                      style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', gap: 8, pointerEvents: 'auto', cursor: 'pointer' }}
                     >
                       <Send size={16} /> {notifyLoading ? 'Broadcasting...' : 'Post & Broadcast Notification'}
                     </button>
@@ -934,17 +934,17 @@ export default function Admin() {
                 </form>
 
                 {sentNotifications.length > 0 && (
-                  <div style={{ marginTop: 36, borderTop: '1px solid #1f293d', paddingTop: 24 }}>
-                    <h3 style={{ fontSize: 16, fontWeight: 700, color: '#f8fafc', marginBottom: 16 }}>Recent Broadcasts</h3>
+                  <div style={{ marginTop: 36, borderTop: '1px solid var(--border)', paddingTop: 24 }}>
+                    <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--color-text)', marginBottom: 16 }}>Recent Broadcasts</h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                       {sentNotifications.map(n => (
-                        <div key={n.id} style={{ background: '#111827', border: '1px solid #1f293d', borderRadius: 12, padding: 16 }}>
+                        <div key={n.id} style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 12, padding: 16 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                            <span style={{ fontWeight: 700, color: '#f8fafc' }}>{n.title}</span>
+                            <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>{n.title}</span>
                             <span className="badge badge-green" style={{ fontSize: 11 }}>{n.target}</span>
                           </div>
-                          <p style={{ fontSize: 13, color: '#cbd5e1', margin: 0 }}>{n.message}</p>
-                          <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 8 }}>{new Date(n.timestamp).toLocaleString()}</div>
+                          <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: 0 }}>{n.message}</p>
+                          <div style={{ fontSize: 11, color: 'var(--color-text-faint)', marginTop: 8 }}>{new Date(n.timestamp).toLocaleString()}</div>
                         </div>
                       ))}
                     </div>
