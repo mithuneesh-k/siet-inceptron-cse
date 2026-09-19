@@ -88,13 +88,13 @@ export default function Navbar() {
   };
 
   const navLinks = [
-    { to: '/', label: 'Home', icon: <Home size={18} /> },
-    { to: '/updates', label: 'Updates', icon: <Zap size={18} />, studentOnly: true },
-    { to: '/news', label: 'News', icon: <Bell size={18} />, isNews: true },
-    { to: '/leaderboard', label: 'Leaderboard', icon: <Trophy size={18} /> },
-    { to: '/competitive-leaderboard', label: 'Competitive Leaderboard', icon: <Trophy size={18} /> },
-    { to: '/platforms', label: 'Platforms', icon: <Code size={18} /> },
-    { to: '/students', label: 'Students', icon: <GraduationCap size={18} /> },
+    { to: '/', label: 'Home', shortLabel: 'Home', icon: <Home size={16} /> },
+    { to: '/updates', label: 'Updates', shortLabel: 'Updates', icon: <Zap size={16} />, studentOnly: true },
+    { to: '/news', label: 'News', shortLabel: 'News', icon: <Bell size={16} />, isNews: true },
+    { to: '/leaderboard', label: 'Leaderboard', shortLabel: 'Leaderboard', icon: <Trophy size={16} /> },
+    { to: '/competitive-leaderboard', label: 'Competitive Leaderboard', shortLabel: 'Competitive', icon: <Trophy size={16} /> },
+    { to: '/platforms', label: 'Platforms', shortLabel: 'Platforms', icon: <Code size={16} /> },
+    { to: '/students', label: 'Students', shortLabel: 'Students', icon: <GraduationCap size={16} /> },
   ];
 
   return (
@@ -106,7 +106,7 @@ export default function Navbar() {
           </div>
           <div className="brand-text">
             <span className="brand-name">SIET <span className="brand-highlight">Inceptron</span></span>
-            <span className="brand-dept">CSE Department Portal</span>
+            <span className="brand-dept">CSE Portal</span>
           </div>
         </Link>
 
@@ -132,7 +132,8 @@ export default function Navbar() {
                     onBlur={handleNewsMouseLeave}
                   >
                     <span className="nav-icon">{link.icon}</span>
-                    {link.label}
+                    <span className="nav-label-full">{link.label}</span>
+                    <span className="nav-label-short">{link.shortLabel || link.label}</span>
                   </Link>
 
                   {/* News Desktop Hover Popover Panel */}
@@ -206,7 +207,8 @@ export default function Navbar() {
                 onClick={() => setMenuOpen(false)}
               >
                 <span className="nav-icon">{link.icon}</span>
-                {link.label}
+                <span className="nav-label-full">{link.label}</span>
+                <span className="nav-label-short">{link.shortLabel || link.label}</span>
               </Link>
             );
           })}
@@ -214,10 +216,14 @@ export default function Navbar() {
           {user?.is_admin && (
             <>
               <Link to="/admin" className={`nav-link ${isActive('/admin') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
-                <span className="nav-icon"><Shield size={18} /></span> Admin
+                <span className="nav-icon"><Shield size={16} /></span>
+                <span className="nav-label-full">Admin</span>
+                <span className="nav-label-short">Admin</span>
               </Link>
               <Link to="/approvals" className={`nav-link ${isActive('/approvals') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
-                <span className="nav-icon"><CheckCircle size={18} /></span> Approvals
+                <span className="nav-icon"><CheckCircle size={16} /></span>
+                <span className="nav-label-full">Approvals</span>
+                <span className="nav-label-short">Approvals</span>
                 {pendingCount > 0 && <span className="nav-pending-badge">{pendingCount}</span>}
               </Link>
             </>

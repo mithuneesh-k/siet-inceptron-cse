@@ -18,35 +18,37 @@
 }
 
 .navbar-inner {
-  max-width: 1180px;
+  max-width: 1440px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 16px;
   height: 100%;
   display: flex;
   align-items: center;
-  gap: 24px;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 /* Brand */
 .navbar-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-shrink: 0;
   text-decoration: none;
   background: var(--bg-card);
   border: 1px solid var(--border-strong);
-  padding: 6px 14px 6px 6px;
+  padding: 4px 10px 4px 4px;
   border-radius: 12px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
   transition: all var(--transition);
+  z-index: 2;
 }
 .navbar-brand:hover {
   border-color: var(--color-green);
   box-shadow: 0 0 16px rgba(132, 204, 22, 0.35);
 }
 .brand-logo {
-  width: 50px; height: 50px;
+  width: 38px; height: 38px;
   background: transparent;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
@@ -54,7 +56,9 @@
   overflow: hidden;
   padding: 1px;
 }
-.brand-text { display: flex; flex-direction: column; line-height: 1.2; }
+.brand-text { display: flex; flex-direction: column; line-height: 1.15; }
+.brand-name { font-size: 13.5px; font-weight: 800; white-space: nowrap; }
+.brand-dept { font-size: 10.5px; font-weight: 600; white-space: nowrap; }
 
 /* Light Theme Brand Colors */
 [data-theme="light"] .navbar-brand {
@@ -74,16 +78,19 @@
 .navbar-links {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 3px;
   flex: 1;
+  justify-content: flex-start;
+  margin-left: 8px;
+  min-width: 0;
 }
 .nav-link {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
+  gap: 5px;
+  padding: 6px 10px;
   border-radius: 10px;
-  font-size: 14px; font-weight: 600;
+  font-size: 13px; font-weight: 600;
   color: var(--color-text-muted);
   transition: transform 200ms ease, background 200ms ease, border-color 200ms ease, box-shadow 200ms ease, color 200ms ease;
   text-decoration: none;
@@ -92,6 +99,21 @@
   position: relative;
   z-index: 1;
   pointer-events: auto;
+  white-space: nowrap;
+}
+
+.nav-label-short {
+  display: none;
+}
+.nav-label-full {
+  display: inline;
+}
+
+@media (max-width: 1280px) {
+  .nav-label-full { display: none; }
+  .nav-label-short { display: inline; }
+  .brand-dept { display: none; }
+  .nav-link { padding: 6px 8px; font-size: 12.5px; }
 }
 
 .nav-link .nav-icon {
@@ -188,12 +210,12 @@
 }
 
 /* Actions */
-.navbar-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
-.user-menu { display: flex; align-items: center; gap: 10px; }
+.navbar-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.user-menu { display: flex; align-items: center; gap: 8px; }
 
 .user-chip {
-  display: flex; align-items: center; gap: 10px;
-  padding: 4px 14px 4px 4px;
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 12px 4px 4px;
   background: var(--bg-card);
   border: 1px solid var(--border-strong);
   border-radius: 10px;
@@ -223,7 +245,7 @@
 }
 .user-name { font-size: 13px; font-weight: 700; }
 
-/* Mobile */
+/* Mobile & Tablet Drawer Breakpoint */
 .menu-toggle {
   display: none; flex-direction: column; gap: 5px;
   padding: 6px; cursor: pointer; background: none; border: none;
@@ -236,8 +258,10 @@
 }
 [data-theme="light"] .menu-toggle span { background: #ffffff; }
 
-@media (max-width: 768px) {
+@media (max-width: 1040px) {
   .navbar-inner { gap: 0; }
+  .nav-label-full { display: inline; }
+  .nav-label-short { display: none; }
   .navbar-links {
     position: fixed;
     top: var(--navbar-height); left: 0; right: 0;
@@ -252,6 +276,7 @@
     pointer-events: none;
     transition: all var(--transition-slow);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9);
+    margin-left: 0;
   }
   .navbar-links.open { transform: translateY(0); opacity: 1; pointer-events: all; }
   .nav-link { padding: 12px 14px; }
