@@ -58,10 +58,11 @@ function AppContent() {
   const location = useLocation();
 
   const isLoginPage = location.pathname === '/login';
+  const showHeaderFooter = Boolean(user) && !isLoginPage;
 
   return (
     <>
-      <Navbar />
+      {showHeaderFooter && <Navbar />}
       <Suspense fallback={<div className="p-4 text-center">Loading...</div>}>
         <Routes>
           <Route path="/" element={<ProtectedRoute><Landing /></ProtectedRoute>} />
@@ -79,7 +80,7 @@ function AppContent() {
           <Route path="*" element={<Navigate to={user ? "/" : "/login"} replace />} />
         </Routes>
       </Suspense>
-      {user && !isLoginPage && <Footer />}
+      {showHeaderFooter && <Footer />}
     </>
   );
 }

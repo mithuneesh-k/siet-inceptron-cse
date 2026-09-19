@@ -59,7 +59,6 @@ export default function Navbar() {
 
   const navLinks = [
     { to: '/', label: 'Home', icon: <Home size={18} /> },
-    { to: '/login', label: 'Login', icon: <User size={18} />, authOnly: false },
     { to: '/updates', label: 'Updates', icon: <Zap size={18} />, studentOnly: true },
     { to: '/leaderboard', label: 'Leaderboard', icon: <Trophy size={18} /> },
     { to: '/competitive-leaderboard', label: 'Competitive Leaderboard', icon: <Trophy size={18} /> },
@@ -82,10 +81,6 @@ export default function Navbar() {
 
         <div className={`navbar-links ${menuOpen ? 'open' : ''}`}>
           {navLinks.map(link => {
-            // Hide non-auth links if not logged in except Home and Login
-            if (!user && link.to !== '/' && link.to !== '/login') return null;
-            // Hide Login link if logged in
-            if (user && link.to === '/login') return null;
             // Hide student-only links from non-student accounts (Faculty / Admin)
             if (link.studentOnly && (user?.is_admin || (user?.role && user?.role !== 'student'))) return null;
             return (
@@ -115,17 +110,13 @@ export default function Navbar() {
         </div>
 
         <div className="navbar-actions">
-          {user ? (
+          {user && (
             <div className="user-menu">
               <Link to={`/profile/${user.id}`} className="user-chip">
                 <div className="user-avatar-sm">{user.name?.[0] || '?'}</div>
                 <span className="user-name">{user.name?.split(' ')[0] || 'User'}</span>
               </Link>
               <button className="btn btn-ghost btn-sm" onClick={handleLogout}>Logout</button>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <Link to="/login" className={`nav-link ${location.pathname === '/login' ? 'active' : ''}`}>Login</Link>
             </div>
           )}
         </div>

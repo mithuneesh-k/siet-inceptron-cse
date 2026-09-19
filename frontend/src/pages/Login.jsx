@@ -463,15 +463,13 @@ export default function Login() {
           min-height: 100vh;
           background: #05070b;
           overflow: hidden;
-          padding-top: var(--navbar-height, 64px);
         }
 
         .intro-viewport {
           position: fixed;
-          top: var(--navbar-height, 64px);
-          left: 0; right: 0; bottom: 0;
+          inset: 0;
           width: 100vw;
-          height: calc(100vh - var(--navbar-height, 64px));
+          height: 100vh;
           z-index: 100;
           background: #05070b;
           overflow: hidden;
@@ -581,7 +579,7 @@ export default function Login() {
         .auth-07-container {
           position: relative;
           display: flex;
-          height: calc(100vh - var(--navbar-height, 64px));
+          height: 100vh;
           width: 100vw;
           max-width: 100%;
           background-color: #05070b;
@@ -1007,7 +1005,7 @@ export default function Login() {
         @media (max-width: 868px) {
           .auth-07-container {
             height: auto;
-            min-height: calc(100vh - var(--navbar-height, 64px));
+            min-height: 100vh;
             overflow-y: auto;
           }
 
@@ -1022,7 +1020,7 @@ export default function Login() {
           .auth-07-form-wrapper {
             width: 100%;
             height: auto;
-            min-height: calc(100vh - var(--navbar-height, 64px));
+            min-height: 100vh;
             justify-content: center;
             padding: 24px 16px;
             background: #05070b;
