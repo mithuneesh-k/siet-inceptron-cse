@@ -587,6 +587,134 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
     assert.strictEqual(migrationSql.includes("GRANT EXECUTE ON FUNCTION public.delete_faculty_member(uuid) TO service_role;"), true);
   });
 
+  test('53. Announcements API: Auth permissions, important flag, newest-first sorting, expiry filter & 3 per page pagination', async () => {
+    const announcementsRouter = require('../routes/announcements');
+    if (announcementsRouter._resetInMemory) announcementsRouter._resetInMemory();
+
+    let resCode = null, resBody = null;
+    const runCall = (req) => {
+      resCode = null; resBody = null;
+      return new Promise((resolve) => {
+        const reqObj = Object.assign({
+          method: 'GET',
+          url: '/',
+          baseUrl: '',
+          originalUrl: req.url || '/',
+          params: req.params || {},
+          query: {},
+          body: req.body || {},
+          headers: Object.assign({ 'content-type': 'application/json' }, req.headers || {}),
+          user: req.user
+        }, req);
+
+        const resObj = {
+          statusCode: 200,
+          status: (c) => { resCode = c; resObj.statusCode = c; return resObj; },
+          json: (b) => {
+            if (resCode === null) resCode = resObj.statusCode;
+            resBody = b;
+            resolve();
+            return resObj;
+          }
+        };
+
+        announcementsRouter.handle(reqObj, resObj, (err) => {
+          if (err && !resCode) resCode = 500;
+          resolve();
+        });
+      });
+    };
+
+    // 53A. Admin creates normal announcement
+    await runCall({
+      method: 'POST',
+      url: '/',
+      body: { title: 'Hackathon Alert', message: 'Annual hackathon begins next week', type: 'Hackathon', is_important: false },
+      user: { id: 'admin1', role: 'admin', is_admin: true }
+    });
+    assert.strictEqual(resCode, 201);
+    assert.strictEqual(resBody.success, true);
+    assert.strictEqual(resBody.announcement.title, 'Hackathon Alert');
+    assert.strictEqual(resBody.announcement.is_important, false);
+
+    // 53B. Admin creates important announcement
+    await runCall({
+      method: 'POST',
+      url: '/',
+      body: { title: 'Urgent Exam Update', message: 'Exam timetable updated', type: 'General', is_important: true },
+      user: { id: 'admin1', role: 'admin', is_admin: true }
+    });
+    assert.strictEqual(resCode, 201);
+    assert.strictEqual(resBody.announcement.is_important, true);
+    const importantId = resBody.announcement.id;
+
+    // 53C. Student create rejected with 403
+    await runCall({
+      method: 'POST',
+      url: '/',
+      body: { title: 'Illegal Post', message: 'Student trying to post' },
+      user: { id: 'stu1', role: 'student', is_admin: false }
+    });
+    assert.strictEqual(resCode, 403);
+
+    // 53D. Faculty create rejected with 403
+    await runCall({
+      method: 'POST',
+      url: '/',
+      body: { title: 'Faculty Post', message: 'Faculty trying to post' },
+      user: { id: 'fac1', role: 'faculty', is_admin: true, is_hod: false }
+    });
+    assert.strictEqual(resCode, 403);
+
+    // 53E. Authenticated user can read announcements
+    await runCall({
+      method: 'GET',
+      url: '/',
+      user: { id: 'stu1', role: 'student' }
+    });
+    assert.strictEqual(resBody.success, true);
+    assert.strictEqual(Array.isArray(resBody.announcements), true);
+    assert.strictEqual(resBody.announcements.length >= 2, true);
+
+    // 53F. Sorting test: newest first
+    assert.strictEqual(resBody.announcements[0].title, 'Urgent Exam Update');
+
+    // 53G. Expired item excluded
+    await runCall({
+      method: 'POST',
+      url: '/',
+      body: { title: 'Expired Event', message: 'Old event', expires_at: new Date(Date.now() - 3600000).toISOString() },
+      user: { id: 'admin1', role: 'admin', is_admin: true }
+    });
+    await runCall({
+      method: 'GET',
+      url: '/',
+      user: { id: 'stu1', role: 'student' }
+    });
+    const expiredFound = resBody.announcements.some(a => a.title === 'Expired Event');
+    assert.strictEqual(expiredFound, false);
+
+    // 53H. Student delete rejected with 403
+    await runCall({
+      method: 'DELETE',
+      url: `/${importantId}`,
+      user: { id: 'stu1', role: 'student', is_admin: false }
+    });
+    assert.strictEqual(resCode, 403);
+
+    // 53I. Admin can delete announcement
+    await runCall({
+      method: 'DELETE',
+      url: `/${importantId}`,
+      user: { id: 'admin1', role: 'admin', is_admin: true }
+    });
+    assert.strictEqual(resCode, 200);
+    assert.strictEqual(resBody.success, true);
+
+    // Clean up test state
+    if (announcementsRouter._resetInMemory) announcementsRouter._resetInMemory();
+  });
+
   const { runPlatformTests } = require('./platform.test');
   await runPlatformTests();
 

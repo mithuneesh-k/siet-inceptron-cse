@@ -4,6 +4,7 @@ import client from '../api/client';
 import ScoreBadge from '../components/ScoreBadge';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import AnnouncementsFeed from '../components/AnnouncementsFeed';
 import { Users, Award, Trophy, Briefcase, Star, Zap, BookOpen, Rocket, Medal, Target } from 'lucide-react';
 
 const RANK_ICONS = [
@@ -177,6 +178,9 @@ export default function Landing() {
           ))}
         </div>
       </section>
+
+      {/* ── Department Announcements & Notifications ── */}
+      <AnnouncementsFeed />
 
       {/* ── Top Achievers ─────────────────────── */}
       <section className="lp-section">

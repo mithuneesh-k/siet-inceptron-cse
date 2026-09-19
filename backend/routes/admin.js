@@ -739,25 +739,22 @@ router.get('/advisor/dashboard', facultyAdvisorMiddleware, async (req, res) => {
   });
 });
 
-// POST /api/admin/notify - Broadcast notification/announcement (HOD/Admin only)
-router.post('/notify', hodMiddleware, async (req, res) => {
-  const { title, message, target, priority } = req.body;
-  if (!title || !message) {
-    return res.status(400).json({ error: 'Title and message are required for notification.' });
-  }
-  return res.json({
-    success: true,
-    message: 'Notification broadcasted successfully.',
-    notification: {
-      id: Date.now(),
-      title: title.trim(),
-      message: message.trim(),
-      target: target || 'all',
-      priority: priority || 'normal',
-      timestamp: new Date().toISOString()
-    }
-  });
-});
+// POST /api/admin/notify & /api/admin/announcements - Broadcast announcement (Admin/HOD only)
+const announcementsRouter = require('./announcements');
+
+const handleCreateAnnouncement = async (req, res, next) => {
+  req.url = '/';
+  return announcementsRouter(req, res, next);
+};
+
+const handleDeleteAnnouncement = async (req, res, next) => {
+  return announcementsRouter(req, res, next);
+};
+
+router.post('/notify', hodMiddleware, handleCreateAnnouncement);
+router.post('/announcements', hodMiddleware, handleCreateAnnouncement);
+router.delete('/notify/:id', hodMiddleware, handleDeleteAnnouncement);
+router.delete('/announcements/:id', hodMiddleware, handleDeleteAnnouncement);
 
 // ─── Admin: Clear Cache ──────────────────────────────────────────────────────
 router.post('/clear-cache', hodMiddleware, async (req, res) => {

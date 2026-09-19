@@ -54,9 +54,10 @@ export default function Admin() {
   const [platPlatformFilter, setPlatPlatformFilter] = useState('all');
 
   // Post & Notify state
-  const [notifyForm, setNotifyForm] = useState({ title: '', message: '', target: 'all', priority: 'normal' });
+  const [notifyForm, setNotifyForm] = useState({ title: '', type: 'General', message: '', is_important: false, target: 'all', link: '', expires_at: '' });
   const [notifyLoading, setNotifyLoading] = useState(false);
   const [sentNotifications, setSentNotifications] = useState([]);
+  const [deleteAnnTarget, setDeleteAnnTarget] = useState(null);
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
@@ -152,14 +153,61 @@ export default function Admin() {
     }
   };
 
+  const loadAnnouncements = useCallback(async () => {
+    try {
+      const res = await client.get('/announcements');
+      if (res.data?.success) {
+        setSentNotifications(res.data.announcements || []);
+      }
+    } catch {
+      setSentNotifications([]);
+    }
+  }, []);
+
   useEffect(() => {
     if (tab === 'manage') loadManagedStudents();
     if (tab === 'faculty') loadFaculties();
     if (tab === 'platforms') loadPlatformConnections();
-  }, [tab, loadManagedStudents, loadFaculties, loadPlatformConnections]);
+    if (tab === 'notify') loadAnnouncements();
+  }, [tab, loadManagedStudents, loadFaculties, loadPlatformConnections, loadAnnouncements]);
+
+  const handleDeleteAnnouncementConfirm = async () => {
+    if (!deleteAnnTarget) return;
+    const targetId = deleteAnnTarget.id;
+    setDeleteAnnTarget(null);
+    try {
+      await client.delete(`/announcements/${targetId}`);
+      setSentNotifications(prev => prev.filter(n => String(n.id) !== String(targetId)));
+      showToast('Announcement deleted successfully.');
+    } catch (err) {
+      showToast(err.response?.data?.error || 'Failed to delete announcement.', 'error');
+    }
+  };
+
+  const handleSendNotification = async (e) => {
+    e.preventDefault();
+    if (!notifyForm.title.trim() || !notifyForm.message.trim()) {
+      showToast('Title and message are required.', 'error');
+      return;
+    }
+    setNotifyLoading(true);
+    try {
+      const res = await client.post('/announcements', notifyForm);
+      if (res.data?.success) {
+        showToast('Announcement broadcasted successfully! 📢');
+        const created = res.data.announcement || { ...notifyForm, id: Date.now(), created_at: new Date().toISOString() };
+        setSentNotifications(prev => [created, ...prev.filter(n => String(n.id) !== String(created.id))]);
+        setNotifyForm({ title: '', type: 'General', message: '', is_important: false, target: 'all', link: '', expires_at: '' });
+      }
+    } catch (err) {
+      showToast(err.response?.data?.error || 'Failed to send notification.', 'error');
+    } finally {
+      setNotifyLoading(false);
+    }
+  };
 
   const isAdmin = Boolean(user && (user.is_admin || user.role === 'admin' || user.role === 'faculty'));
-  if (!isAdmin) return <Navigate to="/" replace />;
+  const isFullAdmin = Boolean(user && (user.role === 'admin' || user.is_admin || user.is_hod || user.designation?.toUpperCase() === 'HOD'));
 
   const totalScore = students.reduce((s, u) => s + u.score, 0);
   const avgScore = students.length ? Math.round(totalScore / students.length) : 0;
@@ -251,29 +299,6 @@ export default function Admin() {
     }
   };
 
-  const isFullAdmin = Boolean(user && (user.role === 'admin' || user.is_admin || user.is_hod || user.designation?.toUpperCase() === 'HOD'));
-
-  const handleSendNotification = async (e) => {
-    e.preventDefault();
-    if (!notifyForm.title.trim() || !notifyForm.message.trim()) {
-      showToast('Title and message are required.', 'error');
-      return;
-    }
-    setNotifyLoading(true);
-    try {
-      const res = await client.post('/admin/notify', notifyForm);
-      if (res.data?.success) {
-        showToast('Announcement broadcasted successfully! 📢');
-        setSentNotifications(prev => [res.data.notification, ...prev]);
-        setNotifyForm({ title: '', message: '', target: 'all', priority: 'normal' });
-      }
-    } catch (err) {
-      showToast(err.response?.data?.error || 'Failed to send notification.', 'error');
-    } finally {
-      setNotifyLoading(false);
-    }
-  };
-
   // Auto-populate filters for restricted advisors
   useEffect(() => {
     if (user && !isFullAdmin) {
@@ -281,6 +306,8 @@ export default function Admin() {
       if (user.advising_batch) setFilterBatch(user.advising_batch);
     }
   }, [user, isFullAdmin]);
+
+  if (!isAdmin) return <Navigate to="/" replace />;
 
   const tabs = [
     { id: 'overview', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><BarChart2 size={16} /> Overview</span> },
@@ -859,14 +886,14 @@ export default function Admin() {
                     <Send size={22} style={{ color: 'var(--color-green)' }} /> Post & Notify Department
                   </h2>
                   <p style={{ fontSize: 13.5, color: 'var(--color-text-muted)', marginTop: 4 }}>
-                    Broadcast departmental announcements, hackathon alerts, or portal notices to students and faculty.
+                    Broadcast departmental announcements, hackathons, internships, or notices to students and faculty.
                   </p>
                 </div>
 
                 <form onSubmit={handleSendNotification} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 16 }}>
                     <div className="form-group">
-                      <label className="form-label" style={{ color: 'var(--color-text-muted)', fontWeight: 700 }}>Announcement Title</label>
+                      <label className="form-label" style={{ color: 'var(--color-text-muted)', fontWeight: 700 }}>Announcement Title *</label>
                       <input
                         type="text"
                         className="form-input"
@@ -877,6 +904,25 @@ export default function Admin() {
                         required
                       />
                     </div>
+
+                    <div className="form-group">
+                      <label className="form-label" style={{ color: 'var(--color-text-muted)', fontWeight: 700 }}>Announcement Type *</label>
+                      <select
+                        className="form-select"
+                        value={notifyForm.type}
+                        onChange={e => setNotifyForm(prev => ({ ...prev, type: e.target.value }))}
+                        style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--color-text)' }}
+                      >
+                        <option value="General">General</option>
+                        <option value="Hackathon">Hackathon</option>
+                        <option value="Internship">Internship</option>
+                        <option value="Achievement">Achievement</option>
+                        <option value="Course">Course</option>
+                        <option value="Placement">Placement</option>
+                        <option value="Event">Event</option>
+                      </select>
+                    </div>
+
                     <div className="form-group">
                       <label className="form-label" style={{ color: 'var(--color-text-muted)', fontWeight: 700 }}>Target Audience</label>
                       <select
@@ -893,23 +939,35 @@ export default function Admin() {
                         <option value="cse-c">CSE-C Only</option>
                       </select>
                     </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
                     <div className="form-group">
-                      <label className="form-label" style={{ color: 'var(--color-text-muted)', fontWeight: 700 }}>Priority Level</label>
-                      <select
-                        className="form-select"
-                        value={notifyForm.priority}
-                        onChange={e => setNotifyForm(prev => ({ ...prev, priority: e.target.value }))}
+                      <label className="form-label" style={{ color: 'var(--color-text-muted)', fontWeight: 700 }}>Action Link / URL (Optional)</label>
+                      <input
+                        type="url"
+                        className="form-input"
+                        placeholder="https://..."
+                        value={notifyForm.link}
+                        onChange={e => setNotifyForm(prev => ({ ...prev, link: e.target.value }))}
                         style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--color-text)' }}
-                      >
-                        <option value="normal">Normal</option>
-                        <option value="urgent">Urgent Alert</option>
-                        <option value="opportunity">New Opportunity</option>
-                      </select>
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label" style={{ color: 'var(--color-text-muted)', fontWeight: 700 }}>Expiry Date (Optional)</label>
+                      <input
+                        type="date"
+                        className="form-input"
+                        value={notifyForm.expires_at}
+                        onChange={e => setNotifyForm(prev => ({ ...prev, expires_at: e.target.value }))}
+                        style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--color-text)' }}
+                      />
                     </div>
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label" style={{ color: 'var(--color-text-muted)', fontWeight: 700 }}>Announcement Message</label>
+                    <label className="form-label" style={{ color: 'var(--color-text-muted)', fontWeight: 700 }}>Announcement Message *</label>
                     <textarea
                       className="form-input"
                       rows={5}
@@ -921,7 +979,19 @@ export default function Admin() {
                     />
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                    <label className="checkbox-group" style={{ cursor: 'pointer', margin: 0 }}>
+                      <input
+                        type="checkbox"
+                        className="checkbox-custom"
+                        checked={notifyForm.is_important}
+                        onChange={e => setNotifyForm(prev => ({ ...prev, is_important: e.target.checked }))}
+                      />
+                      <span style={{ fontWeight: 700, color: notifyForm.is_important ? '#ef4444' : 'var(--color-text)' }}>
+                        Mark as IMPORTANT (Red Highlighted Banner)
+                      </span>
+                    </label>
+
                     <button
                       type="submit"
                       disabled={notifyLoading}
@@ -935,16 +1005,42 @@ export default function Admin() {
 
                 {sentNotifications.length > 0 && (
                   <div style={{ marginTop: 36, borderTop: '1px solid var(--border)', paddingTop: 24 }}>
-                    <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--color-text)', marginBottom: 16 }}>Recent Broadcasts</h3>
+                    <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--color-text)', marginBottom: 16 }}>Posted Announcements ({sentNotifications.length})</h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                       {sentNotifications.map(n => (
-                        <div key={n.id} style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 12, padding: 16 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                            <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>{n.title}</span>
-                            <span className="badge badge-green" style={{ fontSize: 11 }}>{n.target}</span>
+                        <div
+                          key={n.id}
+                          style={{
+                            background: n.is_important ? 'rgba(239, 68, 68, 0.08)' : 'var(--bg-input)',
+                            border: `1px solid ${n.is_important ? 'rgba(239, 68, 68, 0.4)' : 'var(--border)'}`,
+                            borderRadius: 12,
+                            padding: 16
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 6 }}>
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                <span className="badge badge-green" style={{ fontSize: 11 }}>{n.type || 'General'}</span>
+                                {n.is_important && <span className="badge" style={{ fontSize: 11, background: '#ef4444', color: '#fff' }}>IMPORTANT</span>}
+                                <span style={{ fontSize: 11, color: 'var(--color-text-faint)' }}>Audience: {n.target}</span>
+                              </div>
+                              <h4 style={{ fontWeight: 800, color: 'var(--color-text)', margin: 0, fontSize: 15 }}>{n.title}</h4>
+                            </div>
+
+                            <button
+                              className="btn btn-danger btn-sm"
+                              onClick={() => setDeleteAnnTarget(n)}
+                              style={{ padding: '4px 10px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}
+                              title="Delete Announcement"
+                            >
+                              <Trash2 size={13} /> Delete
+                            </button>
                           </div>
-                          <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: 0 }}>{n.message}</p>
-                          <div style={{ fontSize: 11, color: 'var(--color-text-faint)', marginTop: 8 }}>{new Date(n.timestamp).toLocaleString()}</div>
+
+                          <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '6px 0 0', whiteSpace: 'pre-line' }}>{n.message}</p>
+                          <div style={{ fontSize: 11, color: 'var(--color-text-faint)', marginTop: 8 }}>
+                            Posted: {new Date(n.created_at || n.timestamp || Date.now()).toLocaleString()}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -1014,12 +1110,25 @@ export default function Admin() {
       {deleteFacultyTarget && (
         <ConfirmModal
           isOpen={Boolean(deleteFacultyTarget)}
-          title={`Delete faculty member "${deleteFacultyTarget.name}"?`}
-          message="This action will remove their faculty login account."
+          title="Delete Faculty Member?"
+          message="This will permanently remove this faculty account."
           confirmText="Delete Faculty"
           confirmVariant="danger"
           onConfirm={handleDeleteFacultyConfirm}
           onCancel={() => setDeleteFacultyTarget(null)}
+        />
+      )}
+
+      {/* ── Confirm Announcement Delete Modal ── */}
+      {deleteAnnTarget && (
+        <ConfirmModal
+          isOpen={Boolean(deleteAnnTarget)}
+          title="Delete Announcement?"
+          message={`Are you sure you want to delete "${deleteAnnTarget.title}"? This cannot be undone.`}
+          confirmText="Delete Announcement"
+          confirmVariant="danger"
+          onConfirm={handleDeleteAnnouncementConfirm}
+          onCancel={() => setDeleteAnnTarget(null)}
         />
       )}
 
