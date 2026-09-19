@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import client from '../api/client';
-import { Home, Zap, Trophy, GraduationCap, Users, Shield, CheckCircle, Code } from 'lucide-react';
+import { Home, Zap, Trophy, GraduationCap, Users, User, Shield, CheckCircle, Code } from 'lucide-react';
 import { subscribeAchievementEvents } from '../utils/achievementEvents';
 import './Navbar.css';
 
