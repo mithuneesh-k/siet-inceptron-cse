@@ -31,7 +31,7 @@ router.post('/register', async (req, res) => {
     .single();
 
   if (userErr || !newUser) {
-    console.error(userErr);
+    console.error('Account creation request failed');
     return res.status(500).json({ error: 'Failed to create account.' });
   }
 
@@ -50,6 +50,7 @@ router.post('/register', async (req, res) => {
   if (profileErr) {
     // Rollback: delete the user
     await supabase.from('users').delete().eq('id', newUser.id);
+    console.error('Profile creation request failed');
     return res.status(500).json({ error: 'Failed to create profile.' });
   }
 
@@ -76,7 +77,7 @@ router.post('/login', async (req, res) => {
   if (!email || !password) return res.status(400).json({ error: 'Identifier and password required.' });
 
   const identifier = email.trim();
-  console.log(`🔍 Attempting login for identifier: ${identifier}`);
+  console.log('Login attempt received');
 
   const findUserWithFallback = async (queryFn) => {
     let { data, error } = await queryFn(supabase.from('users').select('id, email, password_hash, role, must_change_password')).maybeSingle();
@@ -93,11 +94,9 @@ router.post('/login', async (req, res) => {
   const byEmail = await findUserWithFallback(q => q.ilike('email', identifier.toLowerCase()));
 
   if (byEmail) {
-    console.log(`✅ Found user by email: ${byEmail.email}`);
     authUser = byEmail;
   } else {
     // 2. Try to find by roll_no in 'students' table
-    console.log(`Searching for roll_no: ${identifier.toUpperCase()}`);
     const { data: byRollNo } = await supabase
       .from('students')
       .select('user_id')
@@ -105,11 +104,9 @@ router.post('/login', async (req, res) => {
       .maybeSingle();
 
     if (byRollNo) {
-      console.log(`✅ Found user by roll_no, user_id: ${byRollNo.user_id}`);
       authUser = await findUserWithFallback(q => q.eq('id', byRollNo.user_id));
     } else {
       // 3. Try to find by reg_no in 'students' table
-      console.log(`Searching for reg_no: ${identifier}`);
       const { data: byRegNo } = await supabase
         .from('students')
         .select('user_id')
@@ -117,22 +114,21 @@ router.post('/login', async (req, res) => {
         .maybeSingle();
 
       if (byRegNo) {
-        console.log(`✅ Found user by reg_no, user_id: ${byRegNo.user_id}`);
         authUser = await findUserWithFallback(q => q.eq('id', byRegNo.user_id));
       }
     }
   }
 
   if (!authUser) {
-    console.warn(`❌ No user found for: ${identifier}`);
+    console.warn('Login failed: user not found');
     return res.status(404).json({ error: 'No account found with this email, roll number, or register number.' });
   }
 
   if (!bcrypt.compareSync(password, authUser.password_hash)) {
-    console.warn(`❌ Incorrect password for: ${identifier}`);
+    console.warn('Login failed: incorrect password');
     return res.status(401).json({ error: 'Incorrect password.' });
   }
-  console.log(`✨ Login successful for: ${authUser.email}`);
+  console.log('Login successful');
 
   // Fetch profile based on role
   let profile = {};

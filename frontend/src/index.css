@@ -930,3 +930,25 @@ img { max-width: 100%; display: block; }
 .anim-stagg > *:nth-child(4) { animation-delay: 0.25s; }
 .anim-stagg > *:nth-child(5) { animation-delay: 0.3s; }
 
+/* ─── Keyboard Accessibility & Focus States ─── */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--color-green);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px var(--green-200);
+}
+
+/* ─── Reduced Motion ─── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+
