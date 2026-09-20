@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import AnnouncementsFeed from '../components/AnnouncementsFeed';
 import AchieversCarousel from '../components/ui/achievers-carousel';
+import MarqueeSection from '../components/ui/marquee-section';
 import { Users, Award, Trophy, Briefcase, Star, Zap, BookOpen, Rocket, Medal, Target } from 'lucide-react';
 
 const RANK_ICONS = [
@@ -214,6 +215,9 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
+      {/* ── Live From Inceptron Marquee Highlights ── */}
+      <MarqueeSection />
 
       <style>{`
         .lp { overflow-x: hidden; }

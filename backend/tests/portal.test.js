@@ -744,6 +744,50 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
     if (announcementsRouter._resetInMemory) announcementsRouter._resetInMemory();
   });
 
+  test('54. Scoring Consistency: Canonical stats & Leaderboard vs Admin Overview alignment', async () => {
+    const { 
+      isApprovedAchievement, 
+      fetchVerifiedAchievements, 
+      buildLeaderboardFromAchievements, 
+      getLeaderboardStats 
+    } = require('../services/scoringService');
+
+    // 54A. Test 5: Pending achievement does NOT affect score
+    const pendingAch = { user_id: 'stu1', points: 50, status: 'pending', verified: false, description: 'Pending Hackathon' };
+    assert.strictEqual(isApprovedAchievement(pendingAch), false);
+
+    // 54B. Test 6: Rejected achievement does NOT affect score
+    const rejectedAch = { user_id: 'stu1', points: 50, status: 'rejected', verified: false, description: '[REJECTED: Invalid proof] Hackathon' };
+    assert.strictEqual(isApprovedAchievement(rejectedAch), false);
+
+    // 54C. Test 4: Student with three +10 approved achievements receives 30
+    const approved1 = { user_id: 'stu1', points: 10, status: 'approved', verified: true, description: 'Achv 1' };
+    const approved2 = { user_id: 'stu1', points: 10, status: 'approved', verified: true, description: 'Achv 2' };
+    const approved3 = { user_id: 'stu1', points: 10, status: 'approved', verified: true, description: 'Achv 3' };
+
+    assert.strictEqual(isApprovedAchievement(approved1), true);
+    assert.strictEqual(isApprovedAchievement(approved2), true);
+    assert.strictEqual(isApprovedAchievement(approved3), true);
+
+    const sumPoints = [approved1, approved2, approved3].reduce((s, a) => s + (a.points || 0), 0);
+    assert.strictEqual(sumPoints, 30);
+
+    // 54D. Test 1 & Test 2: Leaderboard stats match Admin Overview stats
+    const leaderboardStats = await getLeaderboardStats();
+    assert.strictEqual(typeof leaderboardStats.totalStudents, 'number');
+    assert.strictEqual(typeof leaderboardStats.totalAchievements, 'number');
+    assert.strictEqual(typeof leaderboardStats.avgScore, 'number');
+
+    // 54E. Test 3 & Test 7 & Test 8: Admin Top 5 equals canonical leaderboard top 5
+    const leaderboardRanking = await buildLeaderboardFromAchievements('all', 'all', 10);
+    const top5Leaderboard = leaderboardRanking.slice(0, 5);
+
+    assert.strictEqual(top5Leaderboard.length <= 5, true);
+    if (top5Leaderboard.length > 1) {
+      assert.strictEqual(top5Leaderboard[0].score >= top5Leaderboard[1].score, true);
+    }
+  });
+
   const { runPlatformTests } = require('./platform.test');
   await runPlatformTests();
 

@@ -14,7 +14,8 @@ async function clearAchievementCaches(userId) {
   try {
     const tasks = [
       cache.delPrefix('leaderboard'),
-      cache.delPrefix('achievements:pending')
+      cache.delPrefix('achievements:pending'),
+      cache.delPrefix('admin:students')
     ];
     if (userId) {
       tasks.push(cache.del(`user:${userId}`));

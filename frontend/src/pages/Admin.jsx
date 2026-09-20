@@ -71,6 +71,7 @@ export default function Admin() {
   };
 
   const [recentApproved, setRecentApproved] = useState([]);
+  const [overviewStats, setOverviewStats] = useState(null);
 
   // Load overview data
   useEffect(() => {
@@ -78,12 +79,16 @@ export default function Admin() {
     Promise.allSettled([
       client.get('/admin/students'),
       client.get('/achievements/all/pending'),
-      client.get('/achievements/recent/approved')
-    ]).then(([uRes, aRes, recRes]) => {
+      client.get('/achievements/recent/approved'),
+      client.get('/admin/overview-stats')
+    ]).then(([uRes, aRes, recRes, statRes]) => {
       if (uRes.status === 'fulfilled') setStudents(uRes.value.data);
       if (aRes.status === 'fulfilled') setAchievements(aRes.value.data);
       if (recRes.status === 'fulfilled' && Array.isArray(recRes.value.data)) {
         setRecentApproved(recRes.value.data);
+      }
+      if (statRes.status === 'fulfilled' && statRes.value.data) {
+        setOverviewStats(statRes.value.data);
       }
     }).finally(() => setLoading(false));
   }, []);
@@ -466,16 +471,17 @@ export default function Admin() {
           <>
             {/* ── OVERVIEW ── */}
             {tab === 'overview' && (() => {
-              const totalScoreSum = students.reduce((sum, s) => sum + (s.score || 0), 0);
-              const computedAvg = students.length ? Math.round(totalScoreSum / students.length) : 0;
+              const totalStudentsCount = overviewStats?.totalStudents ?? students.length;
+              const totalAchievementsCount = overviewStats?.totalAchievements ?? students.reduce((s, u) => s + (u.achievement_count || 0), 0);
+              const computedAvg = overviewStats?.avgScore ?? (students.length ? Math.round(students.reduce((sum, s) => sum + (s.score || 0), 0) / students.length) : 0);
               const topStudents = [...students].sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 5);
 
               return (
                 <div className="animate-fadeIn">
                   <div className="admin-stats">
                     {[
-                      { n: students.length, l: 'Total Students', i: <Users size={28} />, c: 'var(--color-violet)' },
-                      { n: students.reduce((s, u) => s + u.achievement_count, 0), l: 'Total Achievements', i: <Award size={28} />, c: 'var(--color-gold)' },
+                      { n: totalStudentsCount, l: 'Total Students', i: <Users size={28} />, c: 'var(--color-violet)' },
+                      { n: totalAchievementsCount, l: 'Total Achievements', i: <Award size={28} />, c: 'var(--color-gold)' },
                       { n: computedAvg, l: 'Avg Score', i: <TrendingUp size={28} />, c: 'var(--color-blue)' },
                       { n: achievements.length, l: 'Pending Reviews', i: <Hourglass size={28} />, c: 'var(--color-orange)' },
                     ].map((s, i) => (

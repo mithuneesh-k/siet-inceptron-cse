@@ -7,11 +7,24 @@ const { authMiddleware, adminMiddleware, strictAdminMiddleware, hodMiddleware, f
 const cache = require('../services/cache');
 const { getSectionFromRegisterNo } = require('../services/sectionService');
 
+const { getLeaderboardStats, isApprovedAchievement, fetchVerifiedAchievements } = require('../services/scoringService');
+
 router.use(authMiddleware, adminMiddleware);
 
 function generateTemporaryPassword() {
   return crypto.randomBytes(6).toString('hex'); // 12 random hex characters
 }
+
+// ─── GET /api/admin/overview-stats ───────────────────────────────────────────
+router.get('/overview-stats', async (req, res) => {
+  try {
+    const stats = await getLeaderboardStats();
+    res.json(stats);
+  } catch (err) {
+    console.error('Overview stats error:', err);
+    res.status(500).json({ error: 'Failed to fetch overview stats' });
+  }
+});
 
 // ─── GET /api/admin/students ──────────────────────────────────────────────────
 router.get('/students', async (req, res) => {
@@ -55,14 +68,7 @@ router.get('/students', async (req, res) => {
     return res.json([]);
   }
 
-  const validAchs = rawAchs.filter(a => {
-    if (!a) return false;
-    const desc = a.description || '';
-    if (desc.trim().toUpperCase().includes('[REJECTED:')) return false;
-    if (a.status === 'rejected') return false;
-    if (a.status === 'approved') return true;
-    return a.verified === true;
-  });
+  const validAchs = rawAchs.filter(isApprovedAchievement);
 
   const userIds = profiles.map(s => s.user_id);
 
@@ -86,7 +92,11 @@ router.get('/students', async (req, res) => {
     ...s,
     score: achMap[s.user_id]?.score || 0,
     achievement_count: achMap[s.user_id]?.count || 0,
-  }));
+  })).sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    if (b.achievement_count !== a.achievement_count) return b.achievement_count - a.achievement_count;
+    return (a.name || '').localeCompare(b.name || '');
+  });
 
   await cache.set(cacheKey, result, 1800);
   res.json(result);
