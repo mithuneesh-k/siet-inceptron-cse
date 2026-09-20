@@ -69,9 +69,9 @@ const Footer = () => {
           }
         }
         .footer-brand-logo {
-          display: flex;
+          display: inline-flex;
           align-items: center;
-          gap: 10px;
+          gap: 12px;
           margin-bottom: 14px;
         }
         .brand-name {
@@ -138,7 +138,7 @@ const Footer = () => {
           font-size: 13.5px;
           color: var(--footer-text-muted, var(--color-text-muted));
           text-decoration: none;
-          transition: color 0.15s;
+          transition: all 0.18s ease;
           display: flex;
           align-items: center;
           gap: 6px;
@@ -239,6 +239,99 @@ const Footer = () => {
           border-radius: 20px;
           letter-spacing: 0.04em;
         }
+
+        /* ─── Premium Light Mode Scoped Footer Overrides ─── */
+        [data-theme="light"] .siet-footer {
+          background: radial-gradient(circle at 15% 20%, rgba(132, 204, 22, 0.10), transparent 35%),
+                      linear-gradient(135deg, #0f4f2b 0%, #14532d 45%, #166534 100%) !important;
+          border-top: 2px solid #84cc16 !important;
+          box-shadow: 0 -10px 30px rgba(132, 204, 22, 0.06);
+          color: #e5f3e8 !important;
+        }
+        [data-theme="light"] .siet-footer .footer-brand-logo {
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 12px;
+          padding: 8px 14px;
+        }
+        [data-theme="light"] .siet-footer .footer-logo-img {
+          background: rgba(255, 255, 255, 0.95);
+          padding: 4px 8px;
+          border-radius: 8px;
+        }
+        [data-theme="light"] .siet-footer .brand-name {
+          color: #ffffff !important;
+        }
+        [data-theme="light"] .siet-footer .brand-sub {
+          color: #bef264 !important;
+        }
+        [data-theme="light"] .siet-footer .footer-desc {
+          color: #e5f3e8 !important;
+        }
+        [data-theme="light"] .siet-footer .footer-col-title {
+          color: #ffffff !important;
+          font-weight: 700 !important;
+          letter-spacing: 0.06em !important;
+        }
+        [data-theme="light"] .siet-footer .footer-links a {
+          color: #d9f99d !important;
+          transition: all 180ms ease !important;
+        }
+        [data-theme="light"] .siet-footer .footer-links a:hover {
+          color: #ffffff !important;
+          transform: translateX(3px) !important;
+        }
+        [data-theme="light"] .siet-footer .footer-links a::before {
+          background: #bef264 !important;
+          box-shadow: 0 0 6px #bef264 !important;
+        }
+        [data-theme="light"] .siet-footer .contact-item {
+          color: #e5f3e8 !important;
+        }
+        [data-theme="light"] .siet-footer .contact-item a {
+          color: #d9f99d !important;
+        }
+        [data-theme="light"] .siet-footer .contact-item a:hover {
+          color: #ffffff !important;
+        }
+        [data-theme="light"] .siet-footer .contact-icon {
+          background: rgba(255, 255, 255, 0.10) !important;
+          border: 1px solid rgba(255, 255, 255, 0.15) !important;
+          color: #bef264 !important;
+          border-radius: 6px !important;
+        }
+        [data-theme="light"] .siet-footer .contact-icon:hover {
+          background: rgba(255, 255, 255, 0.16) !important;
+        }
+        [data-theme="light"] .siet-footer .social-btn {
+          background: rgba(255, 255, 255, 0.10) !important;
+          border: 1px solid rgba(255, 255, 255, 0.16) !important;
+          color: #ffffff !important;
+          border-radius: 8px !important;
+          transition: all 180ms ease !important;
+        }
+        [data-theme="light"] .siet-footer .social-btn:hover {
+          background: #84cc16 !important;
+          color: #12301b !important;
+          border-color: #84cc16 !important;
+          transform: translateY(-2px) !important;
+          box-shadow: 0 4px 14px rgba(132, 204, 22, 0.3) !important;
+        }
+        [data-theme="light"] .siet-footer .dept-badge {
+          background: rgba(255, 255, 255, 0.92) !important;
+          color: #14532d !important;
+          border: 1px solid rgba(255, 255, 255, 0.45) !important;
+          border-radius: 999px !important;
+          font-weight: 600 !important;
+        }
+        [data-theme="light"] .siet-footer .footer-divider {
+          border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+        }
+        [data-theme="light"] .siet-footer .footer-copy,
+        [data-theme="light"] .siet-footer .footer-made {
+          color: #b7d8bd !important;
+        }
+
       `}</style>
 
       <footer className="siet-footer">
