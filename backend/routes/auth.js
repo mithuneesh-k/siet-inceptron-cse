@@ -75,10 +75,14 @@ const { loginIpLimiter, loginIdentifierLimiter } = require('../middleware/rateLi
 
 // ─── POST /api/auth/login ─────────────────────────────────────────────────────
 router.post('/login', loginIpLimiter, loginIdentifierLimiter, async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ error: 'Identifier and password required.' });
+  const { email, identifier: reqId, roll_no, reg_no, username, password } = req.body;
+  const rawIdentifier = email || reqId || roll_no || reg_no || username;
+  if (!rawIdentifier || !password) return res.status(400).json({ error: 'Identifier and password required.' });
 
-  const identifier = email.trim();
+  const identifier = String(rawIdentifier).trim();
+  if (identifier.length > 256) {
+    return res.status(400).json({ error: 'Identifier exceeds maximum allowed length of 256 characters.' });
+  }
   console.log('Login attempt received');
 
   const findUserWithFallback = async (queryFn) => {
@@ -123,12 +127,12 @@ router.post('/login', loginIpLimiter, loginIdentifierLimiter, async (req, res) =
 
   if (!authUser) {
     console.warn('Login failed: user not found');
-    return res.status(404).json({ error: 'No account found with this email, roll number, or register number.' });
+    return res.status(401).json({ error: 'Invalid identifier or password.' });
   }
 
   if (!bcrypt.compareSync(password, authUser.password_hash)) {
     console.warn('Login failed: incorrect password');
-    return res.status(401).json({ error: 'Incorrect password.' });
+    return res.status(401).json({ error: 'Invalid identifier or password.' });
   }
   console.log('Login successful');
 

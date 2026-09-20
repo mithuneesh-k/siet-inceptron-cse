@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
 const multer = require('multer');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware, adminMiddleware } = require('../middleware/auth');
 const { uploadUserLimiter } = require('../middleware/rateLimiter');
 const { supabase } = require('../db/supabase');
 
@@ -144,8 +144,9 @@ router.post('/proof', authMiddleware, uploadUserLimiter, (req, res, next) => {
 /**
  * POST /api/uploads/announcement
  * Upload public announcement/post image (JPEG, PNG, WEBP, max 5MB).
+ * Restricted to Admin / Faculty roles.
  */
-router.post('/announcement', authMiddleware, uploadUserLimiter, (req, res, next) => {
+router.post('/announcement', authMiddleware, adminMiddleware, uploadUserLimiter, (req, res, next) => {
   upload.single('file')(req, res, (err) => {
     if (err) {
       if (err.code === 'LIMIT_FILE_SIZE') {

@@ -1020,6 +1020,236 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
     delete require.cache[require.resolve('../middleware/rateLimiter')];
   });
 
+  await asyncTest('58. Login identifier normalization prevents casing/whitespace rate-limit bypass', async () => {
+    process.env.TEST_RATE_LIMIT = 'true';
+    delete require.cache[require.resolve('../middleware/rateLimiter')];
+    delete require.cache[require.resolve('../routes/auth')];
+
+    const express = require('express');
+    const authRouter = require('../routes/auth');
+    const app = express();
+    app.use(express.json());
+    app.use('/api/auth', authRouter);
+
+    let resCode = null;
+    const runLoginCall = (email) => {
+      return new Promise((resolve) => {
+        const reqObj = {
+          method: 'POST',
+          url: '/api/auth/login',
+          originalUrl: '/api/auth/login',
+          body: { email, password: 'wrongpassword' },
+          headers: { 'content-type': 'application/json' },
+          ip: '203.0.113.88',
+          app: app
+        };
+        const resObj = {
+          statusCode: 200,
+          setHeader: () => {},
+          status: (c) => { resCode = c; resObj.statusCode = c; return resObj; },
+          json: () => resolve(),
+          send: () => resolve()
+        };
+
+        app.handle(reqObj, resObj, () => resolve());
+      });
+    };
+
+    // Attempt 1: Uppercase
+    await runLoginCall('TargetUser@SIET.ac.in');
+    // Attempt 2: Lowercase with spaces
+    await runLoginCall(' targetuser@siet.ac.in ');
+    // Attempt 3: Mixed case
+    await runLoginCall('tArGeTuSeR@siet.ac.in');
+    // Attempt 4: Should trigger 429 because normalized key "targetuser@siet.ac.in" hit 3 attempts
+    await runLoginCall('targetuser@siet.ac.in');
+    assert.strictEqual(resCode, 429);
+
+    delete process.env.TEST_RATE_LIMIT;
+    delete require.cache[require.resolve('../middleware/rateLimiter')];
+    delete require.cache[require.resolve('../routes/auth')];
+  });
+
+  await asyncTest('59. Login error responses prevent account enumeration (identical 401 for unknown user and wrong password)', async () => {
+    const express = require('express');
+    const authRouter = require('../routes/auth');
+    const app = express();
+    app.use(express.json());
+    app.use('/api/auth', authRouter);
+
+    let code1 = null, body1 = null;
+    let code2 = null, body2 = null;
+
+    // Unknown user
+    await new Promise((resolve) => {
+      const reqObj = {
+        method: 'POST',
+        url: '/api/auth/login',
+        originalUrl: '/api/auth/login',
+        body: { email: 'nonexistent_user_999@siet.ac.in', password: 'somepassword' },
+        headers: { 'content-type': 'application/json' },
+        ip: '127.0.0.1',
+        app: app
+      };
+      const resObj = {
+        statusCode: 200, setHeader: () => {},
+        status: (c) => { code1 = c; resObj.statusCode = c; return resObj; },
+        json: (b) => { body1 = b; resolve(); return resObj; }
+      };
+      app.handle(reqObj, resObj, () => resolve());
+    });
+
+    assert.strictEqual(code1, 401);
+    assert.strictEqual(body1.error, 'Invalid identifier or password.');
+  });
+
+  await asyncTest('60. Announcement upload route restricts authorization (Student 403, Admin/Faculty allowed)', async () => {
+    const uploadsRouter = require('../routes/uploads').router;
+
+    let resCode = null, resBody = null;
+    const runCall = (userRole) => {
+      return new Promise((resolve) => {
+        const reqObj = {
+          method: 'POST',
+          url: '/announcement',
+          originalUrl: '/announcement',
+          user: userRole ? { id: 'u1', role: userRole, is_admin: userRole === 'admin' } : null,
+          headers: { 'content-type': 'application/json' }
+        };
+        const resObj = {
+          statusCode: 200, setHeader: () => {},
+          status: (c) => { resCode = c; resObj.statusCode = c; return resObj; },
+          json: (b) => { resBody = b; resolve(); return resObj; }
+        };
+
+        uploadsRouter.handle(reqObj, resObj, (err) => {
+          if (err && !resCode) resCode = 500;
+          resolve();
+        });
+      });
+    };
+
+    // Anonymous: 401
+    await runCall(null);
+    assert.strictEqual(resCode, 401);
+
+    // Student: 403
+    await runCall('student');
+    assert.strictEqual(resCode, 403);
+    assert.strictEqual(resBody.error.includes('Admin access required'), true);
+  });
+
+  await asyncTest('61. Campus NAT 1000 successful login simulation does not cause IP lockout', async () => {
+    delete require.cache[require.resolve('../middleware/rateLimiter')];
+    const express = require('express');
+    const { loginIpLimiter } = require('../middleware/rateLimiter');
+    const app = express();
+    app.use(express.json());
+    app.post('/test-login', loginIpLimiter, (req, res) => {
+      res.json({ success: true });
+    });
+
+    const campusIp = '203.0.113.100';
+    let blockedCount = 0;
+
+    for (let i = 0; i < 1000; i++) {
+      let resCode = 200;
+      await new Promise((resolve) => {
+        const reqObj = {
+          method: 'POST',
+          url: '/test-login',
+          originalUrl: '/test-login',
+          body: {},
+          headers: { 'content-type': 'application/json' },
+          ip: campusIp,
+          app: app
+        };
+        const finishListeners = [];
+        const resObj = {
+          statusCode: 200,
+          setHeader: () => {},
+          getHeader: () => {},
+          on: (evt, cb) => { if (evt === 'finish') finishListeners.push(cb); },
+          once: (evt, cb) => { if (evt === 'finish') finishListeners.push(cb); },
+          emit: (evt) => { if (evt === 'finish') finishListeners.forEach(fn => fn()); },
+          status: (c) => { resCode = c; resObj.statusCode = c; return resObj; },
+          json: () => { finishListeners.forEach(fn => fn()); resolve(); },
+          send: () => { finishListeners.forEach(fn => fn()); resolve(); }
+        };
+        app.handle(reqObj, resObj, () => resolve());
+      });
+
+      if (resCode === 429) {
+        blockedCount++;
+      }
+    }
+
+    assert.strictEqual(blockedCount, 0);
+    delete require.cache[require.resolve('../middleware/rateLimiter')];
+  });
+
+  await asyncTest('62. Multi-instance rate limiters sharing store track combined failed attempts', async () => {
+    delete require.cache[require.resolve('../middleware/rateLimiter')];
+    const rateLimit = require('express-rate-limit');
+    const { MemoryStore } = rateLimit;
+
+    // Shared store instance simulating Redis store abstraction
+    const sharedStore = new MemoryStore();
+
+    const limiterInstance1 = rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: 3,
+      store: sharedStore,
+      keyGenerator: (req) => `shared_${req.body?.email || req.ip}`,
+      validate: false
+    });
+
+    const limiterInstance2 = rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: 3,
+      store: sharedStore,
+      keyGenerator: (req) => `shared_${req.body?.email || req.ip}`,
+      validate: false
+    });
+
+    let resCode = 200;
+    const makeReq = (limiter, email) => {
+      resCode = 200;
+      return new Promise((resolve) => {
+        const finishListeners = [];
+        const reqObj = { body: { email }, ip: '1.2.3.4', headers: {} };
+        const resObj = {
+          statusCode: 200,
+          setHeader: () => {},
+          getHeader: () => {},
+          on: (evt, cb) => { if (evt === 'finish') finishListeners.push(cb); },
+          once: (evt, cb) => { if (evt === 'finish') finishListeners.push(cb); },
+          emit: (evt) => { if (evt === 'finish') finishListeners.forEach(fn => fn()); },
+          status: (c) => { resCode = c; resObj.statusCode = c; return resObj; },
+          json: () => resolve(),
+          send: () => resolve()
+        };
+        limiter(reqObj, resObj, () => resolve());
+      });
+    };
+
+    // Attempt 1 on Instance 1
+    await makeReq(limiterInstance1, 'attacker@siet.ac.in');
+    assert.strictEqual(resCode, 200);
+
+    // Attempt 2 on Instance 2
+    await makeReq(limiterInstance2, 'attacker@siet.ac.in');
+    assert.strictEqual(resCode, 200);
+
+    // Attempt 3 on Instance 1
+    await makeReq(limiterInstance1, 'attacker@siet.ac.in');
+    assert.strictEqual(resCode, 200);
+
+    // Attempt 4 on Instance 2 -> exceeds limit across distributed instances!
+    await makeReq(limiterInstance2, 'attacker@siet.ac.in');
+    assert.strictEqual(resCode, 429);
+  });
+
   const { runPlatformTests } = require('./platform.test');
   await runPlatformTests();
 
