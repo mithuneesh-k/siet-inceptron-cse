@@ -49,7 +49,7 @@ const Footer = () => {
       <style>{`
         .siet-footer {
           background: var(--footer-bg);
-          color: var(--color-text-muted);
+          color: var(--footer-text-muted, var(--color-text-muted));
           font-family: 'Inter', system-ui, sans-serif;
           border-top: 1px solid var(--footer-border);
         }
@@ -77,7 +77,7 @@ const Footer = () => {
         .brand-name {
           font-size: 18px;
           font-weight: 800;
-          color: var(--color-text);
+          color: var(--footer-text, var(--color-text));
           letter-spacing: -0.3px;
         }
         .brand-sub {
@@ -90,7 +90,7 @@ const Footer = () => {
         .footer-desc {
           font-size: 13.5px;
           line-height: 1.75;
-          color: var(--color-text-muted);
+          color: var(--footer-text-muted, var(--color-text-muted));
           margin: 0 0 20px;
           max-width: 320px;
         }
@@ -102,7 +102,7 @@ const Footer = () => {
           width: 36px;
           height: 36px;
           border-radius: 8px;
-          background: var(--bg-card);
+          background: var(--footer-card-bg, var(--bg-card));
           border: 1px solid var(--border-strong);
           color: var(--color-green);
           display: flex;
@@ -123,7 +123,7 @@ const Footer = () => {
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.1em;
-          color: var(--color-text);
+          color: var(--footer-text, var(--color-text));
           margin: 0 0 18px;
         }
         .footer-links {
@@ -136,7 +136,7 @@ const Footer = () => {
         }
         .footer-links a {
           font-size: 13.5px;
-          color: var(--color-text-muted);
+          color: var(--footer-text-muted, var(--color-text-muted));
           text-decoration: none;
           transition: color 0.15s;
           display: flex;
@@ -159,13 +159,13 @@ const Footer = () => {
           gap: 10px;
           margin-bottom: 13px;
           font-size: 13.5px;
-          color: var(--color-text-muted);
+          color: var(--footer-text-muted, var(--color-text-muted));
           line-height: 1.5;
         }
         .contact-icon {
           width: 28px;
           height: 28px;
-          background: var(--bg-card);
+          background: var(--footer-card-bg, var(--bg-card));
           border: 1px solid var(--border-strong);
           color: var(--color-green);
           border-radius: 6px;
@@ -195,11 +195,11 @@ const Footer = () => {
         }
         .footer-copy {
           font-size: 12.5px;
-          color: var(--color-text-faint);
+          color: var(--footer-text-faint, var(--color-text-faint));
         }
         .footer-made {
           font-size: 12px;
-          color: var(--color-text-faint);
+          color: var(--footer-text-faint, var(--color-text-faint));
           display: flex;
           align-items: center;
           gap: 5px;
@@ -233,7 +233,7 @@ const Footer = () => {
           margin-top: 10px;
           font-size: 11px;
           color: var(--color-green);
-          background: var(--bg-card);
+          background: var(--footer-card-bg, var(--bg-card));
           border: 1px solid var(--border-strong);
           padding: 4px 10px;
           border-radius: 20px;
@@ -312,7 +312,7 @@ const Footer = () => {
 
             <div className="contact-item">
               <div className="contact-icon"><Globe size={16} /></div>
-              <a href="https://www.siet.ac.in" target="_blank" rel="noopener noreferrer" style={{color:"#8aaa8a", textDecoration:"none"}}>www.siet.ac.in</a>
+              <a href="https://www.siet.ac.in" target="_blank" rel="noopener noreferrer" style={{color:"var(--color-green)", textDecoration:"none"}}>www.siet.ac.in</a>
             </div>
 
             <div className="contact-item">

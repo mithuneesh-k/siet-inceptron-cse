@@ -43,17 +43,26 @@ router.get('/students', async (req, res) => {
   // Parallel fetch: profiles and all verified achievements
   const [pRes, aRes] = await Promise.all([
     query,
-    supabase.from('achievements').select('user_id, points').eq('verified', true)
+    supabase.from('achievements').select('user_id, points, status, verified, description').or('verified.eq.true,status.eq.approved')
   ]);
 
   if (pRes.error) return res.status(500).json({ error: 'Failed to fetch students', details: pRes.error.message });
   const profiles = pRes.data || [];
-  const achs = aRes.data || [];
+  const rawAchs = aRes.data || [];
 
   if (!profiles.length) {
     await cache.set(cacheKey, [], 1800);
     return res.json([]);
   }
+
+  const validAchs = rawAchs.filter(a => {
+    if (!a) return false;
+    const desc = a.description || '';
+    if (desc.trim().toUpperCase().includes('[REJECTED:')) return false;
+    if (a.status === 'rejected') return false;
+    if (a.status === 'approved') return true;
+    return a.verified === true;
+  });
 
   const userIds = profiles.map(s => s.user_id);
 
@@ -65,7 +74,7 @@ router.get('/students', async (req, res) => {
   const emailMap = Object.fromEntries((uRes.data || []).map(u => [u.id, u.email]));
 
   const achMap = {};
-  for (const a of achs) {
+  for (const a of validAchs) {
     if (!achMap[a.user_id]) achMap[a.user_id] = { score: 0, count: 0 };
     achMap[a.user_id].score += a.points || 0;
     achMap[a.user_id].count++;

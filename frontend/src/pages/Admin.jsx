@@ -465,38 +465,47 @@ export default function Admin() {
         ) : (
           <>
             {/* ── OVERVIEW ── */}
-            {tab === 'overview' && (
-              <div className="animate-fadeIn">
-                <div className="admin-stats">
-                  {[
-                    { n: students.length, l: 'Total Students', i: <Users size={28} />, c: 'var(--color-violet)' },
-                    { n: students.reduce((s, u) => s + u.achievement_count, 0), l: 'Total Achievements', i: <Award size={28} />, c: 'var(--color-gold)' },
-                    { n: avgScore, l: 'Avg Score', i: <TrendingUp size={28} />, c: 'var(--color-blue)' },
-                    { n: achievements.length, l: 'Pending Reviews', i: <Hourglass size={28} />, c: 'var(--color-orange)' },
-                  ].map((s, i) => (
-                    <div key={i} className="admin-stat card" style={{ borderTop: `3px solid ${s.c}` }}>
-                      <div>{s.i}</div>
-                      <div style={{ fontSize: 32, fontWeight: 900, fontFamily: "'Space Grotesk', sans-serif", color: s.c }}>{s.n}</div>
-                      <div style={{ fontSize: 12, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{s.l}</div>
-                    </div>
-                  ))}
-                </div>
+            {tab === 'overview' && (() => {
+              const totalScoreSum = students.reduce((sum, s) => sum + (s.score || 0), 0);
+              const computedAvg = students.length ? Math.round(totalScoreSum / students.length) : 0;
+              const topStudents = [...students].sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 5);
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 20, marginTop: 20 }}>
-                  <div className="card" style={{ padding: '20px 24px' }}>
-                    <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}><List size={18} /> Top 5 Students by Score</h3>
-                    {students.slice(0, 5).map((s, i) => (
-                      <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
-                        <span style={{ fontWeight: 700, fontSize: 16, minWidth: 24 }}>#{i + 1}</span>
-                        <div style={{ width: 36, height: 36, background: 'var(--gradient-primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#fff' }}>{s.name[0]}</div>
-                        <div style={{ flex: 1 }}>
-                          <Link to={`/profile/${s.id}`} style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{s.name}</Link>
-                          <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{s.class} · {s.batch || 'No batch'}</div>
-                        </div>
-                        <span style={{ fontWeight: 800, color: 'var(--color-gold)', fontFamily: "'Space Grotesk', sans-serif" }}>{s.score} pts</span>
+              return (
+                <div className="animate-fadeIn">
+                  <div className="admin-stats">
+                    {[
+                      { n: students.length, l: 'Total Students', i: <Users size={28} />, c: 'var(--color-violet)' },
+                      { n: students.reduce((s, u) => s + u.achievement_count, 0), l: 'Total Achievements', i: <Award size={28} />, c: 'var(--color-gold)' },
+                      { n: computedAvg, l: 'Avg Score', i: <TrendingUp size={28} />, c: 'var(--color-blue)' },
+                      { n: achievements.length, l: 'Pending Reviews', i: <Hourglass size={28} />, c: 'var(--color-orange)' },
+                    ].map((s, i) => (
+                      <div key={i} className="admin-stat card" style={{ borderTop: `3px solid ${s.c}` }}>
+                        <div>{s.i}</div>
+                        <div style={{ fontSize: 32, fontWeight: 900, fontFamily: "'Space Grotesk', sans-serif", color: s.c }}>{s.n}</div>
+                        <div style={{ fontSize: 12, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{s.l}</div>
                       </div>
                     ))}
                   </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 20, marginTop: 20 }}>
+                    <div className="card" style={{ padding: '20px 24px' }}>
+                      <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}><List size={18} /> Top 5 Students by Score</h3>
+                      {topStudents.length === 0 ? (
+                        <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: 13 }}>No student records found.</div>
+                      ) : (
+                        topStudents.map((s, i) => (
+                          <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
+                            <span style={{ fontWeight: 700, fontSize: 16, minWidth: 24 }}>#{i + 1}</span>
+                            <div style={{ width: 36, height: 36, background: 'var(--gradient-primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#fff' }}>{s.name[0]}</div>
+                            <div style={{ flex: 1 }}>
+                              <Link to={`/profile/${s.id}`} style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{s.name}</Link>
+                              <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{s.class} · {s.batch || 'No batch'}</div>
+                            </div>
+                            <span style={{ fontWeight: 800, color: 'var(--color-gold)', fontFamily: "'Space Grotesk', sans-serif" }}>{s.score} pts</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
 
                   <div className="card" style={{ padding: '20px 24px' }}>
                     <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}><Award size={18} /> Recent Approved Achievements</h3>
@@ -522,7 +531,8 @@ export default function Admin() {
                   </div>
                 </div>
               </div>
-            )}
+            );
+          })()}
 
             {/* ── STUDENTS (view-only) ── */}
             {tab === 'students' && (

@@ -76,6 +76,10 @@
 
   --footer-bg: #05070a;
   --footer-border: rgba(132, 204, 22, 0.25);
+  --footer-text: #ffffff;
+  --footer-text-muted: #94a3b8;
+  --footer-text-faint: #64748b;
+  --footer-card-bg: rgba(15, 23, 42, 0.85);
 
   --hero-bg: #070a0f;
   --stats-bg: #090d14;
@@ -127,8 +131,12 @@
   --navbar-scrolled: #053b0a;
   --navbar-border: rgba(255, 255, 255, 0.12);
 
-  --footer-bg: #052c0a;
-  --footer-border: #166534;
+  --footer-bg: #ffffff;
+  --footer-border: #d7e2d3;
+  --footer-text: #111827;
+  --footer-text-muted: #4b5563;
+  --footer-text-faint: #6b7280;
+  --footer-card-bg: #f0fdf4;
 
   --hero-bg: #f6f8f5;
   --stats-bg: #ffffff;
