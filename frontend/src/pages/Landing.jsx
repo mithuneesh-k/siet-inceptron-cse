@@ -102,7 +102,7 @@ export default function Landing() {
           <div className="container">
             <div className="lp-hero-inner animate-fadeInUp">
               <div className="lp-hero-logo-col">
-                <img src={theme === 'dark' ? '/dark.png' : '/inceptron-logo.jpeg'} alt="Inceptron Logo" className="lp-hero-logo-img" />
+                <img src={theme === 'dark' ? '/dark.png?v=2' : '/inceptron-logo.png?v=2'} alt="Inceptron Logo" className="lp-hero-logo-img" />
               </div>
               <div className="lp-hero-text">
                 <div className="lp-pill">
@@ -137,7 +137,7 @@ export default function Landing() {
         <div className="container">
           <div className="lp-hero-inner animate-fadeInUp">
             <div className="lp-hero-logo-col">
-              <img src={theme === 'dark' ? '/dark.png' : '/inceptron-logo.jpeg'} alt="Inceptron Logo" className="lp-hero-logo-img" />
+              <img src={theme === 'dark' ? '/dark.png?v=2' : '/inceptron-logo.png?v=2'} alt="Inceptron Logo" className="lp-hero-logo-img" />
             </div>
             <div className="lp-hero-text">
               <div className="lp-pill">
@@ -398,6 +398,17 @@ export default function Landing() {
         .lp-pm-name { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .lp-pm-meta { font-size: 12px; color: var(--color-text-muted); margin-top: 1px; }
         .lp-pm-score { font-size: 18px; font-weight: 900; color: var(--color-green); font-family: 'Space Grotesk', sans-serif; flex-shrink: 0; }
+
+        [data-theme="light"] .lp-carousel-card { background: #ffffff; border: 2px solid #d7e2d3; border-top: 4px solid #84cc16; }
+        [data-theme="light"] .lp-carousel-name { color: #111827; }
+        [data-theme="light"] .lp-carousel-meta { color: #4b5563; }
+        [data-theme="light"] .lp-carousel-rank { color: #166534; }
+        [data-theme="light"] .lp-podium-row { background: #ffffff; border: 1px solid #d7e2d3; color: #111827; }
+        [data-theme="light"] .lp-podium-row:hover { background: #f0fdf4 !important; border-color: #84cc16; box-shadow: 0 4px 14px rgba(22, 101, 52, 0.08); }
+        [data-theme="light"] .lp-podium-row.active, [data-theme="light"] .lp-podium-row.selected { background: #ecfdf5 !important; border-color: #84cc16; }
+        [data-theme="light"] .lp-pm-name { color: #111827 !important; }
+        [data-theme="light"] .lp-pm-meta { color: #4b5563 !important; }
+        [data-theme="light"] .lp-pm-score { color: #166534 !important; }
 
         /* ── Scoring ── */
         .lp-score-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 28px; }

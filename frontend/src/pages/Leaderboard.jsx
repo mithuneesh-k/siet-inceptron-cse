@@ -278,6 +278,19 @@ export default function Leaderboard() {
         .lb-row { display: grid; grid-template-columns: 60px 2fr 100px 70px 120px 100px; gap: 12px; padding: 13px 20px; border-bottom: 1px solid var(--border); align-items: center; text-decoration: none; color: inherit; transition: background var(--transition); animation: fadeInUp 0.3s ease both; }
         .lb-row:last-child { border-bottom: none; }
         .lb-row:hover { background: var(--green-50); }
+
+        [data-theme="light"] .lb-table-header { background: #f6f8f5; border-bottom: 1.5px solid #d7e2d3; color: #4b5563; }
+        [data-theme="light"] .lb-row { background: #ffffff; border-bottom: 1px solid #d7e2d3; color: #111827; }
+        [data-theme="light"] .lb-row:hover { background: #f0fdf4 !important; border-color: #84cc16; }
+        [data-theme="light"] .lb-row.active, [data-theme="light"] .lb-row.selected { background: #ecfdf5 !important; border-color: #84cc16; }
+        [data-theme="light"] .lb-name { color: #111827 !important; }
+        [data-theme="light"] .lb-year, [data-theme="light"] .lb-cell { color: #4b5563 !important; }
+        [data-theme="light"] .lb-score { color: #166534 !important; }
+        [data-theme="light"] .lb-rank { color: #111827 !important; }
+        [data-theme="light"] .podium-student { background: #ffffff; border: 2px solid #d7e2d3; color: #111827; }
+        [data-theme="light"] .podium-student:hover { background: #f5faf2; border-color: #84cc16; }
+        [data-theme="light"] .podium-sname { color: #111827; }
+        [data-theme="light"] .podium-sclass { color: #4b5563; }
         .lb-rank-container { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; }
         .lb-rank { font-size: 14px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; color: var(--color-text-muted); line-height: 1; }
         .lb-student { display: flex; align-items: center; gap: 10px; }

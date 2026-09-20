@@ -413,7 +413,7 @@ export default function Login() {
               {/* Mobile Header */}
               <div className="auth-07-mobile-header">
                 <img
-                  src={theme === 'dark' ? '/real inceptron.png' : '/Screenshot 2026-09-19 162820.png'}
+                  src={theme === 'dark' ? '/dark.png?v=2' : '/inceptron-logo.png?v=2'}
                   alt="SIET Inceptron Logo"
                   className="auth-07-mobile-logo"
                 />

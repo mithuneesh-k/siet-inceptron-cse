@@ -384,7 +384,7 @@ export default function Approvals() {
                           <Link to={`/profile/${ach.user_id}`} className="student-name-link">
                             {ach.student_name}
                           </Link>
-                          <span className="badge" style={{ fontSize: 11, padding: '2px 8px', color: 'var(--color-text-muted)', background: 'rgba(255, 255, 255, 0.08)', borderColor: 'var(--color-border)' }}>{ach.roll_no}</span>
+                          <span className="badge" style={{ fontSize: 11, padding: '2px 8px', color: 'var(--color-text-muted)', background: 'var(--bg-hover)', borderColor: 'var(--color-border)' }}>{ach.roll_no}</span>
                           {ach.class && <span className="badge" style={{ fontSize: 11, padding: '2px 8px', background: 'var(--bg-hover)' }}>{ach.class}</span>}
                           {ach.batch && <span className="badge" style={{ fontSize: 11, padding: '2px 8px', background: 'var(--bg-hover)' }}>{ach.batch}</span>}
                         </div>

@@ -767,21 +767,21 @@ export default function Admin() {
             {tab === 'platforms' && (
               <div className="animate-fadeIn">
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
-                  <div className="card" style={{ padding: '16px 20px', background: 'rgba(15, 23, 42, 0.75)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: 12 }}>
-                    <div style={{ fontSize: 12, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>Total Connections</div>
-                    <div style={{ fontSize: 26, fontWeight: 800, color: '#f8fafc', marginTop: 4 }}>{platformConnections.length}</div>
+                  <div className="card" style={{ padding: '16px 20px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12 }}>
+                    <div style={{ fontSize: 12, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>Total Connections</div>
+                    <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--color-text)', marginTop: 4 }}>{platformConnections.length}</div>
                   </div>
-                  <div className="card" style={{ padding: '16px 20px', background: 'rgba(15, 23, 42, 0.75)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: 12 }}>
-                    <div style={{ fontSize: 12, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>Verified Profiles</div>
-                    <div style={{ fontSize: 26, fontWeight: 800, color: '#84cc16', marginTop: 4 }}>{platformConnections.filter(c => c.ownershipVerified).length}</div>
+                  <div className="card" style={{ padding: '16px 20px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12 }}>
+                    <div style={{ fontSize: 12, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>Verified Profiles</div>
+                    <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--color-green)', marginTop: 4 }}>{platformConnections.filter(c => c.ownershipVerified).length}</div>
                   </div>
-                  <div className="card" style={{ padding: '16px 20px', background: 'rgba(15, 23, 42, 0.75)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: 12 }}>
-                    <div style={{ fontSize: 12, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>Active Students</div>
-                    <div style={{ fontSize: 26, fontWeight: 800, color: '#60a5fa', marginTop: 4 }}>{[...new Set(platformConnections.map(c => c.userId))].length}</div>
+                  <div className="card" style={{ padding: '16px 20px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12 }}>
+                    <div style={{ fontSize: 12, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>Active Students</div>
+                    <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--color-text)', marginTop: 4 }}>{[...new Set(platformConnections.map(c => c.userId))].length}</div>
                   </div>
-                  <div className="card" style={{ padding: '16px 20px', background: 'rgba(15, 23, 42, 0.75)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: 12 }}>
-                    <div style={{ fontSize: 12, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>Sync Failures</div>
-                    <div style={{ fontSize: 26, fontWeight: 800, color: platformConnections.filter(c => c.status === 'sync_error' || c.status === 'error').length > 0 ? '#ef4444' : '#a3e635', marginTop: 4 }}>
+                  <div className="card" style={{ padding: '16px 20px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12 }}>
+                    <div style={{ fontSize: 12, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>Sync Failures</div>
+                    <div style={{ fontSize: 26, fontWeight: 800, color: platformConnections.filter(c => c.status === 'sync_error' || c.status === 'error').length > 0 ? '#ef4444' : 'var(--color-green)', marginTop: 4 }}>
                       {platformConnections.filter(c => c.status === 'sync_error' || c.status === 'error').length}
                     </div>
                   </div>
