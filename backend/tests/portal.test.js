@@ -2,6 +2,11 @@ const assert = require('assert');
 const { validateMagicBytes, resolveStorageUrl, deleteStorageObject } = require('../routes/uploads');
 const { authMiddleware, adminMiddleware } = require('../middleware/auth');
 
+process.on('unhandledRejection', (reason) => {
+  console.error('  ❌ Unhandled Promise Rejection in test runner:', reason);
+  process.exit(1);
+});
+
 console.log('🧪 Running Portal Baseline Test Suite...\n');
 
 let passedTests = 0;
@@ -16,6 +21,7 @@ function test(name, fn) {
   } catch (err) {
     console.error(`  ❌ FAIL [${totalTests}]: ${name}`);
     console.error('     Error:', err.message);
+    process.exitCode = 1;
   }
 }
 
@@ -28,6 +34,7 @@ async function asyncTest(name, fn) {
   } catch (err) {
     console.error(`  ❌ FAIL [${totalTests}]: ${name}`);
     console.error('     Error:', err.message);
+    process.exitCode = 1;
   }
 }
 
@@ -437,7 +444,7 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
     assert.strictEqual(result.easySolved, 0);
   });
 
-  test('49. Login handles missing must_change_password column gracefully without failing user lookup', async () => {
+  await asyncTest('49. Login handles missing must_change_password column gracefully without failing user lookup', async () => {
     const mockQueryBuilder = {
       maybeSingle: async () => ({
         data: null,
@@ -466,7 +473,7 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
     assert.strictEqual(user.role, 'student');
   });
 
-  test('50. GET /api/admin/faculty handles missing is_hod column gracefully and returns faculty list', async () => {
+  await asyncTest('50. GET /api/admin/faculty handles missing is_hod column gracefully and returns faculty list', async () => {
     const mockProfiles = [
       { user_id: 'f1', name: 'Dr. Test', designation: 'Assistant Professor', department: 'CSE' }
     ];
@@ -490,7 +497,7 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
     assert.strictEqual(result[0].is_hod, false);
   });
 
-  test('51. DELETE /api/admin/faculty/:id protected deletion rules (admin success, advisor 403, student 403, admin target 403, self 400, missing 404, DB failure 500)', async () => {
+  await asyncTest('51. DELETE /api/admin/faculty/:id protected deletion rules (admin success, advisor 403, student 403, admin target 403, self 400, missing 404, DB failure 500)', async () => {
     // 51A. Self-deletion check
     const reqSelf = { params: { id: 'admin1' }, user: { id: 'admin1', role: 'admin' } };
     let resCode = null, resBody = null;
@@ -554,7 +561,7 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
     assert.strictEqual(resBody.message, 'Faculty deleted successfully.');
   });
 
-  test('52. Hardened RPC RPC-missing 503 handling and Migration 003 security rules', async () => {
+  await asyncTest('52. Hardened RPC RPC-missing 503 handling and Migration 003 security rules', async () => {
     // 52A. Missing RPC returns 503 Service Unavailable
     const rpcErrMissing = { code: 'PGRST202', message: 'could not find the function delete_faculty_member' };
     let resCode = null, resBody = null;
@@ -587,7 +594,7 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
     assert.strictEqual(migrationSql.includes("GRANT EXECUTE ON FUNCTION public.delete_faculty_member(uuid) TO service_role;"), true);
   });
 
-  test('53. Announcements API: Auth permissions, important flag, newest-first sorting, expiry filter & 3 per page pagination', async () => {
+  await asyncTest('53. Announcements API: Auth permissions, important flag, newest-first sorting, expiry filter & 3 per page pagination', async () => {
     const announcementsRouter = require('../routes/announcements');
     if (announcementsRouter._resetInMemory) announcementsRouter._resetInMemory();
 
@@ -744,13 +751,81 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
     if (announcementsRouter._resetInMemory) announcementsRouter._resetInMemory();
   });
 
-  test('54. Scoring Consistency: Canonical stats & Leaderboard vs Admin Overview alignment', async () => {
+  await asyncTest('54. Scoring Consistency: Canonical stats & Leaderboard vs Admin Overview alignment', async () => {
     const { 
       isApprovedAchievement, 
       fetchVerifiedAchievements, 
       buildLeaderboardFromAchievements, 
       getLeaderboardStats 
     } = require('../services/scoringService');
+
+    // Deterministic in-memory fixtures (0 live network calls)
+    const mockStudents = [
+      { user_id: 'stu1', name: 'Nishanth KR', roll_no: '064', class: 'CSE A', batch: '2022-2026' },
+      { user_id: 'stu2', name: 'Student B', roll_no: '065', class: 'CSE B', batch: '2022-2026' }
+    ];
+    const mockAchievements = [
+      { user_id: 'stu1', points: 10, status: 'approved', verified: true, title: 'Achv 1', type: 'hackathon', position: '1st' },
+      { user_id: 'stu1', points: 10, status: 'approved', verified: true, title: 'Achv 2' },
+      { user_id: 'stu1', points: 10, status: 'approved', verified: true, title: 'Achv 3' },
+      { user_id: 'stu2', points: 5, status: 'approved', verified: true, title: 'Achv B' },
+      { user_id: 'stu1', points: 50, status: 'pending', verified: false, description: 'Pending Hackathon' },
+      { user_id: 'stu1', points: 50, status: 'rejected', verified: false, description: '[REJECTED: Invalid proof] Hackathon' }
+    ];
+
+    function createMockDb({ students = mockStudents, achievements = mockAchievements, teamsCount = 0 } = {}) {
+      return {
+        from(tableName) {
+          if (tableName === 'students') {
+            const queryObj = {
+              _batchFilter: null,
+              _classFilter: null,
+              select() { return this; },
+              eq(field, val) {
+                if (field === 'batch') this._batchFilter = val;
+                if (field === 'class') this._classFilter = val;
+                return this;
+              },
+              then(resolve) {
+                let res = [...students];
+                if (this._batchFilter && this._batchFilter !== 'all') {
+                  res = res.filter(s => s.batch === this._batchFilter);
+                }
+                if (this._classFilter && this._classFilter !== 'all') {
+                  res = res.filter(s => s.class === this._classFilter);
+                }
+                resolve({ data: res, error: null });
+              }
+            };
+            return queryObj;
+          }
+          if (tableName === 'achievements') {
+            return {
+              select() { return this; },
+              or() { return this; },
+              eq() { return this; },
+              then(resolve) {
+                resolve({ data: achievements, error: null });
+              }
+            };
+          }
+          if (tableName === 'teams') {
+            return {
+              select() { return this; },
+              then(resolve) {
+                resolve({ count: teamsCount, error: null });
+              }
+            };
+          }
+          return {
+            select() { return this; },
+            then(resolve) { resolve({ data: [], error: null }); }
+          };
+        }
+      };
+    }
+
+    const mockDb = createMockDb();
 
     // 54A. Test 5: Pending achievement does NOT affect score
     const pendingAch = { user_id: 'stu1', points: 50, status: 'pending', verified: false, description: 'Pending Hackathon' };
@@ -772,20 +847,57 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
     const sumPoints = [approved1, approved2, approved3].reduce((s, a) => s + (a.points || 0), 0);
     assert.strictEqual(sumPoints, 30);
 
-    // 54D. Test 1 & Test 2: Leaderboard stats match Admin Overview stats
-    const leaderboardStats = await getLeaderboardStats();
-    assert.strictEqual(typeof leaderboardStats.totalStudents, 'number');
-    assert.strictEqual(typeof leaderboardStats.totalAchievements, 'number');
-    assert.strictEqual(typeof leaderboardStats.avgScore, 'number');
+    // 54D. Test 1 & Test 2: Leaderboard stats match Admin Overview stats using mockDb
+    const leaderboardStats = await getLeaderboardStats(mockDb);
+    assert.strictEqual(leaderboardStats.totalStudents, 2);
+    assert.strictEqual(leaderboardStats.totalAchievements, 4);
+    assert.strictEqual(leaderboardStats.avgScore, 17.5);
 
-    // 54E. Test 3 & Test 7 & Test 8: Admin Top 5 equals canonical leaderboard top 5
-    const leaderboardRanking = await buildLeaderboardFromAchievements('all', 'all', 10);
+    // 54E. Test 3 & Test 7 & Test 8: Admin Top 5 equals canonical leaderboard top 5 using mockDb
+    const leaderboardRanking = await buildLeaderboardFromAchievements('all', 'all', 10, mockDb);
     const top5Leaderboard = leaderboardRanking.slice(0, 5);
 
-    assert.strictEqual(top5Leaderboard.length <= 5, true);
-    if (top5Leaderboard.length > 1) {
-      assert.strictEqual(top5Leaderboard[0].score >= top5Leaderboard[1].score, true);
-    }
+    assert.strictEqual(top5Leaderboard.length, 2);
+    assert.strictEqual(top5Leaderboard[0].name, 'Nishanth KR');
+    assert.strictEqual(top5Leaderboard[0].score, 30);
+    assert.strictEqual(top5Leaderboard[1].name, 'Student B');
+    assert.strictEqual(top5Leaderboard[1].score, 5);
+  });
+
+  await asyncTest('55. Database failure error propagation in scoring service', async () => {
+    const { 
+      fetchVerifiedAchievements, 
+      buildLeaderboardFromAchievements, 
+      getLeaderboardStats 
+    } = require('../services/scoringService');
+
+    const failingDb = {
+      from() {
+        return {
+          select() { return this; },
+          or() { return this; },
+          eq() { return this; },
+          then(resolve) {
+            resolve({ data: null, error: new Error('Simulated Database Error') });
+          }
+        };
+      }
+    };
+
+    await assert.rejects(
+      async () => await fetchVerifiedAchievements(failingDb),
+      /Simulated Database Error/
+    );
+
+    await assert.rejects(
+      async () => await buildLeaderboardFromAchievements('all', 'all', 10, failingDb),
+      /Simulated Database Error/
+    );
+
+    await assert.rejects(
+      async () => await getLeaderboardStats(failingDb),
+      /Simulated Database Error/
+    );
   });
 
   const { runPlatformTests } = require('./platform.test');

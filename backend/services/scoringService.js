@@ -1,4 +1,10 @@
-const { supabase } = require('../db/supabase');
+const { supabase: defaultSupabase } = require('../db/supabase');
+
+let activeClient = defaultSupabase;
+
+function setScoringDbClient(client) {
+  activeClient = client || defaultSupabase;
+}
 
 function isMissingColumnError(error) {
   if (!error) return false;
@@ -20,14 +26,14 @@ function isApprovedAchievement(a) {
   return a.verified === true;
 }
 
-async function fetchVerifiedAchievements() {
-  let { data, error } = await supabase
+async function fetchVerifiedAchievements(db = activeClient) {
+  let { data, error } = await db
     .from('achievements')
     .select('user_id, points, type, title, position, status, verified, description')
     .or('verified.eq.true,status.eq.approved');
 
   if (isMissingColumnError(error)) {
-    const fallbackRes = await supabase
+    const fallbackRes = await db
       .from('achievements')
       .select('user_id, points, type, title, position, verified, description')
       .eq('verified', true);
@@ -43,8 +49,8 @@ async function fetchVerifiedAchievements() {
   return (data || []).filter(isApprovedAchievement);
 }
 
-async function buildLeaderboardFromAchievements(batchFilter, classFilter, limit) {
-  let query = supabase
+async function buildLeaderboardFromAchievements(batchFilter, classFilter, limit, db = activeClient) {
+  let query = db
     .from('students')
     .select('user_id, name, roll_no, reg_no, class, batch, year, github, linkedin, avatar_url');
 
@@ -61,7 +67,7 @@ async function buildLeaderboardFromAchievements(batchFilter, classFilter, limit)
   }
 
   const validUserIds = new Set(students.map(s => s.user_id));
-  const achievements = await fetchVerifiedAchievements();
+  const achievements = await fetchVerifiedAchievements(db);
 
   const validAchs = (achievements || []).filter(a =>
     validUserIds.has(a.user_id) && isApprovedAchievement(a)
@@ -129,17 +135,17 @@ async function buildLeaderboardFromAchievements(batchFilter, classFilter, limit)
     .map((u, i) => ({ ...u, rank: i + 1 }));
 }
 
-async function getLeaderboardStats() {
+async function getLeaderboardStats(db = activeClient) {
   const [
     { data: studentsRaw, error: studentErr },
     achievementsResult,
     { count: activeTeamsCount, error: teamsErr },
     topStudents
   ] = await Promise.all([
-    supabase.from('students').select('user_id'),
-    fetchVerifiedAchievements().catch(() => []),
-    supabase.from('teams').select('*', { count: 'exact', head: true }),
-    buildLeaderboardFromAchievements(null, null, 5).catch(() => [])
+    db.from('students').select('user_id'),
+    fetchVerifiedAchievements(db),
+    db.from('teams').select('*', { count: 'exact', head: true }),
+    buildLeaderboardFromAchievements(null, null, 5, db)
   ]);
 
   if (studentErr) {
@@ -176,4 +182,6 @@ module.exports = {
   fetchVerifiedAchievements,
   buildLeaderboardFromAchievements,
   getLeaderboardStats,
+  setScoringDbClient
 };
+
