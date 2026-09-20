@@ -900,7 +900,7 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
     );
   });
 
-  await asyncTest('56. General rate limiting for login and upload endpoints returns HTTP 429 on burst', async () => {
+  await asyncTest('56. Campus NAT login rate limiting: Identifier limiter isolates failed accounts without blocking distinct students on same IP', async () => {
     process.env.TEST_RATE_LIMIT = 'true';
     delete require.cache[require.resolve('../middleware/rateLimiter')];
     delete require.cache[require.resolve('../routes/auth')];
@@ -912,13 +912,13 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
     app.use('/api/auth', authRouter);
 
     let resCode = null, resBody = null;
-    const runLoginCall = (ip) => {
+    const runLoginCall = (ip, email) => {
       return new Promise((resolve) => {
         const reqObj = {
           method: 'POST',
           url: '/api/auth/login',
           originalUrl: '/api/auth/login',
-          body: { email: 'test@siet.ac.in', password: 'secretpassword' },
+          body: { email, password: 'wrongpassword' },
           headers: { 'content-type': 'application/json' },
           ip: ip,
           app: app
@@ -945,17 +945,79 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
       });
     };
 
-    const testIp = '192.168.1.100';
-    for (let i = 0; i < 5; i++) {
-      await runLoginCall(testIp);
+    const sharedCampusIp = '203.0.113.50'; // Shared NAT IP
+
+    // 56A. Student A fails login 3 times -> 4th attempt gets HTTP 429
+    for (let i = 0; i < 3; i++) {
+      await runLoginCall(sharedCampusIp, 'studentA@siet.ac.in');
     }
-    await runLoginCall(testIp);
+    await runLoginCall(sharedCampusIp, 'studentA@siet.ac.in');
     assert.strictEqual(resCode, 429);
-    assert.strictEqual(resBody.error.includes('Too many login attempts'), true);
+    assert.strictEqual(resBody.error.includes('Too many failed login attempts for this account'), true);
+
+    // 56B. Student B on SAME campus IP can still attempt login without being blocked by Student A's account lockout
+    await runLoginCall(sharedCampusIp, 'studentB@siet.ac.in');
+    assert.notStrictEqual(resCode, 429);
 
     delete process.env.TEST_RATE_LIMIT;
     delete require.cache[require.resolve('../middleware/rateLimiter')];
     delete require.cache[require.resolve('../routes/auth')];
+  });
+
+  await asyncTest('57. Authenticated upload rate limiting: User ID keying isolates Student A quota from Student B', async () => {
+    process.env.TEST_RATE_LIMIT = 'true';
+    delete require.cache[require.resolve('../middleware/rateLimiter')];
+
+    const { uploadUserLimiter } = require('../middleware/rateLimiter');
+
+    let resCode = null, resBody = null;
+    const runUploadReq = (userId) => {
+      return new Promise((resolve) => {
+        const reqObj = {
+          user: { id: userId },
+          ip: '203.0.113.50'
+        };
+        const resObj = {
+          statusCode: 200,
+          setHeader: () => {},
+          status: (c) => { resCode = c; resObj.statusCode = c; return resObj; },
+          json: (b) => {
+            if (!resCode) resCode = resObj.statusCode;
+            resBody = b;
+            resolve();
+            return resObj;
+          },
+          send: (b) => {
+            if (!resCode) resCode = resObj.statusCode;
+            resBody = b;
+            resolve();
+            return resObj;
+          }
+        };
+
+        uploadUserLimiter(reqObj, resObj, () => {
+          resCode = 200;
+          resolve();
+        });
+      });
+    };
+
+    // Student A uses up quota (3 calls allowed in TEST_RATE_LIMIT mode)
+    await runUploadReq('stuA'); assert.strictEqual(resCode, 200);
+    await runUploadReq('stuA'); assert.strictEqual(resCode, 200);
+    await runUploadReq('stuA'); assert.strictEqual(resCode, 200);
+
+    // Student A 4th upload triggers 429
+    await runUploadReq('stuA');
+    assert.strictEqual(resCode, 429);
+    assert.strictEqual(resBody.error.includes('Upload limit exceeded'), true);
+
+    // Student B on SAME IP still has clean quota
+    await runUploadReq('stuB');
+    assert.strictEqual(resCode, 200);
+
+    delete process.env.TEST_RATE_LIMIT;
+    delete require.cache[require.resolve('../middleware/rateLimiter')];
   });
 
   const { runPlatformTests } = require('./platform.test');

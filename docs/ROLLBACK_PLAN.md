@@ -1,43 +1,48 @@
 # SIET INCEPTRON — DEPLOYMENT ROLLBACK PLAN & PROCEDURES
 
 **Target Environment**: Staging & Production Rollout Procedures  
-**Current Baseline Commit**: `9c47d4812f9ab0cc147b5c68aae1b286785d5e8f`  
+**Current Baseline Commit**: `c1c1ca94dd96e97f380a757652114526ee016ab8`  
 **Current Branch**: `fix/light-mode-ui`
 
 ---
 
-## 1. Application Code Rollback (Git & Hosting Service)
+## 1. Application Code Rollback (Git & Hosting Container Service)
 
 ### Frontend Service
-- **Last Known Good Commit**: `9c47d4812f9ab0cc147b5c68aae1b286785d5e8f`
+- **Last Known Good Commit**: `c1c1ca94dd96e97f380a757652114526ee016ab8`
 - **Rollback Procedure**:
-  1. Trigger manual deployment in hosting console (Render / Vercel) pinned to commit `9c47d4812f9ab0cc147b5c68aae1b286785d5e8f`.
+  1. Trigger manual deployment in hosting console (Render / Vercel) pinned to commit `c1c1ca94dd96e97f380a757652114526ee016ab8`.
   2. Verify Vite build asset hash update.
 
 ### Backend API Service
-- **Last Known Good Commit**: `9c47d4812f9ab0cc147b5c68aae1b286785d5e8f`
+- **Last Known Good Commit**: `c1c1ca94dd96e97f380a757652114526ee016ab8`
 - **Rollback Procedure**:
-  1. Trigger backend service redeployment pinned to commit `9c47d4812f9ab0cc147b5c68aae1b286785d5e8f`.
+  1. Trigger backend container service redeployment pinned to commit `c1c1ca94dd96e97f380a757652114526ee016ab8`.
   2. Perform health check verification: `GET /api/health` returning `200 OK`.
 
 ---
 
-## 2. Database Migration Rollback Analysis & Procedures
+## 2. Database Security & Migration Rollback Policy
 
-> **CRITICAL RULE**: A Git revert does NOT undo SQL schema changes or stored RPCs in Supabase. The table below documents individual migration reversibility and manual rollback steps.
+> **CRITICAL PRODUCTION SAFETY MANDATE**:
+> 1. **NEVER DISABLE RLS** as a routine rollback measure. Disabling Row Level Security exposes public tables to un-authenticated direct PostgREST access. For security migrations, keep RLS enabled at all times and roll forward a policy fix or restore verified baseline policies.
+> 2. **NEVER DROP POPULATED COLUMNS OR TABLES** in production to revert application code. For additive migrations (e.g. `004_announcement_images.sql`), leave unused columns intact when rolling back application code.
+> 3. **NEVER EXECUTE `DROP TABLE` IN PRODUCTION**. Destructive table drops are permitted ONLY during fresh staging resets and are strictly forbidden on production databases.
 
-| Migration File | Reversible? | Data Loss Risk? | Manual Rollback Procedure |
-| :--- | :--- | :--- | :--- |
-| `002_secure_supabase_rls_and_policies.sql` | **Yes** | **No** | Re-enable default RLS policies and re-grant permissions if needed: <br>`ALTER TABLE public.users DISABLE ROW LEVEL SECURITY;` <br>`GRANT SELECT ON public.users TO authenticated;` |
-| `003_delete_faculty_rpc.sql` | **Yes** | **No** | Drop stored function: <br>`DROP FUNCTION IF EXISTS public.delete_faculty_member(uuid);` |
-| `004_announcement_images.sql` | **Yes** | **Low** (if non-null columns populated) | Remove added columns: <br>`ALTER TABLE public.announcements DROP COLUMN IF EXISTS image_url, DROP COLUMN IF EXISTS image_storage_path;` |
-| `create_platform_connections.sql` | **Yes** | **HIGH** (drops all student platform links if dropped) | Drop table (Staging only): <br>`DROP TABLE IF EXISTS public.student_platform_connections CASCADE;` <br>*Note: In production, preserve table and perform data point-in-time recovery if required.* |
+### Migration Reversibility Matrix
+
+| Migration File | Safe Production Rollback Strategy | Destructive Staging-Only Action |
+| :--- | :--- | :--- |
+| `002_secure_supabase_rls_and_policies.sql` | **Keep RLS Enabled**. Re-apply or roll forward previous known-secure policies via SQL editor. **Do NOT run `DISABLE ROW LEVEL SECURITY`.** | `DROP POLICY IF EXISTS ... ON public.users;` |
+| `003_delete_faculty_rpc.sql` | **Safe**. Drop RPC function without affecting data: `DROP FUNCTION IF EXISTS public.delete_faculty_member(uuid);` | `DROP FUNCTION IF EXISTS public.delete_faculty_member(uuid);` |
+| `004_announcement_images.sql` | **Leave columns intact**. Revert backend code; existing data remains safe in `image_url` columns. | `ALTER TABLE public.announcements DROP COLUMN IF EXISTS image_url;` *(Staging Reset Only)* |
+| `create_platform_connections.sql` | **Preserve Table & Revert Code**. Keep table data intact; revert API container image. | `DROP TABLE IF EXISTS public.student_platform_connections CASCADE;` *(STAGING-RESET-ONLY)* |
 
 ---
 
 ## 3. Emergency Restoration from Point-in-Time Recovery (PITR) Backup
 
-If schema corruption occurs during staging or production deployment:
+If database corruption occurs during staging or production deployment:
 1. Open Supabase Console -> Project Settings -> Database -> Backups.
-2. Select **Restore to Point-in-Time** matching the timestamp prior to migration execution.
-3. Restore snapshot into a **NON-PRODUCTION** secondary target for data integrity verification before overriding primary database.
+2. Select **Restore to Point-in-Time** matching the timestamp prior to deployment execution.
+3. Restore snapshot into a **NON-PRODUCTION** secondary target project for data integrity verification before overriding primary database.
