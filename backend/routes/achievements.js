@@ -86,6 +86,41 @@ async function enrichAchievementWithStudentProfile(a) {
   };
 }
 
+// ─── GET /api/achievements/recent/approved ──────────────────────────────────
+router.get('/recent/approved', optionalAuthMiddleware, async (req, res) => {
+  res.set('Cache-Control', 'public, max-age=60');
+  try {
+    let { data: achs, error } = await supabase
+      .from('achievements')
+      .select('*')
+      .eq('verified', true)
+      .order('created_at', { ascending: false })
+      .limit(6);
+
+    if (error || !achs) return res.json([]);
+
+    const userIds = [...new Set(achs.map(a => a.user_id))];
+    const { data: studentProfiles } = await supabase
+      .from('students')
+      .select('user_id, name, roll_no, class, avatar_url')
+      .in('user_id', userIds);
+
+    const profileMap = Object.fromEntries((studentProfiles || []).map(s => [s.user_id, s]));
+
+    const result = achs.map(a => ({
+      ...a,
+      student_name: profileMap[a.user_id]?.name || 'Student',
+      roll_no: profileMap[a.user_id]?.roll_no || '—',
+      class: profileMap[a.user_id]?.class || null,
+      avatar_url: profileMap[a.user_id]?.avatar_url || null,
+    }));
+
+    res.json(result);
+  } catch {
+    res.json([]);
+  }
+});
+
 // ─── GET /api/achievements/pending/count ─────────────────────────────────────
 router.get('/pending/count', authMiddleware, adminMiddleware, async (req, res) => {
   res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
