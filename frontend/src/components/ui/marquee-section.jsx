@@ -1,41 +1,55 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import client from '../../api/client';
-import { Trophy, Code, Bell, Flame, Award, ExternalLink } from 'lucide-react';
+import { Trophy, Code, Bell, Flame } from 'lucide-react';
 
 export default function MarqueeSection() {
   const [leaderboardRows, setLeaderboardRows] = useState([]);
   const [competitiveRows, setCompetitiveRows] = useState([]);
   const [newsRows, setNewsRows] = useState([]);
 
+  const row1GroupRef = useRef(null);
+  const row2GroupRef = useRef(null);
+  const row3GroupRef = useRef(null);
+
+  const [durations, setDurations] = useState({ r1: 60, r2: 60, r3: 60 });
+
   useEffect(() => {
-    // 1. Fetch canonical achievement leaderboard highlights
+    // 1. Fetch canonical achievement leaderboard highlights (Top 10)
     client.get('/leaderboard?limit=10')
       .then(res => {
         const data = Array.isArray(res.data) ? res.data : [];
-        setLeaderboardRows(data);
+        const top10 = data.slice(0, 10).map((item, idx) => ({
+          ...item,
+          rank: item.rank || idx + 1
+        }));
+        setLeaderboardRows(top10);
       })
       .catch(() => setLeaderboardRows([]));
 
-    // 2. Fetch competitive platform highlights (Correct response shape: res.data?.leaderboard)
+    // 2. Fetch competitive platform highlights (Top 10 canonical order)
     client.get('/platforms/leaderboard?batch=all&class=all')
       .then(res => {
         const data = Array.isArray(res.data?.leaderboard) ? res.data.leaderboard : [];
-        setCompetitiveRows(data);
+        const top10 = data.slice(0, 10).map((item, idx) => ({
+          ...item,
+          rank: item.rank || idx + 1
+        }));
+        setCompetitiveRows(top10);
       })
       .catch(() => setCompetitiveRows([]));
 
-    // 3. Fetch latest admin announcements
+    // 3. Fetch latest admin announcements (Latest 8)
     client.get('/announcements')
       .then(res => {
         if (res.data?.success && Array.isArray(res.data.announcements)) {
-          setNewsRows(res.data.announcements);
+          setNewsRows(res.data.announcements.slice(0, 8));
         }
       })
       .catch(() => setNewsRows([]));
   }, []);
 
-  // Duplicate items for DOM marquee group rendering (filling the continuous loop)
+  // Duplicate items for DOM marquee group rendering (filling continuous visual width)
   const ensureClones = (arr, minCount = 8) => {
     if (!arr || arr.length === 0) return [];
     let list = [...arr];
@@ -48,6 +62,37 @@ export default function MarqueeSection() {
   const leadItems = ensureClones(leaderboardRows);
   const compItems = ensureClones(competitiveRows);
   const newsItems = ensureClones(newsRows);
+
+  // Measure group DOM width and set dynamic animation duration for uniform visual speed (~38-40 px/sec)
+  useEffect(() => {
+    const updateDurations = () => {
+      const getDuration = (ref, targetPxPerSec, itemCount) => {
+        let width = 0;
+        if (ref.current) {
+          width = ref.current.getBoundingClientRect().width;
+        }
+        if (width <= 0) {
+          width = (itemCount || 8) * 284;
+        }
+        // Duration = Distance / Speed
+        return Math.max(24, Math.round(width / targetPxPerSec));
+      };
+
+      setDurations({
+        r1: getDuration(row1GroupRef, 40, leadItems.length),
+        r2: getDuration(row2GroupRef, 40, compItems.length),
+        r3: getDuration(row3GroupRef, 36, newsItems.length)
+      });
+    };
+
+    updateDurations();
+    const timer = setTimeout(updateDurations, 150);
+    window.addEventListener('resize', updateDurations);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', updateDurations);
+    };
+  }, [leadItems.length, compItems.length, newsItems.length]);
 
   return (
     <section className="lp-section lp-marquee-section" aria-label="Live From Inceptron Ticker">
@@ -116,12 +161,12 @@ export default function MarqueeSection() {
 
         /* Row 1: Achievement Leaderboard (LEFT → RIGHT: movement toward right) */
         .lp-marquee-left-to-right {
-          animation: marqueeScrollRight 36s linear infinite;
+          animation: marqueeScrollRight linear infinite;
         }
 
         /* Row 2: Competitive Leaderboard (RIGHT → LEFT: movement toward left) */
         .lp-marquee-right-to-left {
-          animation: marqueeScrollLeft 38s linear infinite;
+          animation: marqueeScrollLeft linear infinite;
         }
 
         /* Pause ONLY the row currently hovered or focused */
@@ -261,8 +306,11 @@ export default function MarqueeSection() {
                 No verified achievements yet
               </div>
             ) : (
-              <div className="lp-marquee-track lp-marquee-left-to-right">
-                <div className="lp-marquee-group">
+              <div
+                className="lp-marquee-track lp-marquee-left-to-right"
+                style={{ animationDuration: `${durations.r1}s` }}
+              >
+                <div className="lp-marquee-group" ref={row1GroupRef}>
                   {leadItems.map((item, i) => (
                     <Link key={`lead-a-${i}`} to={`/profile/${item.id}`} className="lp-ticker-pill">
                       <div className="lp-tk-avatar">{item.name?.[0] || 'S'}</div>
@@ -301,8 +349,11 @@ export default function MarqueeSection() {
                 No competitive platform scores yet
               </div>
             ) : (
-              <div className="lp-marquee-track lp-marquee-right-to-left">
-                <div className="lp-marquee-group">
+              <div
+                className="lp-marquee-track lp-marquee-right-to-left"
+                style={{ animationDuration: `${durations.r2}s` }}
+              >
+                <div className="lp-marquee-group" ref={row2GroupRef}>
                   {compItems.map((item, i) => {
                     const name = item.name || item.student_name || 'Student';
                     const cls = item.class || 'CSE';
@@ -363,8 +414,11 @@ export default function MarqueeSection() {
                 No active announcements
               </div>
             ) : (
-              <div className="lp-marquee-track lp-marquee-left-to-right">
-                <div className="lp-marquee-group">
+              <div
+                className="lp-marquee-track lp-marquee-left-to-right"
+                style={{ animationDuration: `${durations.r3}s` }}
+              >
+                <div className="lp-marquee-group" ref={row3GroupRef}>
                   {newsItems.map((item, i) => (
                     <Link
                       key={`news-a-${i}`}
@@ -423,3 +477,4 @@ export default function MarqueeSection() {
     </section>
   );
 }
+
