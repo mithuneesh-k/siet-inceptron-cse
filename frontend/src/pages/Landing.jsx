@@ -6,7 +6,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import AnnouncementsFeed from '../components/AnnouncementsFeed';
 import AchieversCarousel from '../components/ui/achievers-carousel';
-import { Users, Award, Trophy, Briefcase, Star, Zap, BookOpen, Rocket, Medal, Target } from 'lucide-react';
+import ActivitiesCard from '../components/ui/activities-card';
+import { Users, Award, Trophy, Briefcase, Star, Zap, BookOpen, Rocket, Medal, Target, Activity } from 'lucide-react';
 
 const RANK_ICONS = [
   <Medal size={18} color="#B45309" strokeWidth={2.5} style={{ display: 'inline' }} />,
@@ -45,7 +46,7 @@ function AnimatedNumber({ target, duration = 1400 }) {
 
 function AchievementCarousel({ topStudents }) {
   return (
-    <div className="lp-carousel" style={{ position: 'sticky', top: 76 }}>
+    <div className="lp-carousel">
       <AchieversCarousel achievers={topStudents} />
     </div>
   );
@@ -56,15 +57,53 @@ export default function Landing() {
   const { theme } = useTheme();
   const [stats, setStats] = useState({ totalStudents: 0, totalAchievements: 0, totalHackathonWins: 0, totalInternships: 0 });
   const [topStudents, setTopStudents] = useState([]);
+  const [activities, setActivities] = useState([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
-    Promise.all([
+    Promise.allSettled([
       client.get('/leaderboard/stats'),
       client.get('/leaderboard/top'),
-    ]).then(([s, t]) => {
-      setStats(s.data);
-      setTopStudents(t.data);
+      client.get('/announcements'),
+      client.get('/updates')
+    ]).then(([s, t, annRes, updRes]) => {
+      if (s.status === 'fulfilled') setStats(s.value.data);
+      if (t.status === 'fulfilled') setTopStudents(t.value.data);
+
+      const list = [];
+      if (annRes.status === 'fulfilled' && annRes.value.data?.announcements) {
+        annRes.value.data.announcements.forEach(a => {
+          list.push({
+            id: `ann-${a.id}`,
+            type: a.type || 'Announcement',
+            title: a.title,
+            desc: a.message ? (a.message.length > 50 ? a.message.slice(0, 50) + '...' : a.message) : (a.type || 'Department Notice'),
+            time: a.created_at ? new Date(a.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Recent',
+            created_at: a.created_at,
+            link: a.link
+          });
+        });
+      }
+      if (updRes.status === 'fulfilled' && Array.isArray(updRes.value.data)) {
+        updRes.value.data.forEach(u => {
+          list.push({
+            id: `upd-${u.id}`,
+            type: u.type || 'Opportunity',
+            title: u.title,
+            desc: u.organization || u.type || 'Portal Opportunity',
+            time: u.deadline ? `Due ${new Date(u.deadline).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : 'Recent',
+            created_at: u.created_at || u.deadline,
+            link: u.link
+          });
+        });
+      }
+
+      list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+      setActivities(list.slice(0, 5));
+      setActivitiesLoading(false);
+    }).catch(() => {
+      setActivitiesLoading(false);
     });
   }, [user]);
 
@@ -166,7 +205,15 @@ export default function Landing() {
             <Link to="/leaderboard" className="btn btn-secondary btn-sm">View All →</Link>
           </div>
           <div className="lp-achievers-layout">
-            <AchievementCarousel topStudents={topStudents} />
+            <div className="lp-carousel-column" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <AchievementCarousel topStudents={topStudents} />
+              <ActivitiesCard
+                activities={activities}
+                loading={activitiesLoading}
+                title="Recent Activity"
+                subtitle="Latest portal updates & notices"
+              />
+            </div>
             <div className="lp-podium-list">
               {topStudents.map((s, i) => (
                 <Link key={s.id} to={`/profile/${s.id}`} className="lp-podium-row card card-hover animate-fadeInUp" style={{ animationDelay: `${i * 0.06}s` }}>
