@@ -2,35 +2,63 @@ const rateLimit = require('express-rate-limit');
 const RedisStore = require('rate-limit-redis').default;
 const Redis = require('ioredis');
 
-let storeOption = undefined;
+let redisClient = null;
 
-if (process.env.REDIS_URL && process.env.NODE_ENV !== 'test') {
+function getRedisClient() {
+  if (process.env.REDIS_URL && process.env.NODE_ENV !== 'test') {
+    if (!redisClient) {
+      try {
+        redisClient = new Redis(process.env.REDIS_URL, {
+          maxRetriesPerRequest: 1,
+          enableOfflineQueue: false,
+        });
+        redisClient.on('error', (err) => {
+          const safeMsg = err.message ? String(err.message).replace(/redis:\/\/[^@]+@/gi, 'redis://***@') : 'Redis connection error';
+          console.warn('⚠️ Redis Rate Limit Store connection error (passOnStoreError enabled for request passthrough):', safeMsg);
+        });
+      } catch (err) {
+        const safeMsg = err.message ? String(err.message).replace(/redis:\/\/[^@]+@/gi, 'redis://***@') : 'Redis init error';
+        console.warn('⚠️ Could not initialize Redis client, using default MemoryStore:', safeMsg);
+        redisClient = null;
+      }
+    }
+    return redisClient;
+  }
+  return null;
+}
+
+function createStore(prefix) {
+  const client = getRedisClient();
+  if (!client) return undefined;
   try {
-    const client = new Redis(process.env.REDIS_URL, {
-      maxRetriesPerRequest: 1,
-      enableOfflineQueue: false,
-    });
-    client.on('error', (err) => {
-      const safeMsg = err.message ? String(err.message).replace(/redis:\/\/[^@]+@/gi, 'redis://***@') : 'Redis connection error';
-      console.warn('⚠️ Redis Rate Limit Store error (gracefully falling back):', safeMsg);
-    });
-    storeOption = new RedisStore({
+    return new RedisStore({
       sendCommand: (...args) => client.call(...args),
+      prefix: prefix
     });
   } catch (err) {
-    const safeMsg = err.message ? String(err.message).replace(/redis:\/\/[^@]+@/gi, 'redis://***@') : 'Redis init error';
-    console.warn('⚠️ Could not initialize Redis rate limit store, falling back to MemoryStore:', safeMsg);
+    const safeMsg = err.message ? String(err.message).replace(/redis:\/\/[^@]+@/gi, 'redis://***@') : 'Redis store error';
+    console.warn(`⚠️ Could not create RedisStore for prefix ${prefix}, using default MemoryStore:`, safeMsg);
+    return undefined;
+  }
+}
+
+function closeRedisClient() {
+  if (redisClient) {
+    redisClient.disconnect();
+    redisClient = null;
   }
 }
 
 // Identifier-based Login Limiter (Per Account/Email/Roll No)
-// Max 10 failed login attempts per 15-minute window per normalized identifier
-// Ignores successful logins so valid authentication resets/doesn't count against limit
+// Max 10 failed login attempts per 15-minute window per normalized identifier.
+// skipSuccessfulRequests: true means successful requests (HTTP < 400) do not count against the window limit.
+// (Note: This does not clear or reset previously accumulated failed attempt counters.)
 const loginIdentifierLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: process.env.TEST_RATE_LIMIT ? 3 : 10,
   skipSuccessfulRequests: true,
-  store: storeOption,
+  passOnStoreError: true,
+  store: createStore('inceptron:rl:login:id:'),
   keyGenerator: (req) => {
     const body = req.body || {};
     const rawInput = body.email || body.identifier || body.roll_no || body.reg_no || body.username;
@@ -45,24 +73,26 @@ const loginIdentifierLimiter = rateLimit({
 });
 
 // Coarse IP-level Login Limiter (Supports Campus NAT / CGNAT with 1200+ students)
-// High threshold (500 requests per 15 mins per IP) to prevent IP-wide lockout
-// Ignores successful requests so legitimate campus traffic is never penalized
+// High threshold (500 requests per 15 mins per IP) to prevent IP-wide lockout.
+// skipSuccessfulRequests: true means legitimate campus traffic (HTTP < 400) does not consume quota.
 const loginIpLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: process.env.TEST_RATE_LIMIT ? 10 : (process.env.NODE_ENV === 'test' ? 1000 : 500),
   skipSuccessfulRequests: true,
-  store: storeOption,
+  passOnStoreError: true,
+  store: createStore('inceptron:rl:login:ip:'),
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many login requests from this network. Please try again later.' }
 });
 
 // Authenticated Upload Rate Limiter (Per User ID)
-// Keyed on req.user.id so Student A upload activity never consumes Student B quota
+// Keyed on req.user.id so Student A upload activity never consumes Student B quota.
 const uploadUserLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: process.env.TEST_RATE_LIMIT ? 3 : (process.env.NODE_ENV === 'test' ? 100 : 10),
-  store: storeOption,
+  passOnStoreError: true,
+  store: createStore('inceptron:rl:upload:user:'),
   keyGenerator: (req) => {
     return req.user && req.user.id ? `user_${req.user.id}` : `ip_${req.ip}`;
   },
@@ -75,5 +105,7 @@ const uploadUserLimiter = rateLimit({
 module.exports = {
   loginIdentifierLimiter,
   loginIpLimiter,
-  uploadUserLimiter
+  uploadUserLimiter,
+  getRedisClient,
+  closeRedisClient
 };

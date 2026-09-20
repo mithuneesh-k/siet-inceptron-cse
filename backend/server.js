@@ -5,10 +5,11 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Trust proxy topology configuration (Render / cloud PaaS load balancers default to 1 proxy hop)
+// Trust proxy topology configuration: defaults to false in unconfigured local/dev mode to prevent synthetic header spoofing.
+// In Staging/Production environments behind PaaS load balancers (e.g. Render / Cloudflare / Nginx), set TRUST_PROXY=1 in env.
 const trustProxyVal = process.env.TRUST_PROXY
-  ? (process.env.TRUST_PROXY === 'true' ? 1 : process.env.TRUST_PROXY === 'false' ? false : Number(process.env.TRUST_PROXY) || process.env.TRUST_PROXY)
-  : 1;
+  ? (process.env.TRUST_PROXY === 'true' ? 1 : process.env.TRUST_PROXY === 'false' ? false : (isNaN(process.env.TRUST_PROXY) ? process.env.TRUST_PROXY : parseInt(process.env.TRUST_PROXY)))
+  : false;
 app.set('trust proxy', trustProxyVal);
 
 const allowedOrigins = process.env.FRONTEND_URL

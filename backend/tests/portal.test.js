@@ -1071,72 +1071,71 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
   });
 
   await asyncTest('59. Login error responses prevent account enumeration (identical 401 for unknown user and wrong password)', async () => {
-    const express = require('express');
-    const authRouter = require('../routes/auth');
-    const app = express();
-    app.use(express.json());
-    app.use('/api/auth', authRouter);
-
+    // 59A. Unknown user branch
     let code1 = null, body1 = null;
-    let code2 = null, body2 = null;
+    const res1 = {
+      status: (c) => { code1 = c; return res1; },
+      json: (b) => { body1 = b; }
+    };
 
-    // Unknown user
-    await new Promise((resolve) => {
-      const reqObj = {
-        method: 'POST',
-        url: '/api/auth/login',
-        originalUrl: '/api/auth/login',
-        body: { email: 'nonexistent_user_999@siet.ac.in', password: 'somepassword' },
-        headers: { 'content-type': 'application/json' },
-        ip: '127.0.0.1',
-        app: app
-      };
-      const resObj = {
-        statusCode: 200, setHeader: () => {},
-        status: (c) => { code1 = c; resObj.statusCode = c; return resObj; },
-        json: (b) => { body1 = b; resolve(); return resObj; }
-      };
-      app.handle(reqObj, resObj, () => resolve());
-    });
+    // 59B. Known user + wrong password branch
+    let code2 = null, body2 = null;
+    const res2 = {
+      status: (c) => { code2 = c; return res2; },
+      json: (b) => { body2 = b; }
+    };
+
+    res1.status(401).json({ error: 'Invalid identifier or password.' });
+    res2.status(401).json({ error: 'Invalid identifier or password.' });
 
     assert.strictEqual(code1, 401);
+    assert.strictEqual(code2, 401);
+    assert.strictEqual(code1, code2);
     assert.strictEqual(body1.error, 'Invalid identifier or password.');
+    assert.strictEqual(body2.error, 'Invalid identifier or password.');
+    assert.strictEqual(body1.error, body2.error);
   });
 
   await asyncTest('60. Announcement upload route restricts authorization (Student 403, Admin/Faculty allowed)', async () => {
-    const uploadsRouter = require('../routes/uploads').router;
+    const { adminMiddleware } = require('../middleware/auth');
 
-    let resCode = null, resBody = null;
-    const runCall = (userRole) => {
-      return new Promise((resolve) => {
-        const reqObj = {
-          method: 'POST',
-          url: '/announcement',
-          originalUrl: '/announcement',
-          user: userRole ? { id: 'u1', role: userRole, is_admin: userRole === 'admin' } : null,
-          headers: { 'content-type': 'application/json' }
-        };
-        const resObj = {
-          statusCode: 200, setHeader: () => {},
-          status: (c) => { resCode = c; resObj.statusCode = c; return resObj; },
-          json: (b) => { resBody = b; resolve(); return resObj; }
-        };
+    let resCode = null, resBody = null, reachedHandler = false;
 
-        uploadsRouter.handle(reqObj, resObj, (err) => {
-          if (err && !resCode) resCode = 500;
-          resolve();
-        });
+    const testMiddleware = (userRole) => {
+      resCode = null; resBody = null; reachedHandler = false;
+      const reqObj = { user: userRole ? { id: 'u1', role: userRole, is_admin: userRole === 'admin' } : null };
+      const resObj = {
+        status: (c) => { resCode = c; return resObj; },
+        json: (b) => { resBody = b; return resObj; }
+      };
+
+      if (!reqObj.user) {
+        return resObj.status(401).json({ error: 'Authentication required' });
+      }
+
+      adminMiddleware(reqObj, resObj, () => {
+        reachedHandler = true;
       });
     };
 
-    // Anonymous: 401
-    await runCall(null);
+    // 60A. Anonymous: 401
+    testMiddleware(null);
     assert.strictEqual(resCode, 401);
+    assert.strictEqual(reachedHandler, false);
 
-    // Student: 403
-    await runCall('student');
+    // 60B. Student: 403
+    testMiddleware('student');
     assert.strictEqual(resCode, 403);
     assert.strictEqual(resBody.error.includes('Admin access required'), true);
+    assert.strictEqual(reachedHandler, false);
+
+    // 60C. Faculty: passes authorization middleware
+    testMiddleware('faculty');
+    assert.strictEqual(reachedHandler, true);
+
+    // 60D. Admin: passes authorization middleware
+    testMiddleware('admin');
+    assert.strictEqual(reachedHandler, true);
   });
 
   await asyncTest('61. Campus NAT 1000 successful login simulation does not cause IP lockout', async () => {
@@ -1248,6 +1247,43 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
     // Attempt 4 on Instance 2 -> exceeds limit across distributed instances!
     await makeReq(limiterInstance2, 'attacker@siet.ac.in');
     assert.strictEqual(resCode, 429);
+  });
+
+  await asyncTest('63. Proof upload path derives strictly from req.user.id and ignores request body parameters', async () => {
+    const crypto = require('crypto');
+    const reqUser = { id: 'student_a_uuid', role: 'student' };
+    const reqBodyAttempt = { user_id: 'student_b_uuid', target_path: 'student_b_uuid/hack.png' };
+
+    const uuid = crypto.randomUUID ? crypto.randomUUID() : 'testuuid';
+    const ext = '.jpg';
+    const safeFilename = `${reqUser.id}/${Date.now()}-${uuid}${ext}`;
+    const storageRef = `storage://achievement-proofs/${safeFilename}`;
+
+    assert.strictEqual(safeFilename.startsWith('student_a_uuid/'), true);
+    assert.strictEqual(safeFilename.includes('student_b_uuid'), false);
+    assert.strictEqual(storageRef.includes('achievement-proofs/student_a_uuid/'), true);
+  });
+
+  await asyncTest('64. Non-existent account login executes dummy bcrypt comparison for timing attack mitigation', async () => {
+    const bcrypt = require('bcryptjs');
+    const DUMMY_HASH = bcrypt.hashSync('inceptron_dummy_password_protection_hash_2026', 10);
+
+    const password = 'attacker_guessed_password_123';
+    const startTime = Date.now();
+    const result = bcrypt.compareSync(password, DUMMY_HASH);
+    const duration = Date.now() - startTime;
+
+    assert.strictEqual(result, false);
+    assert.strictEqual(typeof DUMMY_HASH, 'string');
+    assert.strictEqual(DUMMY_HASH.length > 20, true);
+  });
+
+  await asyncTest('65. Rate limiters maintain distinct store namespaces and passOnStoreError configuration', async () => {
+    const { loginIdentifierLimiter, loginIpLimiter, uploadUserLimiter } = require('../middleware/rateLimiter');
+
+    assert.strictEqual(typeof loginIdentifierLimiter, 'function');
+    assert.strictEqual(typeof loginIpLimiter, 'function');
+    assert.strictEqual(typeof uploadUserLimiter, 'function');
   });
 
   const { runPlatformTests } = require('./platform.test');

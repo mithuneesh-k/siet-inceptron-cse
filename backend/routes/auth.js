@@ -4,6 +4,10 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { supabase } = require('../db/supabase');
 
+// Precomputed dummy hash for timing-attack mitigation on non-existent accounts
+// Cost factor 10 matching standard user password hash, does not correspond to any valid account
+const DUMMY_HASH = bcrypt.hashSync('inceptron_dummy_password_protection_hash_2026', 10);
+
 // ─── POST /api/auth/register ──────────────────────────────────────────────────
 router.post('/register', async (req, res) => {
   const { name, roll_no, year, class: cls, email, password, github, linkedin, bio } = req.body;
@@ -127,6 +131,7 @@ router.post('/login', loginIpLimiter, loginIdentifierLimiter, async (req, res) =
 
   if (!authUser) {
     console.warn('Login failed: user not found');
+    bcrypt.compareSync(password, DUMMY_HASH);
     return res.status(401).json({ error: 'Invalid identifier or password.' });
   }
 
