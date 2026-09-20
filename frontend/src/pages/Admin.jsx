@@ -473,8 +473,10 @@ export default function Admin() {
             {tab === 'overview' && (() => {
               const totalStudentsCount = overviewStats?.totalStudents ?? students.length;
               const totalAchievementsCount = overviewStats?.totalAchievements ?? students.reduce((s, u) => s + (u.achievement_count || 0), 0);
-              const computedAvg = overviewStats?.avgScore ?? (students.length ? Math.round(students.reduce((sum, s) => sum + (s.score || 0), 0) / students.length) : 0);
-              const topStudents = [...students].sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 5);
+              const computedAvg = overviewStats?.avgScore ?? (students.length ? Number((students.reduce((sum, s) => sum + (s.score || 0), 0) / students.length).toFixed(2)) : 0);
+              const topStudents = overviewStats?.topStudents && overviewStats.topStudents.length > 0
+                ? overviewStats.topStudents 
+                : [];
 
               return (
                 <div className="animate-fadeIn">
