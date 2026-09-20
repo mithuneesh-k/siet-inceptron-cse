@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import SwitchMode from './ui/switch-mode';
 import client from '../api/client';
 import { Home, Zap, Trophy, GraduationCap, Users, User, Shield, CheckCircle, Code, Sun, Moon, Bell, AlertCircle, ChevronRight } from 'lucide-react';
 import { subscribeAchievementEvents } from '../utils/achievementEvents';
@@ -231,14 +232,7 @@ export default function Navbar() {
         </div>
 
         <div className="navbar-actions">
-          <button
-            className="theme-toggle-btn"
-            onClick={toggleTheme}
-            title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
-            aria-label="Toggle Theme"
-          >
-            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
+          <SwitchMode width={64} height={32} />
           {user && (
             <div className="user-menu">
               <Link to={`/profile/${user.id}`} className="user-chip">

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import SwitchMode from '../components/ui/switch-mode';
 import { Eye, EyeOff, Lock, User, ArrowRight, AlertCircle, ChevronDown, Sun, Moon } from 'lucide-react';
 
 export default function Login() {
@@ -335,19 +336,10 @@ export default function Login() {
 
   return (
     <div ref={experienceRef} className="login-experience">
-      {/* Floating Theme Toggle Button */}
-      <button
-        type="button"
-        className={`login-theme-toggle ${theme}`}
-        onClick={toggleTheme}
-        title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
-        aria-label="Toggle Theme"
-      >
-        <span className="theme-toggle-icon-wrap">
-          <Sun size={20} className="theme-icon sun-icon" />
-          <Moon size={20} className="theme-icon moon-icon" />
-        </span>
-      </button>
+      {/* Floating Theme Toggle Switch */}
+      <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 1000 }}>
+        <SwitchMode width={72} height={36} />
+      </div>
 
       {/* INTRO CINEMATIC VIEWPORT OVERLAY */}
       <div ref={overlayRef} className="intro-viewport">

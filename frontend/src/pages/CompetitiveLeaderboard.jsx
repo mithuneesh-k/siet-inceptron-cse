@@ -6,6 +6,7 @@ import {
   Users, Award, Zap, Code, ShieldCheck, Flame, BarChart3, HelpCircle,
   RefreshCw, ExternalLink, Copy, Check
 } from 'lucide-react';
+import RunActionButton from '../components/ui/run-action-button';
 
 const BATCH_OPTIONS = ['2026-2030', '2025-2029', '2024-2028', '2023-2027', '2022-2026'];
 const CLASS_OPTIONS = ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D', 'CSE-E'];
@@ -733,16 +734,12 @@ export default function CompetitiveLeaderboard() {
                         )}
 
                         {isOwnRowSelected && isConn && (
-                          <button
-                            type="button"
-                            className="btn btn-secondary btn-xs"
-                            onClick={() => handleModalSync('codeforces')}
+                          <RunActionButton
+                            onStart={() => handleModalSync('codeforces')}
                             disabled={modalSyncingMap.codeforces}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, padding: '3px 8px' }}
-                          >
-                            <RefreshCw size={12} className={modalSyncingMap.codeforces ? 'spin' : ''} />
-                            {modalSyncingMap.codeforces ? 'Syncing...' : 'Sync'}
-                          </button>
+                            idleText="Sync"
+                            doneText="Synced"
+                          />
                         )}
                       </div>
                     </div>
@@ -797,16 +794,12 @@ export default function CompetitiveLeaderboard() {
                         )}
 
                         {isOwnRowSelected && isConn && (
-                          <button
-                            type="button"
-                            className="btn btn-secondary btn-xs"
-                            onClick={() => handleModalSync('leetcode')}
+                          <RunActionButton
+                            onStart={() => handleModalSync('leetcode')}
                             disabled={modalSyncingMap.leetcode}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, padding: '3px 8px' }}
-                          >
-                            <RefreshCw size={12} className={modalSyncingMap.leetcode ? 'spin' : ''} />
-                            {modalSyncingMap.leetcode ? 'Syncing...' : 'Sync'}
-                          </button>
+                            idleText="Sync"
+                            doneText="Synced"
+                          />
                         )}
                       </div>
                     </div>
