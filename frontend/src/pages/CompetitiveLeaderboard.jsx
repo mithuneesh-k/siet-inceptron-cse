@@ -855,16 +855,12 @@ export default function CompetitiveLeaderboard() {
                         )}
 
                         {isOwnRowSelected && isConn && (
-                          <button
-                            type="button"
-                            className="btn btn-secondary btn-xs"
-                            onClick={() => handleModalSync('geeksforgeeks')}
+                          <RunActionButton
+                            onStart={() => handleModalSync('geeksforgeeks')}
                             disabled={modalSyncingMap.geeksforgeeks}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, padding: '3px 8px' }}
-                          >
-                            <RefreshCw size={12} className={modalSyncingMap.geeksforgeeks ? 'spin' : ''} />
-                            {modalSyncingMap.geeksforgeeks ? 'Syncing...' : 'Sync'}
-                          </button>
+                            idleText="Sync"
+                            doneText="Synced"
+                          />
                         )}
                       </div>
                     </div>
@@ -920,16 +916,12 @@ export default function CompetitiveLeaderboard() {
                         )}
 
                         {isOwnRowSelected && isConn && (
-                          <button
-                            type="button"
-                            className="btn btn-secondary btn-xs"
-                            onClick={() => handleModalSync('hackerrank')}
+                          <RunActionButton
+                            onStart={() => handleModalSync('hackerrank')}
                             disabled={modalSyncingMap.hackerrank}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, padding: '3px 8px' }}
-                          >
-                            <RefreshCw size={12} className={modalSyncingMap.hackerrank ? 'spin' : ''} />
-                            {modalSyncingMap.hackerrank ? 'Syncing...' : 'Sync'}
-                          </button>
+                            idleText="Sync"
+                            doneText="Synced"
+                          />
                         )}
                       </div>
                     </div>

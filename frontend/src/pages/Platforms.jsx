@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import client from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import ConfirmModal from '../components/ConfirmModal';
+import RunActionButton from '../components/ui/run-action-button';
 import {
   Code, RefreshCw, Unlink, CheckCircle2, AlertTriangle,
   ExternalLink, Eye, BarChart2, Shield
@@ -411,6 +412,15 @@ export default function Platforms() {
     };
     const pName = platformNames[pCode] || pCode;
 
+    if (cooldownRemainingMap[pCode] > 0) {
+      const remainingSec = cooldownRemainingMap[pCode];
+      const mins = Math.floor(remainingSec / 60);
+      const secs = remainingSec % 60;
+      const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+      showToast(`${pName} was synced recently. Please wait ${timeStr} before syncing again.`, 'info');
+      return;
+    }
+
     setSyncingMap(prev => ({ ...prev, [pCode]: true }));
     setSyncFeedbackMap(prev => ({ ...prev, [pCode]: { type: 'loading', message: `Syncing ${pName} metrics...` } }));
 
@@ -739,16 +749,12 @@ export default function Platforms() {
 
                   {!isNonStudent && (
                     <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', paddingTop: 10, borderTop: '1px solid var(--color-border)' }}>
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-xs"
-                        onClick={() => handleSync('codeforces')}
-                        disabled={syncingMap.codeforces || (cooldownRemainingMap.codeforces > 0)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, opacity: (cooldownRemainingMap.codeforces > 0) ? 0.65 : 1 }}
-                      >
-                        <RefreshCw size={13} className={syncingMap.codeforces ? 'spin' : ''} />
-                        {syncingMap.codeforces ? 'Syncing...' : 'Sync'}
-                      </button>
+                      <RunActionButton
+                        onStart={() => handleSync('codeforces')}
+                        disabled={syncingMap.codeforces}
+                        idleText="Sync"
+                        doneText="Synced"
+                      />
                       <button
                         type="button"
                         className="btn btn-ghost btn-xs"
@@ -889,16 +895,12 @@ export default function Platforms() {
 
                   {!isNonStudent && (
                     <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', paddingTop: 10, borderTop: '1px solid var(--color-border)' }}>
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-xs"
-                        onClick={() => handleSync('leetcode')}
-                        disabled={syncingMap.leetcode || (cooldownRemainingMap.leetcode > 0)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, opacity: (cooldownRemainingMap.leetcode > 0) ? 0.65 : 1 }}
-                      >
-                        <RefreshCw size={13} className={syncingMap.leetcode ? 'spin' : ''} />
-                        {syncingMap.leetcode ? 'Syncing...' : 'Sync'}
-                      </button>
+                      <RunActionButton
+                        onStart={() => handleSync('leetcode')}
+                        disabled={syncingMap.leetcode}
+                        idleText="Sync"
+                        doneText="Synced"
+                      />
                       <button
                         type="button"
                         className="btn btn-ghost btn-xs"
@@ -1039,16 +1041,12 @@ export default function Platforms() {
 
                   {!isNonStudent && (
                     <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', paddingTop: 10, borderTop: '1px solid var(--color-border)' }}>
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-xs"
-                        onClick={() => handleSync('geeksforgeeks')}
-                        disabled={syncingMap.geeksforgeeks || (cooldownRemainingMap.geeksforgeeks > 0)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, opacity: (cooldownRemainingMap.geeksforgeeks > 0) ? 0.65 : 1 }}
-                      >
-                        <RefreshCw size={13} className={syncingMap.geeksforgeeks ? 'spin' : ''} />
-                        {syncingMap.geeksforgeeks ? 'Syncing...' : 'Sync'}
-                      </button>
+                      <RunActionButton
+                        onStart={() => handleSync('geeksforgeeks')}
+                        disabled={syncingMap.geeksforgeeks}
+                        idleText="Sync"
+                        doneText="Synced"
+                      />
                       <button
                         type="button"
                         className="btn btn-ghost btn-xs"
@@ -1192,16 +1190,12 @@ export default function Platforms() {
 
                   {!isNonStudent && (
                     <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', paddingTop: 10, borderTop: '1px solid var(--color-border)' }}>
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-xs"
-                        onClick={() => handleSync('hackerrank')}
-                        disabled={syncingMap.hackerrank || (cooldownRemainingMap.hackerrank > 0)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, opacity: (cooldownRemainingMap.hackerrank > 0) ? 0.65 : 1 }}
-                      >
-                        <RefreshCw size={13} className={syncingMap.hackerrank ? 'spin' : ''} />
-                        {syncingMap.hackerrank ? 'Syncing...' : 'Sync'}
-                      </button>
+                      <RunActionButton
+                        onStart={() => handleSync('hackerrank')}
+                        disabled={syncingMap.hackerrank}
+                        idleText="Sync"
+                        doneText="Synced"
+                      />
                       <button
                         type="button"
                         className="btn btn-ghost btn-xs"
