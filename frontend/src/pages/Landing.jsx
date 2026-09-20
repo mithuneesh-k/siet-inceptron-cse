@@ -157,7 +157,7 @@ export default function Landing() {
       <AnnouncementsFeed />
 
       {/* ── Top Achievers ─────────────────────── */}
-      <section className="lp-section">
+      <section className="lp-section lp-achievers-section">
         <div className="container">
           <div className="section-header">
             <div>
@@ -188,7 +188,7 @@ export default function Landing() {
       </section>
 
       {/* ── Scoring ───────────────────────────── */}
-      <section className="lp-section">
+      <section className="lp-section lp-scoring-section lp-section-alt">
         <div className="container">
           <div className="section-header" style={{ justifyContent: 'center', textAlign: 'center', flexDirection: 'column', gap: 0 }}>
             <h2 className="section-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><Award size={24} className="text-gradient" /> How Scoring Works</h2>

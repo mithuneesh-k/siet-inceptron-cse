@@ -1043,6 +1043,94 @@ textarea:focus-visible {
   box-shadow: 0 0 0 3px var(--green-200);
 }
 
+/* ─── Firefox Theme-Aware Scrollbar ─────────── */
+* {
+  scrollbar-width: thin;
+}
+[data-theme="dark"] {
+  scrollbar-color: rgba(148, 163, 184, 0.25) #071018;
+}
+[data-theme="light"] {
+  scrollbar-color: #cbd5e1 #f5f7f4;
+}
+
+/* ─── Advanced Cursor Audit & Edge Case Rules ─ */
+button:not(:disabled),
+a,
+[role="button"],
+select,
+.btn,
+.tab-item,
+.nav-link,
+.social-btn,
+.lp-ticker-pill,
+.custom-select-trigger,
+.custom-select-option,
+.back-to-top,
+.clickable,
+.table-row-clickable,
+.carousel-nav-btn {
+  cursor: pointer;
+}
+
+/* Disabled & ARIA Disabled Controls */
+button:disabled,
+input:disabled,
+select:disabled,
+.disabled,
+.btn-disabled,
+[aria-disabled="true"],
+[role="button"][aria-disabled="true"],
+a[aria-disabled="true"] {
+  cursor: not-allowed !important;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* Stat Cards: Default for static, pointer ONLY when clickable link/button */
+.stat-card,
+.static-card,
+.info-panel,
+.dept-badge,
+.non-clickable {
+  cursor: default;
+}
+
+a.stat-card,
+button.stat-card,
+.stat-card[role="button"],
+.stat-card.clickable {
+  cursor: pointer;
+}
+
+/* ─── Section Background System Rules ───────── */
+.announcements-section {
+  background: var(--bg-alt) !important;
+  border-top: 1.5px solid var(--border) !important;
+  border-bottom: 1.5px solid var(--border) !important;
+}
+
+.lp-scoring-section {
+  background: var(--bg-secondary) !important;
+  border-top: 1.5px solid var(--border) !important;
+  border-bottom: 1.5px solid var(--border) !important;
+}
+
+.lp-achievers-section {
+  background: var(--bg-primary);
+}
+
+.updates-filters {
+  background: var(--bg-card) !important;
+  border: 1.5px solid var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.updates-info {
+  background: var(--bg-secondary) !important;
+  border: 1.5px solid var(--border) !important;
+}
+
 /* ─── Reduced Motion ─── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -1052,5 +1140,6 @@ textarea:focus-visible {
     scroll-behavior: auto !important;
   }
 }
+
 
 
