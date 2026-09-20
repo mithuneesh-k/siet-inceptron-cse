@@ -10,6 +10,7 @@ import FilterModal from '../components/FilterModal';
 import FacultyAdvisorModal from '../components/FacultyAdvisorModal';
 import FacultyActionModal from '../components/FacultyActionModal';
 import ConfirmModal from '../components/ConfirmModal';
+import SplitActions from '../components/ui/split-actions';
 import { 
   Shield, BarChart2, Users, Settings, GraduationCap, Hourglass, 
   Award, TrendingUp, List, RefreshCw, Trash2, Download, Plus, 
@@ -691,9 +692,16 @@ export default function Admin() {
                         <span><span className="badge badge-blue">{s.batch}</span></span>
                         <span style={{ fontSize: 12, color: '#94a3b8' }}>{s.date_of_birth || '—'}</span>
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'nowrap', position: 'relative', zIndex: 5 }}>
-                          <button className="btn btn-ghost btn-sm" title="Edit student" onClick={() => setEditStudent(s)} style={{ pointerEvents: 'auto', cursor: 'pointer' }}><Edit3 size={16} /></button>
-                          <button className="btn btn-ghost btn-sm" title="Reset password to default" onClick={() => handleResetPassword(s)} style={{ pointerEvents: 'auto', cursor: 'pointer', color: '#60a5fa', borderColor: 'rgba(59, 130, 246, 0.3)' }}><Key size={16} /></button>
-                          <button className="btn btn-danger btn-sm" title="Delete student" onClick={() => setDeleteConfirm(s)} style={{ pointerEvents: 'auto', cursor: 'pointer' }}><Trash2 size={16} /></button>
+                          <SplitActions
+                            primaryLabel="Manage"
+                            primaryIcon={Edit3}
+                            onPrimaryClick={() => setEditStudent(s)}
+                            dropdownActions={[
+                              { label: 'Reset Password', icon: Key, onClick: () => handleResetPassword(s) },
+                              { label: 'Delete Student', icon: Trash2, onClick: () => setDeleteConfirm(s), destructive: true }
+                            ]}
+                            ariaLabel="More student actions"
+                          />
                         </div>
                       </div>
                     ))}
@@ -750,10 +758,21 @@ export default function Admin() {
                         <div>{f.advising_class ? <span className="badge badge-green">{f.advising_class}</span> : <span style={{ color: '#64748b' }}>—</span>}</div>
                         <div>{f.advising_batch ? <span className="badge badge-violet">{f.advising_batch}</span> : <span style={{ color: '#64748b' }}>—</span>}</div>
                         <div style={{ display: 'flex', gap: 6, alignItems: 'center', position: 'relative', zIndex: 5 }}>
-                          <button className="btn btn-primary btn-sm" onClick={() => setEditFaculty(f)} style={{ pointerEvents: 'auto', cursor: 'pointer' }}>Adjust</button>
-                          {isFullAdmin && f.user_id !== user?.id && f.id !== user?.id && (
-                            <button className="btn btn-danger btn-sm" onClick={() => setDeleteFacultyTarget(f)} style={{ padding: '4px 10px', fontSize: 12, pointerEvents: 'auto', cursor: 'pointer' }}>Delete</button>
-                          )}
+                          <SplitActions
+                            primaryLabel="Adjust"
+                            primaryIcon={Edit3}
+                            onPrimaryClick={() => setEditFaculty(f)}
+                            dropdownActions={[
+                              {
+                                label: 'Delete Faculty',
+                                icon: Trash2,
+                                onClick: () => setDeleteFacultyTarget(f),
+                                destructive: true,
+                                hidden: !isFullAdmin || f.user_id === user?.id || f.id === user?.id
+                              }
+                            ]}
+                            ariaLabel="More faculty actions"
+                          />
                         </div>
                       </div>
                     ))}
@@ -948,23 +967,20 @@ export default function Admin() {
                                   {conn.lastSyncedAt ? new Date(conn.lastSyncedAt).toLocaleString() : 'Never'}
                                 </td>
                                 <td style={{ padding: '12px', textAlign: 'right' }}>
-                                  {conn.ownershipVerified ? (
-                                    <button
-                                      className="btn btn-ghost btn-xs"
-                                      onClick={() => handleAdminVerifyPlatform(conn.userId, conn.platformCode, false)}
-                                      style={{ pointerEvents: 'auto', cursor: 'pointer' }}
-                                    >
-                                      Unverify
-                                    </button>
-                                  ) : (
-                                    <button
-                                      className="btn btn-primary btn-xs"
-                                      onClick={() => handleAdminVerifyPlatform(conn.userId, conn.platformCode, true)}
-                                      style={{ display: 'inline-flex', alignItems: 'center', gap: 4, pointerEvents: 'auto', cursor: 'pointer' }}
-                                    >
-                                      <CheckCircle size={12} /> Verify Handle
-                                    </button>
-                                  )}
+                                  <SplitActions
+                                    primaryLabel={conn.ownershipVerified ? 'Verified' : 'Verify'}
+                                    primaryIcon={CheckCircle}
+                                    onPrimaryClick={() => handleAdminVerifyPlatform(conn.userId, conn.platformCode, !conn.ownershipVerified)}
+                                    dropdownActions={[
+                                      {
+                                        label: conn.ownershipVerified ? 'Unverify Connection' : 'Verify Handle',
+                                        icon: conn.ownershipVerified ? X : CheckCircle,
+                                        onClick: () => handleAdminVerifyPlatform(conn.userId, conn.platformCode, !conn.ownershipVerified),
+                                        destructive: conn.ownershipVerified
+                                      }
+                                    ]}
+                                    ariaLabel="More platform actions"
+                                  />
                                 </td>
                               </tr>
                             ))}
@@ -1191,14 +1207,15 @@ export default function Admin() {
                               <h4 style={{ fontWeight: 800, color: 'var(--color-text)', margin: 0, fontSize: 15 }}>{n.title}</h4>
                             </div>
 
-                            <button
-                              className="btn btn-danger btn-sm"
-                              onClick={() => setDeleteAnnTarget(n)}
-                              style={{ padding: '4px 10px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'pointer', flexShrink: 0 }}
-                              title="Delete Announcement"
-                            >
-                              <Trash2 size={13} /> Delete
-                            </button>
+                            <SplitActions
+                              primaryLabel="Manage"
+                              primaryIcon={Settings}
+                              onPrimaryClick={() => setDeleteAnnTarget(n)}
+                              dropdownActions={[
+                                { label: 'Delete Announcement', icon: Trash2, onClick: () => setDeleteAnnTarget(n), destructive: true }
+                              ]}
+                              ariaLabel="More announcement actions"
+                            />
                           </div>
 
                           {n.image_url && (
