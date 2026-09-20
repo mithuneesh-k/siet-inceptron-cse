@@ -70,15 +70,21 @@ export default function Admin() {
     setTimeout(() => setToast(null), 3500);
   };
 
+  const [recentApproved, setRecentApproved] = useState([]);
+
   // Load overview data
   useEffect(() => {
     refreshUser();
-    Promise.all([
-      client.get('/admin/students'), // Simplified call for overview, we'll refactor later if needed
+    Promise.allSettled([
+      client.get('/admin/students'),
       client.get('/achievements/all/pending'),
-    ]).then(([uRes, aRes]) => {
-      setStudents(uRes.data);
-      setAchievements(aRes.data);
+      client.get('/achievements/recent/approved')
+    ]).then(([uRes, aRes, recRes]) => {
+      if (uRes.status === 'fulfilled') setStudents(uRes.value.data);
+      if (aRes.status === 'fulfilled') setAchievements(aRes.value.data);
+      if (recRes.status === 'fulfilled' && Array.isArray(recRes.value.data)) {
+        setRecentApproved(recRes.value.data);
+      }
     }).finally(() => setLoading(false));
   }, []);
 
@@ -476,19 +482,44 @@ export default function Admin() {
                   ))}
                 </div>
 
-                <div className="card" style={{ padding: '20px 24px', marginTop: 20 }}>
-                  <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}><List size={18} /> Top 5 Students by Score</h3>
-                  {students.slice(0, 5).map((s, i) => (
-                    <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
-                      <span style={{ fontWeight: 700, fontSize: 16, minWidth: 24 }}>#{i + 1}</span>
-                      <div style={{ width: 36, height: 36, background: 'var(--gradient-primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#fff' }}>{s.name[0]}</div>
-                      <div style={{ flex: 1 }}>
-                        <Link to={`/profile/${s.id}`} style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{s.name}</Link>
-                        <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{s.class} · {s.batch || 'No batch'}</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 20, marginTop: 20 }}>
+                  <div className="card" style={{ padding: '20px 24px' }}>
+                    <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}><List size={18} /> Top 5 Students by Score</h3>
+                    {students.slice(0, 5).map((s, i) => (
+                      <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
+                        <span style={{ fontWeight: 700, fontSize: 16, minWidth: 24 }}>#{i + 1}</span>
+                        <div style={{ width: 36, height: 36, background: 'var(--gradient-primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#fff' }}>{s.name[0]}</div>
+                        <div style={{ flex: 1 }}>
+                          <Link to={`/profile/${s.id}`} style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{s.name}</Link>
+                          <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{s.class} · {s.batch || 'No batch'}</div>
+                        </div>
+                        <span style={{ fontWeight: 800, color: 'var(--color-gold)', fontFamily: "'Space Grotesk', sans-serif" }}>{s.score} pts</span>
                       </div>
-                      <span style={{ fontWeight: 800, color: 'var(--color-gold)', fontFamily: "'Space Grotesk', sans-serif" }}>{s.score} pts</span>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+
+                  <div className="card" style={{ padding: '20px 24px' }}>
+                    <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}><Award size={18} /> Recent Approved Achievements</h3>
+                    {recentApproved.length === 0 ? (
+                      <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: 13 }}>
+                        No approved achievements found yet.
+                      </div>
+                    ) : (
+                      recentApproved.map((a) => (
+                        <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
+                          <div style={{ width: 36, height: 36, background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981', flexShrink: 0 }}>
+                            <CheckCircle size={18} />
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.title}</div>
+                            <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+                              {a.student_name} ({a.class || 'Student'}) · <span style={{ color: 'var(--color-gold)', fontWeight: 600 }}>+{a.points || 0} pts</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
               </div>
             )}
