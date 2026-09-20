@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { UndoDeleteProvider } from './contexts/UndoDeleteContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 
@@ -92,9 +93,11 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <BrowserRouter>
-          <AppContent />
-        </BrowserRouter>
+        <UndoDeleteProvider>
+          <BrowserRouter>
+            <AppContent />
+          </BrowserRouter>
+        </UndoDeleteProvider>
       </AuthProvider>
     </ThemeProvider>
   );

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import client from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
+import { useUndoableDelete } from '../contexts/UndoDeleteContext';
 import ConfirmModal from '../components/ConfirmModal';
 import RunActionButton from '../components/ui/run-action-button';
 import {
@@ -216,6 +217,7 @@ function DifficultyBarChart({ platforms }) {
 // ─── MAIN PLATFORMS PAGE COMPONENT ───────────────────────────────────────────
 export default function Platforms() {
   const { user } = useAuth();
+  const { requestUndoableDelete } = useUndoableDelete();
   const isNonStudent = Boolean(user && (user.is_admin || user.role === 'admin' || user.role === 'faculty'));
 
   const [platforms, setPlatforms] = useState([]);
@@ -509,24 +511,38 @@ export default function Platforms() {
   };
 
   const handleDisconnectConfirm = async () => {
-    if (disconnecting || !disconnectPlatformCode) return;
-    setDisconnecting(true);
+    if (!disconnectPlatformCode) return;
+    const pCode = disconnectPlatformCode;
+    const targetPlatform = platforms.find(p => p.code === pCode);
+    const existingConn = targetPlatform?.connection;
+    setShowDisconnectModal(false);
 
-    try {
-      await client.delete(`/platforms/${disconnectPlatformCode}`);
-      setPlatforms(prev => prev.map(p => p.code === disconnectPlatformCode ? {
-        ...p,
-        connectionStatus: 'not_connected',
-        connection: null
-      } : p));
-      setShowDisconnectModal(false);
-      showToast(`${disconnectPlatformCode} handle disconnected.`);
-    } catch (err) {
-      const msg = err.response?.data?.error || 'Failed to disconnect platform.';
-      showToast(msg, 'error');
-    } finally {
-      setDisconnecting(false);
-    }
+    requestUndoableDelete({
+      id: pCode,
+      type: 'Platform Connection',
+      label: `${pCode.toUpperCase()} account`,
+      itemData: existingConn,
+      onOptimisticRemove: () => {
+        setPlatforms(prev => prev.map(p => p.code === pCode ? {
+          ...p,
+          connectionStatus: 'not_connected',
+          connection: null
+        } : p));
+      },
+      onRestore: () => {
+        setPlatforms(prev => prev.map(p => p.code === pCode ? {
+          ...p,
+          connectionStatus: existingConn?.status || 'connected',
+          connection: existingConn
+        } : p));
+      },
+      onCommit: async () => {
+        await client.delete(`/platforms/${pCode}`);
+      },
+      onFailure: (err) => {
+        showToast(err?.response?.data?.error || 'Failed to disconnect platform.', 'error');
+      }
+    });
   };
 
   if (loading) {

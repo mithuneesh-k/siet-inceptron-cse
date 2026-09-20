@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import client from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
+import { useUndoableDelete } from '../contexts/UndoDeleteContext';
 import StudentActionModal from '../components/StudentActionModal';
 import ImportModal from '../components/ImportModal';
 import CustomSelect from '../components/CustomSelect';
@@ -19,6 +20,7 @@ const CLASSES = ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D', 'CSE-E'];
 
 export default function Admin() {
   const { user, refreshUser } = useAuth();
+  const { requestUndoableDelete } = useUndoableDelete();
   const [students, setStudents] = useState([]);
   const [achievements, setAchievements] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -145,15 +147,31 @@ export default function Admin() {
 
   const handleDeleteFacultyConfirm = async () => {
     if (!deleteFacultyTarget) return;
-    const targetId = deleteFacultyTarget.user_id || deleteFacultyTarget.id;
+    const target = deleteFacultyTarget;
+    const targetId = target.user_id || target.id;
     setDeleteFacultyTarget(null);
-    try {
-      await client.delete(`/admin/faculty/${targetId}`);
-      setFaculties(prev => prev.filter(f => f.id !== targetId && f.user_id !== targetId));
-      showToast('Faculty member deleted successfully.');
-    } catch (err) {
-      showToast(err.response?.data?.error || 'Unable to delete faculty. Please try again.', 'error');
-    }
+
+    requestUndoableDelete({
+      id: targetId,
+      type: 'Faculty',
+      label: target.name || 'Faculty Member',
+      itemData: target,
+      onOptimisticRemove: () => {
+        setFaculties(prev => prev.filter(f => f.id !== targetId && f.user_id !== targetId));
+      },
+      onRestore: () => {
+        setFaculties(prev => {
+          if (prev.some(f => f.id === targetId || f.user_id === targetId)) return prev;
+          return [...prev, target];
+        });
+      },
+      onCommit: async () => {
+        await client.delete(`/admin/faculty/${targetId}`);
+      },
+      onFailure: (err) => {
+        showToast(err?.response?.data?.error || 'Unable to delete faculty. Please try again.', 'error');
+      }
+    });
   };
 
   const loadAnnouncements = useCallback(async () => {
@@ -176,15 +194,31 @@ export default function Admin() {
 
   const handleDeleteAnnouncementConfirm = async () => {
     if (!deleteAnnTarget) return;
-    const targetId = deleteAnnTarget.id;
+    const targetAnn = deleteAnnTarget;
+    const targetId = targetAnn.id;
     setDeleteAnnTarget(null);
-    try {
-      await client.delete(`/announcements/${targetId}`);
-      setSentNotifications(prev => prev.filter(n => String(n.id) !== String(targetId)));
-      showToast('Announcement deleted successfully.');
-    } catch (err) {
-      showToast(err.response?.data?.error || 'Unable to delete announcement. Please try again.', 'error');
-    }
+
+    requestUndoableDelete({
+      id: targetId,
+      type: 'Announcement',
+      label: targetAnn.title || 'Announcement',
+      itemData: targetAnn,
+      onOptimisticRemove: () => {
+        setSentNotifications(prev => prev.filter(n => String(n.id) !== String(targetId)));
+      },
+      onRestore: () => {
+        setSentNotifications(prev => {
+          if (prev.some(n => String(n.id) === String(targetId))) return prev;
+          return [targetAnn, ...prev];
+        });
+      },
+      onCommit: async () => {
+        await client.delete(`/announcements/${targetId}`);
+      },
+      onFailure: (err) => {
+        showToast(err?.response?.data?.error || 'Unable to delete announcement. Please try again.', 'error');
+      }
+    });
   };
 
   const handleAnnImageChange = (e) => {
@@ -302,15 +336,33 @@ export default function Admin() {
   };
 
   const handleDelete = async (s) => {
-    try {
-      await client.delete(`/admin/students/${s.id}`);
-      setManagedStudents(prev => prev.filter(st => st.id !== s.id));
-      setSelectedIds(prev => { const n = new Set(prev); n.delete(s.id); return n; });
-      setDeleteConfirm(null);
-      showToast(<span><Trash2 size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }} /> {s.name} deleted.</span>);
-    } catch {
-      showToast('Failed to delete student.', 'error');
-    }
+    if (!s) return;
+    const targetStudent = s;
+    const targetId = s.id;
+    setDeleteConfirm(null);
+
+    requestUndoableDelete({
+      id: targetId,
+      type: 'Student',
+      label: targetStudent.name || 'Student Profile',
+      itemData: targetStudent,
+      onOptimisticRemove: () => {
+        setManagedStudents(prev => prev.filter(st => st.id !== targetId));
+        setSelectedIds(prev => { const n = new Set(prev); n.delete(targetId); return n; });
+      },
+      onRestore: () => {
+        setManagedStudents(prev => {
+          if (prev.some(st => st.id === targetId)) return prev;
+          return [...prev, targetStudent];
+        });
+      },
+      onCommit: async () => {
+        await client.delete(`/admin/students/${targetId}`);
+      },
+      onFailure: () => {
+        showToast('Failed to delete student.', 'error');
+      }
+    });
   };
 
   const handleBulkDelete = async () => {

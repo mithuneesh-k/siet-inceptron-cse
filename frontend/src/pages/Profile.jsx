@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import client from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
+import { useUndoableDelete } from '../contexts/UndoDeleteContext';
 import ScoreBadge from '../components/ScoreBadge';
 import AchievementCard from '../components/AchievementCard';
 import CustomSelect from '../components/CustomSelect';
@@ -20,6 +21,7 @@ const DURATIONS = ['short', 'medium', 'long'];
 export default function Profile() {
   const { id } = useParams();
   const { user: authUser, updateUserStats } = useAuth();
+  const { requestUndoableDelete } = useUndoableDelete();
   const [user, setUser] = useState(null);
   const [achievements, setAchievements] = useState([]);
   const [teams, setTeams] = useState([]);
@@ -196,30 +198,45 @@ export default function Profile() {
     const ach = achievements.find(a => a.id === achId);
     if (!ach) return;
     const wasPending = ach.status === 'pending' || !ach.verified;
-    try {
-      const res = await client.delete(`/achievements/${achId}`);
-      const resData = res.data || {};
 
-      setAchievements(prev => prev.filter(a => a.id !== achId));
-      if (typeof resData.score === 'number' && typeof resData.achievement_count === 'number') {
-        setUser(prev => prev ? ({ ...prev, score: resData.score, achievement_count: resData.achievement_count }) : prev);
-        if (isOwn) {
-          updateUserStats({ score: resData.score, achievement_count: resData.achievement_count });
+    requestUndoableDelete({
+      id: achId,
+      type: 'Achievement',
+      label: ach.title || 'Achievement Record',
+      itemData: ach,
+      onOptimisticRemove: () => {
+        setAchievements(prev => prev.filter(a => a.id !== achId));
+      },
+      onRestore: () => {
+        setAchievements(prev => {
+          if (prev.some(a => a.id === achId)) return prev;
+          return [...prev, ach];
+        });
+      },
+      onCommit: async () => {
+        const res = await client.delete(`/achievements/${achId}`);
+        const resData = res.data || {};
+
+        if (typeof resData.score === 'number' && typeof resData.achievement_count === 'number') {
+          setUser(prev => prev ? ({ ...prev, score: resData.score, achievement_count: resData.achievement_count }) : prev);
+          if (isOwn) {
+            updateUserStats({ score: resData.score, achievement_count: resData.achievement_count });
+          }
         }
-      }
-      showToast('Achievement removed');
 
-      dispatchAchievementEvent({
-        action: 'deleted',
-        userId: id,
-        achievementId: achId,
-        wasPending: resData.wasPending !== undefined ? resData.wasPending : wasPending,
-        score: resData.score,
-        achievement_count: resData.achievement_count
-      });
-    } catch (err) {
-      showToast(err.response?.data?.error || 'Failed to delete achievement', 'error');
-    }
+        dispatchAchievementEvent({
+          action: 'deleted',
+          userId: id,
+          achievementId: achId,
+          wasPending: resData.wasPending !== undefined ? resData.wasPending : wasPending,
+          score: resData.score,
+          achievement_count: resData.achievement_count
+        });
+      },
+      onFailure: (err) => {
+        showToast(err?.response?.data?.error || 'Failed to delete achievement', 'error');
+      }
+    });
   };
 
   const renderSkeleton = () => (
