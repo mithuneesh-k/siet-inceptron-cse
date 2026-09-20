@@ -71,8 +71,10 @@ router.post('/register', async (req, res) => {
   });
 });
 
+const { loginLimiter } = require('../middleware/rateLimiter');
+
 // ─── POST /api/auth/login ─────────────────────────────────────────────────────
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'Identifier and password required.' });
 

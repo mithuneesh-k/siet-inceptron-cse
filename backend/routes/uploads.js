@@ -3,6 +3,7 @@ const router = express.Router();
 const crypto = require('crypto');
 const multer = require('multer');
 const { authMiddleware } = require('../middleware/auth');
+const { uploadLimiter } = require('../middleware/rateLimiter');
 const { supabase } = require('../db/supabase');
 
 const upload = multer({
@@ -85,7 +86,7 @@ async function deleteStorageObject(storageRef) {
  * POST /api/uploads/proof
  * Upload private achievement proof document (JPEG, PNG, WEBP, PDF, max 5MB).
  */
-router.post('/proof', authMiddleware, (req, res, next) => {
+router.post('/proof', uploadLimiter, authMiddleware, (req, res, next) => {
   upload.single('file')(req, res, (err) => {
     if (err) {
       if (err.code === 'LIMIT_FILE_SIZE') {

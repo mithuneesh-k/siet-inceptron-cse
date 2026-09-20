@@ -900,6 +900,64 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
     );
   });
 
+  await asyncTest('56. General rate limiting for login and upload endpoints returns HTTP 429 on burst', async () => {
+    process.env.TEST_RATE_LIMIT = 'true';
+    delete require.cache[require.resolve('../middleware/rateLimiter')];
+    delete require.cache[require.resolve('../routes/auth')];
+
+    const express = require('express');
+    const authRouter = require('../routes/auth');
+    const app = express();
+    app.use(express.json());
+    app.use('/api/auth', authRouter);
+
+    let resCode = null, resBody = null;
+    const runLoginCall = (ip) => {
+      return new Promise((resolve) => {
+        const reqObj = {
+          method: 'POST',
+          url: '/api/auth/login',
+          originalUrl: '/api/auth/login',
+          body: { email: 'test@siet.ac.in', password: 'secretpassword' },
+          headers: { 'content-type': 'application/json' },
+          ip: ip,
+          app: app
+        };
+        const resObj = {
+          statusCode: 200,
+          setHeader: () => {},
+          status: (c) => { resCode = c; resObj.statusCode = c; return resObj; },
+          json: (b) => {
+            if (!resCode) resCode = resObj.statusCode;
+            resBody = b;
+            resolve();
+            return resObj;
+          },
+          send: (b) => {
+            if (!resCode) resCode = resObj.statusCode;
+            resBody = b;
+            resolve();
+            return resObj;
+          }
+        };
+
+        app.handle(reqObj, resObj, () => resolve());
+      });
+    };
+
+    const testIp = '192.168.1.100';
+    for (let i = 0; i < 5; i++) {
+      await runLoginCall(testIp);
+    }
+    await runLoginCall(testIp);
+    assert.strictEqual(resCode, 429);
+    assert.strictEqual(resBody.error.includes('Too many login attempts'), true);
+
+    delete process.env.TEST_RATE_LIMIT;
+    delete require.cache[require.resolve('../middleware/rateLimiter')];
+    delete require.cache[require.resolve('../routes/auth')];
+  });
+
   const { runPlatformTests } = require('./platform.test');
   await runPlatformTests();
 
