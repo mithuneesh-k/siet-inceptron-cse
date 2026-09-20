@@ -1070,72 +1070,159 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
     delete require.cache[require.resolve('../routes/auth')];
   });
 
-  await asyncTest('59. Login error responses prevent account enumeration (identical 401 for unknown user and wrong password)', async () => {
-    // 59A. Unknown user branch
-    let code1 = null, body1 = null;
-    const res1 = {
-      status: (c) => { code1 = c; return res1; },
-      json: (b) => { body1 = b; }
+  await asyncTest('59. Real route-level login error responses prevent account enumeration and execute dummy bcrypt comparison', async () => {
+    delete require.cache[require.resolve('../routes/auth')];
+    const express = require('express');
+    const bcrypt = require('bcryptjs');
+    const { supabase } = require('../db/supabase');
+    const authRouter = require('../routes/auth');
+
+    const app = express();
+    app.use(express.json());
+    app.use('/api/auth', authRouter);
+
+    const origFrom = supabase.from;
+    const bcryptCalls = [];
+    const origCompareSync = bcrypt.compareSync;
+
+    bcrypt.compareSync = function (pass, hash) {
+      bcryptCalls.push({ pass, hash });
+      return origCompareSync.call(this, pass, hash);
     };
 
-    // 59B. Known user + wrong password branch
-    let code2 = null, body2 = null;
-    const res2 = {
-      status: (c) => { code2 = c; return res2; },
-      json: (b) => { body2 = b; }
+    const knownHash = origCompareSync.hashSync ? bcrypt.hashSync('correctpass', 10) : '$2a$10$abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOP';
+
+    // Mock Supabase from query builder
+    supabase.from = function (table) {
+      return {
+        select() { return this; },
+        ilike(field, val) {
+          this._field = field;
+          this._val = val;
+          return this;
+        },
+        eq(field, val) {
+          this._field = field;
+          this._val = val;
+          return this;
+        },
+        async maybeSingle() {
+          if (table === 'users' && this._val === 'known_user@siet.ac.in') {
+            return { data: { id: 'known_u1', email: 'known_user@siet.ac.in', password_hash: knownHash, role: 'student' }, error: null };
+          }
+          return { data: null, error: null };
+        }
+      };
     };
 
-    res1.status(401).json({ error: 'Invalid identifier or password.' });
-    res2.status(401).json({ error: 'Invalid identifier or password.' });
+    let statusA = null, bodyA = null;
+    let statusB = null, bodyB = null;
 
-    assert.strictEqual(code1, 401);
-    assert.strictEqual(code2, 401);
-    assert.strictEqual(code1, code2);
-    assert.strictEqual(body1.error, 'Invalid identifier or password.');
-    assert.strictEqual(body2.error, 'Invalid identifier or password.');
-    assert.strictEqual(body1.error, body2.error);
+    // Scenario A: Unknown identifier via real POST /api/auth/login
+    await new Promise((resolve) => {
+      const reqObj = {
+        method: 'POST',
+        url: '/api/auth/login',
+        originalUrl: '/api/auth/login',
+        body: { email: 'unknown_account_999@siet.ac.in', password: 'wrongpassword' },
+        headers: { 'content-type': 'application/json' },
+        ip: '127.0.0.1',
+        app: app
+      };
+      const resObj = {
+        statusCode: 200, setHeader: () => {}, getHeader: () => {}, on: () => {}, once: () => {}, emit: () => {},
+        status: (c) => { statusA = c; resObj.statusCode = c; return resObj; },
+        json: (b) => { bodyA = b; resolve(); return resObj; }
+      };
+      app.handle(reqObj, resObj, () => resolve());
+    });
+
+    // Scenario B: Known user + wrong password via real POST /api/auth/login
+    await new Promise((resolve) => {
+      const reqObj = {
+        method: 'POST',
+        url: '/api/auth/login',
+        originalUrl: '/api/auth/login',
+        body: { email: 'known_user@siet.ac.in', password: 'wrongpassword' },
+        headers: { 'content-type': 'application/json' },
+        ip: '127.0.0.1',
+        app: app
+      };
+      const resObj = {
+        statusCode: 200, setHeader: () => {}, getHeader: () => {}, on: () => {}, once: () => {}, emit: () => {},
+        status: (c) => { statusB = c; resObj.statusCode = c; return resObj; },
+        json: (b) => { bodyB = b; resolve(); return resObj; }
+      };
+      app.handle(reqObj, resObj, () => resolve());
+    });
+
+    // Restore mocks
+    bcrypt.compareSync = origCompareSync;
+    supabase.from = origFrom;
+
+    assert.strictEqual(statusA, 401);
+    assert.strictEqual(statusB, 401);
+    assert.strictEqual(statusA, statusB);
+    assert.deepStrictEqual(bodyA, { error: 'Invalid identifier or password.' });
+    assert.deepStrictEqual(bodyB, { error: 'Invalid identifier or password.' });
+    assert.deepStrictEqual(bodyA, bodyB);
+
+    // Verify bcrypt.compareSync was invoked for both requests
+    assert.strictEqual(bcryptCalls.length >= 2, true);
+    assert.strictEqual(typeof bcryptCalls[0].hash, 'string');
+    assert.strictEqual(bcryptCalls[0].hash.startsWith('$2a$') || bcryptCalls[0].hash.startsWith('$2b$'), true);
   });
 
-  await asyncTest('60. Announcement upload route restricts authorization (Student 403, Admin/Faculty allowed)', async () => {
-    const { adminMiddleware } = require('../middleware/auth');
+  await asyncTest('60. Real route-level announcement upload authorization (Anonymous 401, Student 403, Faculty/Admin reach upload stage)', async () => {
+    delete require.cache[require.resolve('../routes/uploads')];
+    const express = require('express');
+    const uploadsRouter = require('../routes/uploads').router;
 
-    let resCode = null, resBody = null, reachedHandler = false;
+    const app = express();
+    app.use(express.json());
+    app.use('/api/uploads', uploadsRouter);
 
-    const testMiddleware = (userRole) => {
-      resCode = null; resBody = null; reachedHandler = false;
-      const reqObj = { user: userRole ? { id: 'u1', role: userRole, is_admin: userRole === 'admin' } : null };
-      const resObj = {
-        status: (c) => { resCode = c; return resObj; },
-        json: (b) => { resBody = b; return resObj; }
-      };
+    let codeAnon = null, codeStudent = null, codeFaculty = null, codeAdmin = null;
 
-      if (!reqObj.user) {
-        return resObj.status(401).json({ error: 'Authentication required' });
-      }
-
-      adminMiddleware(reqObj, resObj, () => {
-        reachedHandler = true;
+    const executeReq = (userObj) => {
+      return new Promise((resolve) => {
+        let code = 200;
+        const reqObj = {
+          method: 'POST',
+          url: '/api/uploads/announcement',
+          originalUrl: '/api/uploads/announcement',
+          user: userObj,
+          headers: { 'content-type': 'application/json' },
+          ip: '127.0.0.1',
+          app: app
+        };
+        const resObj = {
+          statusCode: 200, setHeader: () => {}, getHeader: () => {}, on: () => {}, once: () => {}, emit: () => {},
+          status: (c) => { code = c; resObj.statusCode = c; return resObj; },
+          json: () => resolve(code),
+          send: () => resolve(code)
+        };
+        app.handle(reqObj, resObj, () => resolve(code));
       });
     };
 
-    // 60A. Anonymous: 401
-    testMiddleware(null);
-    assert.strictEqual(resCode, 401);
-    assert.strictEqual(reachedHandler, false);
+    // Anonymous: 401 (authMiddleware blocks)
+    codeAnon = await executeReq(null);
+    assert.strictEqual(codeAnon, 401);
 
-    // 60B. Student: 403
-    testMiddleware('student');
-    assert.strictEqual(resCode, 403);
-    assert.strictEqual(resBody.error.includes('Admin access required'), true);
-    assert.strictEqual(reachedHandler, false);
+    // Student: 403 (adminMiddleware blocks)
+    codeStudent = await executeReq({ id: 'stu1', role: 'student', is_admin: false });
+    assert.strictEqual(codeStudent, 403);
 
-    // 60C. Faculty: passes authorization middleware
-    testMiddleware('faculty');
-    assert.strictEqual(reachedHandler, true);
+    // Faculty: passes auth + adminMiddleware, reaches upload stage (returns 400 for no file uploaded)
+    codeFaculty = await executeReq({ id: 'fac1', role: 'faculty', is_admin: true });
+    assert.strictEqual(codeFaculty, 400);
 
-    // 60D. Admin: passes authorization middleware
-    testMiddleware('admin');
-    assert.strictEqual(reachedHandler, true);
+    // Admin: passes auth + adminMiddleware, reaches upload stage (returns 400 for no file uploaded)
+    codeAdmin = await executeReq({ id: 'admin1', role: 'admin', is_admin: true });
+    assert.strictEqual(codeAdmin, 400);
+
+    delete require.cache[require.resolve('../routes/uploads')];
   });
 
   await asyncTest('61. Campus NAT 1000 successful login simulation does not cause IP lockout', async () => {
@@ -1249,19 +1336,58 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
     assert.strictEqual(resCode, 429);
   });
 
-  await asyncTest('63. Proof upload path derives strictly from req.user.id and ignores request body parameters', async () => {
-    const crypto = require('crypto');
-    const reqUser = { id: 'student_a_uuid', role: 'student' };
-    const reqBodyAttempt = { user_id: 'student_b_uuid', target_path: 'student_b_uuid/hack.png' };
+  await asyncTest('63. Real route-level proof upload path derives strictly from req.user.id and ignores body user_id tampering', async () => {
+    delete require.cache[require.resolve('../routes/uploads')];
+    const { supabase } = require('../db/supabase');
+    const { router: uploadsRouter } = require('../routes/uploads');
 
-    const uuid = crypto.randomUUID ? crypto.randomUUID() : 'testuuid';
-    const ext = '.jpg';
-    const safeFilename = `${reqUser.id}/${Date.now()}-${uuid}${ext}`;
-    const storageRef = `storage://achievement-proofs/${safeFilename}`;
+    let capturedUploadPath = null;
+    const origStorageFrom = supabase.storage.from;
 
-    assert.strictEqual(safeFilename.startsWith('student_a_uuid/'), true);
-    assert.strictEqual(safeFilename.includes('student_b_uuid'), false);
-    assert.strictEqual(storageRef.includes('achievement-proofs/student_a_uuid/'), true);
+    supabase.storage.from = function (bucket) {
+      return {
+        upload(filePath, buffer, options) {
+          capturedUploadPath = filePath;
+          return Promise.resolve({ data: { path: filePath }, error: null });
+        },
+        createSignedUrl(filePath, ttl) {
+          return Promise.resolve({ data: { signedUrl: `https://example.com/${filePath}` }, error: null });
+        }
+      };
+    };
+
+    let resCode = null;
+    const reqObj = {
+      method: 'POST',
+      url: '/proof',
+      originalUrl: '/proof',
+      user: { id: 'student_a_uuid', role: 'student' },
+      body: { user_id: 'student_b_uuid', target_path: 'student_b_uuid/hack.jpg' },
+      file: {
+        buffer: Buffer.from([0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10]), // Valid JPEG magic bytes
+        mimetype: 'image/jpeg'
+      },
+      headers: { 'content-type': 'application/json' },
+      ip: '127.0.0.1'
+    };
+
+    const resObj = {
+      statusCode: 200, setHeader: () => {}, getHeader: () => {}, on: () => {}, once: () => {}, emit: () => {},
+      status: (c) => { resCode = c; resObj.statusCode = c; return resObj; },
+      json: () => {}
+    };
+
+    await new Promise((resolve) => {
+      uploadsRouter.handle(reqObj, resObj, () => resolve());
+    });
+
+    supabase.storage.from = origStorageFrom;
+
+    assert.strictEqual(typeof capturedUploadPath, 'string');
+    assert.strictEqual(capturedUploadPath.startsWith('student_a_uuid/'), true);
+    assert.strictEqual(capturedUploadPath.includes('student_b_uuid'), false);
+
+    delete require.cache[require.resolve('../routes/uploads')];
   });
 
   await asyncTest('64. Non-existent account login executes dummy bcrypt comparison for timing attack mitigation', async () => {
@@ -1269,9 +1395,7 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
     const DUMMY_HASH = bcrypt.hashSync('inceptron_dummy_password_protection_hash_2026', 10);
 
     const password = 'attacker_guessed_password_123';
-    const startTime = Date.now();
     const result = bcrypt.compareSync(password, DUMMY_HASH);
-    const duration = Date.now() - startTime;
 
     assert.strictEqual(result, false);
     assert.strictEqual(typeof DUMMY_HASH, 'string');
