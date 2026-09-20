@@ -5,6 +5,7 @@ import ScoreBadge from '../components/ScoreBadge';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import AnnouncementsFeed from '../components/AnnouncementsFeed';
+import AchieversCarousel from '../components/ui/achievers-carousel';
 import { Users, Award, Trophy, Briefcase, Star, Zap, BookOpen, Rocket, Medal, Target } from 'lucide-react';
 
 const RANK_ICONS = [
@@ -43,37 +44,9 @@ function AnimatedNumber({ target, duration = 1400 }) {
 }
 
 function AchievementCarousel({ topStudents }) {
-  const [current, setCurrent] = useState(0);
-
-  useEffect(() => {
-    if (!topStudents.length) return;
-    const id = setInterval(() => setCurrent(c => (c + 1) % topStudents.length), 4000);
-    return () => clearInterval(id);
-  }, [topStudents.length]);
-
-  if (!topStudents.length) return null;
-  const student = topStudents[current];
-
   return (
-    <div className="lp-carousel">
-      <div className="lp-carousel-card animate-fadeIn" key={current}>
-        <div className="lp-carousel-rank">#{current + 1}</div>
-        <div className="lp-carousel-avatar">{student.name[0]}</div>
-        <div className="lp-carousel-name">{student.name}</div>
-        <div className="lp-carousel-meta">{student.class} · Year {student.year}</div>
-        {student.top_achievement && (
-          <div className="lp-carousel-ach">{student.top_achievement}</div>
-        )}
-        <ScoreBadge score={student.score} size="md" />
-        <Link to={`/profile/${student.id}`} className="btn btn-secondary btn-sm" style={{ marginTop: 12, width: '100%', justifyContent: 'center' }}>
-          View Profile →
-        </Link>
-      </div>
-      <div className="lp-dots">
-        {topStudents.map((_, i) => (
-          <button key={i} className={`lp-dot ${i === current ? 'active' : ''}`} onClick={() => setCurrent(i)} />
-        ))}
-      </div>
+    <div className="lp-carousel" style={{ position: 'sticky', top: 76 }}>
+      <AchieversCarousel achievers={topStudents} />
     </div>
   );
 }

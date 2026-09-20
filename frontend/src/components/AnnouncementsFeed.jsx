@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import client from '../api/client';
 import { useTheme } from '../contexts/ThemeContext';
 import { AnnouncementImage } from '../utils/announcementHelpers';
+import { MinimalCarousel } from './ui/minimal-carousel';
 import {
   Bell, Trophy, Briefcase, Award, BookOpen, Calendar, AlertCircle, ChevronLeft, ChevronRight, ExternalLink, X, Maximize2, ArrowRight
 } from 'lucide-react';
@@ -137,8 +138,8 @@ export default function AnnouncementsFeed() {
             <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginTop: 4, marginBottom: 0 }}>Check back later for new updates and opportunities.</p>
           </div>
         ) : (
-          <div className="announcements-feed-list" style={{ display: 'flex', flexDirection: 'column', gap: 20, width: '100%', alignItems: 'center' }}>
-            {paginatedAnnouncements.map(ann => {
+          <MinimalCarousel itemCount={announcements.length} autoplay={false}>
+            {announcements.map(ann => {
               const isImportant = Boolean(ann.is_important);
 
               // Dark & Light Mode Theme Definitions
@@ -307,32 +308,7 @@ export default function AnnouncementsFeed() {
                 </div>
               );
             })}
-          </div>
-        )}
-
-        {/* Bottom Pagination Bar */}
-        {totalPages > 1 && (
-          <div style={{ marginTop: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
-            <button
-              className="btn btn-ghost btn-sm"
-              onClick={handlePrev}
-              disabled={currentPage === 1}
-              style={{ opacity: currentPage === 1 ? 0.4 : 1, cursor: currentPage === 1 ? 'not-allowed' : 'pointer', padding: '6px 16px' }}
-            >
-              <ChevronLeft size={16} /> Previous
-            </button>
-            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text-muted)' }}>
-              {currentPage} / {totalPages}
-            </span>
-            <button
-              className="btn btn-ghost btn-sm"
-              onClick={handleNext}
-              disabled={currentPage === totalPages}
-              style={{ opacity: currentPage === totalPages ? 0.4 : 1, cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', padding: '6px 16px' }}
-            >
-              Next <ChevronRight size={16} />
-            </button>
-          </div>
+          </MinimalCarousel>
         )}
 
         {/* Full Announcement Detail Modal */}

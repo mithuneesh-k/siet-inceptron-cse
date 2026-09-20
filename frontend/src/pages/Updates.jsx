@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import client from '../api/client';
 import LiveFeedCard from '../components/LiveFeedCard';
+import ExpandableEventCard from '../components/ui/expandable-event-card';
 import CustomSelect from '../components/CustomSelect';
 import { Zap, Briefcase, Target, Info, Inbox, Search } from 'lucide-react';
 
@@ -19,6 +20,7 @@ export default function Updates() {
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('');
   const [filterDate, setFilterDate] = useState('');
+  const [expandedCardId, setExpandedCardId] = useState(null);
 
   useEffect(() => {
     client.get('/updates')
@@ -32,6 +34,7 @@ export default function Updates() {
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
     setFilterType('');
+    setExpandedCardId(null);
   };
 
   const type = TABS.find(t => t.id === activeTab)?.type;
@@ -188,9 +191,14 @@ export default function Updates() {
         {loading ? (
           <div className="loading-screen"><div className="spinner" /></div>
         ) : (
-          <div className="grid-auto animate-fadeIn">
+          <div className="grid-auto animate-fadeIn" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20, alignItems: 'start' }}>
             {items.map(item => (
-              <LiveFeedCard key={item.id} item={item} type={type} />
+              <ExpandableEventCard
+                key={item.id}
+                item={{ ...item, type: item.type || type }}
+                isExpanded={expandedCardId === item.id}
+                onToggle={() => setExpandedCardId(prev => prev === item.id ? null : item.id)}
+              />
             ))}
             {items.length === 0 && (
               <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
@@ -200,7 +208,7 @@ export default function Updates() {
                 <h3>No opportunities found</h3>
                 <p>We couldn't find any items matching your filters.</p>
                 {(search || filterType || filterDate) && (
-                  <button className="btn btn-secondary" onClick={() => {setSearch(''); setFilterType(''); setFilterDate('');}}>
+                  <button className="btn btn-secondary" onClick={() => {setSearch(''); setFilterType(''); setFilterDate(''); setExpandedCardId(null);}}>
                     Clear Filters
                   </button>
                 )}
