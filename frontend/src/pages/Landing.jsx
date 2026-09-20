@@ -6,7 +6,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import AnnouncementsFeed from '../components/AnnouncementsFeed';
 import AchieversCarousel from '../components/ui/achievers-carousel';
-import CardSwipe from '../components/ui/card-swipe';
 import { Users, Award, Trophy, Briefcase, Star, Zap, BookOpen, Rocket, Medal, Target } from 'lucide-react';
 
 const RANK_ICONS = [
@@ -57,24 +56,15 @@ export default function Landing() {
   const { theme } = useTheme();
   const [stats, setStats] = useState({ totalStudents: 0, totalAchievements: 0, totalHackathonWins: 0, totalInternships: 0 });
   const [topStudents, setTopStudents] = useState([]);
-  const [recentAchievements, setRecentAchievements] = useState([]);
-  const [achievementsLoading, setAchievementsLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
-    Promise.allSettled([
+    Promise.all([
       client.get('/leaderboard/stats'),
       client.get('/leaderboard/top'),
-      client.get('/achievements/recent/approved')
-    ]).then(([s, t, achRes]) => {
-      if (s.status === 'fulfilled') setStats(s.value.data);
-      if (t.status === 'fulfilled') setTopStudents(t.value.data);
-      if (achRes.status === 'fulfilled' && Array.isArray(achRes.value.data)) {
-        setRecentAchievements(achRes.value.data);
-      }
-      setAchievementsLoading(false);
-    }).catch(() => {
-      setAchievementsLoading(false);
+    ]).then(([s, t]) => {
+      setStats(s.data);
+      setTopStudents(t.data);
     });
   }, [user]);
 
@@ -176,14 +166,8 @@ export default function Landing() {
             <Link to="/leaderboard" className="btn btn-secondary btn-sm">View All →</Link>
           </div>
           <div className="lp-achievers-layout">
-            <div className="lp-carousel-column" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-              <AchievementCarousel topStudents={topStudents} />
-              <div style={{ marginTop: 8 }}>
-                <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--color-text-muted)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  <Award size={16} className="text-gradient" /> Recent Approved Achievements
-                </div>
-                <CardSwipe achievements={recentAchievements} loading={achievementsLoading} />
-              </div>
+            <div className="lp-carousel">
+              <AchieversCarousel achievers={topStudents} />
             </div>
             <div className="lp-podium-list">
               {topStudents.map((s, i) => (
