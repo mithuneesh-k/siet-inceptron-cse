@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import client from '../api/client';
 import ScoreBadge from '../components/ScoreBadge';
@@ -52,9 +52,242 @@ function AchievementCarousel({ topStudents }) {
   );
 }
 
+const TOTAL_FRAMES = 120;
+const ROTATION_SENSITIVITY = 0.14;
+
+function HeroInteractiveVideo({ videoSrc, fallbackImgSrc, theme }) {
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const containerRef = useRef(null);
+
+  const [isHovered, setIsHovered] = useState(false);
+  const [framesLoaded, setFramesLoaded] = useState(false);
+
+  const framesRef = useRef([]);
+  const isHoveringRef = useRef(false);
+  const targetFrameRef = useRef(0);
+  const displayFrameRef = useRef(0);
+  const lastXRef = useRef(null);
+  const lastDrawnFrameRef = useRef(-1);
+  const animFrameRef = useRef(null);
+
+  const themeKey = theme === 'dark' ? 'dark' : 'light';
+
+  useEffect(() => {
+    let isCancelled = false;
+    setFramesLoaded(false);
+    framesRef.current = [];
+
+    const loadedImages = [];
+    let count = 0;
+
+    for (let i = 0; i < TOTAL_FRAMES; i++) {
+      const img = new Image();
+      const numStr = String(i).padStart(3, '0');
+      img.src = `/hero-frames/${themeKey}/frame-${numStr}.webp`;
+      img.onload = () => {
+        if (isCancelled) return;
+        count++;
+        if (count >= TOTAL_FRAMES) {
+          framesRef.current = loadedImages;
+          setFramesLoaded(true);
+        }
+      };
+      loadedImages.push(img);
+    }
+
+    return () => {
+      isCancelled = true;
+      if (animFrameRef.current) {
+        cancelAnimationFrame(animFrameRef.current);
+        animFrameRef.current = null;
+      }
+    };
+  }, [themeKey]);
+
+  const drawFrameToCanvas = useCallback((frameIdx) => {
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    const frames = framesRef.current;
+
+    if (!canvas || !container || !frames || frames.length === 0) return;
+
+    const img = frames[frameIdx % TOTAL_FRAMES];
+    if (!img || !img.complete) return;
+
+    const rect = container.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const targetW = Math.round(rect.width * dpr);
+    const targetH = Math.round(rect.height * dpr);
+
+    if (canvas.width !== targetW || canvas.height !== targetH) {
+      canvas.width = targetW;
+      canvas.height = targetH;
+    }
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, targetW, targetH);
+
+    const imgAspect = img.width / img.height;
+    const containerAspect = rect.width / rect.height;
+
+    let drawW, drawH, drawX, drawY;
+    if (containerAspect > imgAspect) {
+      drawH = targetH;
+      drawW = targetH * imgAspect;
+      drawX = (targetW - drawW) / 2;
+      drawY = 0;
+    } else {
+      drawW = targetW;
+      drawH = targetW / imgAspect;
+      drawX = 0;
+      drawY = (targetH - drawH) / 2;
+    }
+
+    ctx.drawImage(img, drawX, drawY, drawW, drawH);
+    lastDrawnFrameRef.current = frameIdx % TOTAL_FRAMES;
+  }, []);
+
+  const loop = useCallback(() => {
+    if (!isHoveringRef.current) {
+      animFrameRef.current = null;
+      return;
+    }
+
+    let target = targetFrameRef.current;
+    target = ((target % TOTAL_FRAMES) + TOTAL_FRAMES) % TOTAL_FRAMES;
+
+    let currentDisplay = displayFrameRef.current;
+
+    let difference = target - currentDisplay;
+    if (difference > TOTAL_FRAMES / 2) difference -= TOTAL_FRAMES;
+    if (difference < -TOTAL_FRAMES / 2) difference += TOTAL_FRAMES;
+
+    if (Math.abs(difference) > 0.01) {
+      currentDisplay += difference * 0.14;
+      currentDisplay = ((currentDisplay % TOTAL_FRAMES) + TOTAL_FRAMES) % TOTAL_FRAMES;
+      displayFrameRef.current = currentDisplay;
+    }
+
+    const roundedFrame = Math.round(currentDisplay) % TOTAL_FRAMES;
+    if (roundedFrame !== lastDrawnFrameRef.current) {
+      drawFrameToCanvas(roundedFrame);
+    }
+
+    animFrameRef.current = requestAnimationFrame(loop);
+  }, [drawFrameToCanvas]);
+
+  const handlePointerEnter = (e) => {
+    if (e.pointerType === 'touch' || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches)) {
+      return;
+    }
+
+    const video = videoRef.current;
+    if (!video || !framesLoaded || framesRef.current.length < TOTAL_FRAMES) return;
+
+    isHoveringRef.current = true;
+    lastXRef.current = e.clientX;
+
+    video.pause();
+
+    let startRatio = 0;
+    if (video.readyState >= 1 && Number.isFinite(video.duration) && video.duration > 0) {
+      startRatio = video.currentTime / video.duration;
+    }
+    const startFrame = Math.floor(startRatio * TOTAL_FRAMES) % TOTAL_FRAMES;
+
+    targetFrameRef.current = startFrame;
+    displayFrameRef.current = startFrame;
+
+    drawFrameToCanvas(startFrame);
+    setIsHovered(true);
+
+    if (!animFrameRef.current) {
+      animFrameRef.current = requestAnimationFrame(loop);
+    }
+  };
+
+  const handlePointerMove = (e) => {
+    if (!isHoveringRef.current || !containerRef.current) return;
+
+    if (lastXRef.current !== null) {
+      const deltaX = e.clientX - lastXRef.current;
+      const rect = containerRef.current.getBoundingClientRect();
+      if (rect.width > 0) {
+        const deltaFrames = (deltaX / rect.width) * (TOTAL_FRAMES * ROTATION_SENSITIVITY * 5);
+        targetFrameRef.current += deltaFrames;
+      }
+    }
+    lastXRef.current = e.clientX;
+
+    if (!animFrameRef.current) {
+      animFrameRef.current = requestAnimationFrame(loop);
+    }
+  };
+
+  const handlePointerLeave = () => {
+    isHoveringRef.current = false;
+    lastXRef.current = null;
+    setIsHovered(false);
+
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+
+    const video = videoRef.current;
+    if (video && video.readyState >= 1 && Number.isFinite(video.duration) && video.duration > 0) {
+      const finalRatio = (Math.round(displayFrameRef.current) % TOTAL_FRAMES) / TOTAL_FRAMES;
+      video.currentTime = finalRatio * video.duration;
+      video.play().catch(() => {});
+    }
+  };
+
+  return (
+    <div
+      ref={containerRef}
+      className={`hero-video-wrapper ${isHovered ? 'is-hovered' : ''}`}
+      onPointerEnter={handlePointerEnter}
+      onPointerMove={handlePointerMove}
+      onPointerLeave={handlePointerLeave}
+    >
+      <video
+        key={videoSrc}
+        ref={videoRef}
+        className={`hero-logo-video ${isHovered && framesLoaded ? 'hidden-layer' : ''}`}
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="auto"
+        disablePictureInPicture
+        disableRemotePlayback
+        controls={false}
+        controlsList="nodownload noplaybackrate noremoteplayback"
+        onContextMenu={(e) => e.preventDefault()}
+        draggable={false}
+      >
+        <source src={videoSrc} type="video/mp4" />
+        <img src={fallbackImgSrc} alt="Inceptron Logo" className="lp-hero-logo-img" draggable={false} />
+      </video>
+      <canvas
+        ref={canvasRef}
+        className={`hero-frame-canvas ${isHovered && framesLoaded ? 'visible-layer' : ''}`}
+        onContextMenu={(e) => e.preventDefault()}
+      />
+    </div>
+  );
+}
+
 export default function Landing() {
   const { user } = useAuth();
   const { theme } = useTheme();
+  const videoSrc = theme === 'dark' ? '/videos/dark.mp4' : '/videos/light.mp4';
+  const fallbackImgSrc = theme === 'dark' ? '/dark.png?v=2' : '/inceptron-logo.png?v=2';
   const [stats, setStats] = useState({ totalStudents: 0, totalAchievements: 0, totalHackathonWins: 0, totalInternships: 0 });
   const [topStudents, setTopStudents] = useState([]);
 
@@ -76,7 +309,7 @@ export default function Landing() {
           <div className="container">
             <div className="lp-hero-inner animate-fadeInUp">
               <div className="lp-hero-logo-col">
-                <img src={theme === 'dark' ? '/dark.png?v=2' : '/inceptron-logo.png?v=2'} alt="Inceptron Logo" className="lp-hero-logo-img" />
+                <HeroInteractiveVideo videoSrc={videoSrc} fallbackImgSrc={fallbackImgSrc} theme={theme} />
               </div>
               <div className="lp-hero-text">
                 <div className="lp-pill">
@@ -111,7 +344,7 @@ export default function Landing() {
         <div className="container">
           <div className="lp-hero-inner animate-fadeInUp">
             <div className="lp-hero-logo-col">
-              <img src={theme === 'dark' ? '/dark.png?v=2' : '/inceptron-logo.png?v=2'} alt="Inceptron Logo" className="lp-hero-logo-img" />
+              <HeroInteractiveVideo videoSrc={videoSrc} fallbackImgSrc={fallbackImgSrc} theme={theme} />
             </div>
             <div className="lp-hero-text">
               <div className="lp-pill">
@@ -229,35 +462,94 @@ export default function Landing() {
           padding: calc(var(--navbar-height) + 56px) 0 64px;
         }
         .lp-hero-inner {
-          display: flex;
+          display: grid;
+          grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
           align-items: center;
-          gap: 52px;
-          max-width: 1040px;
+          gap: 32px;
+          max-width: 1280px;
           margin: 0 auto;
         }
         .lp-hero-logo-col {
-          flex: 0 0 440px;
+          display: flex;
+          align-items: center;
+          justify-content: flex-start;
+          position: relative;
+          margin-left: -50px;
+        }
+        @media (max-width: 1199px) {
+          .lp-hero-logo-col {
+            margin-left: -25px;
+          }
+        }
+        .hero-video-wrapper {
+          position: relative;
+          width: 100%;
+          max-width: clamp(440px, 46vw, 700px);
+          aspect-ratio: 1000 / 562;
           display: flex;
           align-items: center;
           justify-content: center;
+          cursor: grab;
+          user-select: none;
+          -webkit-user-drag: none;
+        }
+        .hero-logo-video,
+        .hero-frame-canvas {
+          width: 100%;
+          height: 100%;
+          display: block;
+          object-fit: contain;
+          object-position: center;
+          filter: drop-shadow(0 20px 40px rgba(0,0,0,0.15));
+          background: transparent;
+          mask-image: radial-gradient(ellipse 88% 88% at 50% 50%, black 50%, transparent 95%);
+          -webkit-mask-image: radial-gradient(ellipse 88% 88% at 50% 50%, black 50%, transparent 95%);
+          user-select: none;
+          -webkit-user-drag: none;
+          transition: opacity 0.15s ease;
+        }
+        .hero-frame-canvas {
+          position: absolute;
+          top: 0; left: 0;
+          pointer-events: none;
+          opacity: 0;
+        }
+        .hero-logo-video.hidden-layer {
+          opacity: 0;
+        }
+        .hero-frame-canvas.visible-layer {
+          opacity: 1;
         }
         .lp-hero-logo-img {
           width: 100%;
-          max-width: 440px;
+          max-width: clamp(440px, 46vw, 700px);
           height: auto;
           display: block;
-          filter: drop-shadow(0 20px 40px rgba(0,0,0,0.25));
-          transition: transform 0.3s ease;
+          object-fit: contain;
+          object-position: center;
+          filter: drop-shadow(0 20px 40px rgba(0,0,0,0.15));
+          background: transparent;
+          mask-image: radial-gradient(ellipse 88% 88% at 50% 50%, black 50%, transparent 95%);
+          -webkit-mask-image: radial-gradient(ellipse 88% 88% at 50% 50%, black 50%, transparent 95%);
+          user-select: none;
+          -webkit-user-drag: none;
         }
-        .lp-hero-logo-img:hover {
-          transform: scale(1.04);
+        [data-theme="dark"] .hero-logo-video,
+        [data-theme="dark"] .hero-frame-canvas,
+        [data-theme="dark"] .lp-hero-logo-img {
+          mix-blend-mode: screen;
+        }
+        [data-theme="light"] .hero-logo-video,
+        [data-theme="light"] .hero-frame-canvas,
+        [data-theme="light"] .lp-hero-logo-img {
+          mix-blend-mode: normal;
         }
         .lp-hero-text {
           flex: 1;
         }
         @media (max-width: 768px) {
-          .lp-hero-inner { flex-direction: column; text-align: center; gap: 32px; }
-          .lp-hero-logo-col { flex: 0 0 180px; }
+          .lp-hero-inner { display: flex; flex-direction: column; text-align: center; gap: 32px; }
+          .lp-hero-logo-col { flex: 0 0 180px; margin-left: 0; justify-content: center; }
           .lp-ctas { justify-content: center; }
         }
 

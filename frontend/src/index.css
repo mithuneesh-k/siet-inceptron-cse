@@ -83,7 +83,7 @@
   --footer-text-faint: #64748b;
   --footer-card-bg: rgba(15, 23, 42, 0.85);
 
-  --hero-bg: #071018;
+  --hero-bg: #000000;
   --stats-bg: #091321;
 
   --radius-xs: 4px;
@@ -146,7 +146,7 @@
   --footer-text-faint: #6b7280;
   --footer-card-bg: #f0fdf4;
 
-  --hero-bg: #f5f7f4;
+  --hero-bg: #fbfdfa;
   --stats-bg: #fbfcfa;
 }
 

@@ -732,14 +732,14 @@ export default function Admin() {
                             {s.name[0]}
                           </div>
                           <div style={{ minWidth: 0 }}>
-                            <Link to={`/profile/${s.id}`} style={{ fontSize: 14, fontWeight: 700, color: '#f8fafc', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</Link>
-                            <div style={{ fontSize: 11, color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.email}</div>
+                            <Link to={`/profile/${s.id}`} style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text)', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</Link>
+                            <div style={{ fontSize: 11, color: 'var(--color-text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.email}</div>
                           </div>
                         </div>
-                        <span style={{ fontFamily: 'monospace', fontSize: 12.5, fontWeight: 700, color: '#cbd5e1' }}>{s.roll_no}</span>
+                        <span style={{ fontFamily: 'monospace', fontSize: 12.5, fontWeight: 700, color: 'var(--color-text)' }}>{s.roll_no}</span>
                         <span><span className="badge badge-violet">{s.class}</span></span>
                         <span><span className="badge badge-blue">{s.batch}</span></span>
-                        <span style={{ fontSize: 12, color: '#94a3b8' }}>{s.date_of_birth || '—'}</span>
+                        <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{s.date_of_birth || '—'}</span>
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'nowrap', position: 'relative', zIndex: 5 }}>
                           <SplitActions
                             primaryLabel="Manage"
@@ -768,8 +768,8 @@ export default function Admin() {
               <div className="animate-fadeIn">
                 <div className="section-header" style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <h3 style={{ fontSize: 18, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, color: '#f8fafc' }}><GraduationCap size={20} /> CSE Faculty & Advisors</h3>
-                    <p style={{ fontSize: 13, color: '#94a3b8' }}>Assigned class advisors have admin privileges for their specific class.</p>
+                    <h3 style={{ fontSize: 18, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-text)' }}><GraduationCap size={20} /> CSE Faculty & Advisors</h3>
+                    <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Assigned class advisors have admin privileges for their specific class.</p>
                   </div>
                   <button className="btn btn-primary" onClick={() => setShowAddFacModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Plus size={16} /> Add Faculty</button>
                 </div>
@@ -801,11 +801,11 @@ export default function Admin() {
                     </div>
                     {faculties.map((f, i) => (
                       <div key={f.id} className="manage-table-row" style={{ gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr 140px', animation: `fadeInUp 0.3s ease ${i * 0.02}s both` }}>
-                        <div style={{ fontWeight: 700, color: '#f8fafc' }}>{f.name}</div>
-                        <div style={{ fontSize: 13, color: '#cbd5e1' }}>{f.designation || '—'}</div>
-                        <div style={{ fontSize: 13, color: '#94a3b8' }}>{f.department || 'CSE'}</div>
-                        <div>{f.advising_class ? <span className="badge badge-green">{f.advising_class}</span> : <span style={{ color: '#64748b' }}>—</span>}</div>
-                        <div>{f.advising_batch ? <span className="badge badge-violet">{f.advising_batch}</span> : <span style={{ color: '#64748b' }}>—</span>}</div>
+                        <div style={{ fontWeight: 700, color: 'var(--color-text)' }}>{f.name}</div>
+                        <div style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{f.designation || '—'}</div>
+                        <div style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{f.department || 'CSE'}</div>
+                        <div>{f.advising_class ? <span className="badge badge-green">{f.advising_class}</span> : <span style={{ color: 'var(--color-text-muted)' }}>—</span>}</div>
+                        <div>{f.advising_batch ? <span className="badge badge-violet">{f.advising_batch}</span> : <span style={{ color: 'var(--color-text-muted)' }}>—</span>}</div>
                         <div style={{ display: 'flex', gap: 6, alignItems: 'center', position: 'relative', zIndex: 5 }}>
                           <SplitActions
                             primaryLabel="Adjust"
@@ -910,10 +910,10 @@ export default function Admin() {
                 <div className="card" style={{ padding: '24px', borderRadius: 'var(--radius-lg)', background: 'var(--color-card)', border: '1px solid var(--color-border)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
                     <div>
-                      <h2 style={{ fontSize: 18, fontWeight: 800, margin: 0, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <h2 style={{ fontSize: 18, fontWeight: 800, margin: 0, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 8 }}>
                         <Code size={20} className="text-gradient" /> Platform Connection Verification
                       </h2>
-                      <p style={{ fontSize: 13, color: '#94a3b8', margin: '4px 0 0' }}>
+                      <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '4px 0 0' }}>
                         Review student programming platform handles, sync health, and competitive score metrics.
                       </p>
                     </div>
@@ -961,7 +961,7 @@ export default function Admin() {
                     <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                         <thead>
-                          <tr style={{ borderBottom: '1px solid var(--color-border)', textAlign: 'left', color: '#94a3b8' }}>
+                          <tr style={{ borderBottom: '1px solid var(--color-border)', textAlign: 'left', color: 'var(--color-text-muted)' }}>
                             <th style={{ padding: '10px 12px' }}>Student</th>
                             <th style={{ padding: '10px 12px' }}>Class / Batch</th>
                             <th style={{ padding: '10px 12px' }}>Platform</th>
@@ -987,23 +987,23 @@ export default function Admin() {
                               return true;
                             })
                             .map((conn) => (
-                              <tr key={`${conn.userId}-${conn.platformCode}`} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                              <tr key={`${conn.userId}-${conn.platformCode}`} style={{ borderBottom: '1px solid var(--color-border)' }}>
                                 <td style={{ padding: '12px' }}>
-                                  <div style={{ fontWeight: 700, color: '#f8fafc' }}>{conn.studentName}</div>
-                                  <div style={{ fontSize: 11, color: '#cbd5e1' }}>{conn.rollNo || conn.userId}</div>
+                                  <div style={{ fontWeight: 700, color: 'var(--color-text)' }}>{conn.studentName}</div>
+                                  <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{conn.rollNo || conn.userId}</div>
                                 </td>
-                                <td style={{ padding: '12px', color: '#cbd5e1' }}>
+                                <td style={{ padding: '12px', color: 'var(--color-text-muted)' }}>
                                   {conn.class || '—'} · {conn.batch || '—'}
                                 </td>
-                                <td style={{ padding: '12px', fontWeight: 700, textTransform: 'capitalize', color: '#a3e635' }}>
+                                <td style={{ padding: '12px', fontWeight: 700, textTransform: 'capitalize', color: 'var(--color-green)' }}>
                                   {conn.platformCode}
                                 </td>
-                                <td style={{ padding: '12px', fontWeight: 600, color: '#60a5fa' }}>
+                                <td style={{ padding: '12px', fontWeight: 600, color: 'var(--color-blue, #60a5fa)' }}>
                                   @{conn.handle}
                                 </td>
                                 <td style={{ padding: '12px' }}>
                                   {conn.ownershipVerified ? (
-                                    <span className="badge" style={{ fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(132, 204, 22, 0.15)', color: '#a3e635', border: '1px solid rgba(132, 204, 22, 0.3)' }}>
+                                    <span className="badge" style={{ fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(132, 204, 22, 0.15)', color: 'var(--color-green)', border: '1px solid rgba(132, 204, 22, 0.3)' }}>
                                       <CheckCircle size={12} /> Verified
                                     </span>
                                   ) : (
@@ -1012,7 +1012,7 @@ export default function Admin() {
                                     </span>
                                   )}
                                 </td>
-                                <td style={{ padding: '12px', fontSize: 11, color: '#94a3b8' }}>
+                                <td style={{ padding: '12px', fontSize: 11, color: 'var(--color-text-muted)' }}>
                                   {conn.lastSyncedAt ? new Date(conn.lastSyncedAt).toLocaleString() : 'Never'}
                                 </td>
                                 <td style={{ padding: '12px', textAlign: 'right' }}>

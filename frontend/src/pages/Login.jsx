@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import SwitchMode from '../components/ui/switch-mode';
-import { Eye, EyeOff, Lock, User, ArrowRight, AlertCircle, ChevronDown, Sun, Moon } from 'lucide-react';
+import { Eye, EyeOff, Lock, User, ArrowRight, AlertCircle, ChevronDown, Sun, Moon, Trophy, Zap, Award, Sparkles } from 'lucide-react';
 
 export default function Login() {
   const { login } = useAuth();
@@ -27,15 +27,125 @@ export default function Login() {
   const hintRef = useRef(null);
   const canvasRef = useRef(null);
 
-  // Canonical transition trigger function for button click / keyboard activation
-  const triggerEnterPortal = () => {
-    targetProgressRef.current = 1;
-    isCompletedRef.current = false;
+  // Parallax & Cursor Glow Refs
+  const parallaxFarRef = useRef(null);
+  const parallaxMidRef = useRef(null);
+  const parallaxCubeRef = useRef(null);
+  const parallaxCtaRef = useRef(null);
+
+  // Desktop Mouse Parallax & Cursor Glow Effect
+  useEffect(() => {
+    const isMobile = window.innerWidth < 768;
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (isMobile || prefersReducedMotion) return;
+
+    const overlay = overlayRef.current;
+    if (!overlay) return;
+
+    let rafId = null;
+    let target = { normX: 0, normY: 0 };
+    let current = { x: 0, y: 0 };
+
+    const handlePointerMove = (e) => {
+      if (e.pointerType === 'touch') return;
+      const rect = overlay.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
+
+      const relX = e.clientX - rect.left;
+      const relY = e.clientY - rect.top;
+
+      // Update Cursor Glow CSS variables without React state
+      overlay.style.setProperty('--mouse-x', `${relX.toFixed(1)}px`);
+      overlay.style.setProperty('--mouse-y', `${relY.toFixed(1)}px`);
+
+      const normX = Math.min(1, Math.max(-1, (relX - rect.width / 2) / (rect.width / 2)));
+      const normY = Math.min(1, Math.max(-1, (relY - rect.height / 2) / (rect.height / 2)));
+
+      target = { normX, normY };
+    };
+
+    const handlePointerLeave = () => {
+      target = { normX: 0, normY: 0 };
+    };
+
+    overlay.addEventListener('pointermove', handlePointerMove);
+    overlay.addEventListener('pointerleave', handlePointerLeave);
+
+    const updateParallax = () => {
+      current.x += (target.normX - current.x) * 0.08;
+      current.y += (target.normY - current.y) * 0.08;
+
+      const { x, y } = current;
+
+      if (parallaxFarRef.current) {
+        parallaxFarRef.current.style.transform = `translate3d(${(x * 2).toFixed(2)}px, ${(y * 2).toFixed(2)}px, 0)`;
+      }
+      if (parallaxMidRef.current) {
+        parallaxMidRef.current.style.transform = `translate3d(${(x * 4).toFixed(2)}px, ${(y * 4).toFixed(2)}px, 0)`;
+      }
+      if (parallaxCubeRef.current) {
+        parallaxCubeRef.current.style.transform = `perspective(1000px) rotateX(${(-y * 2.5).toFixed(2)}deg) rotateY(${(x * 2.5).toFixed(2)}deg) translate3d(${(x * 7).toFixed(2)}px, ${(y * 7).toFixed(2)}px, 0)`;
+      }
+      if (parallaxCtaRef.current) {
+        parallaxCtaRef.current.style.transform = `translate3d(${(x * 2).toFixed(2)}px, ${(y * 2).toFixed(2)}px, 0)`;
+      }
+
+      rafId = requestAnimationFrame(updateParallax);
+    };
+
+    rafId = requestAnimationFrame(updateParallax);
+
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      overlay.removeEventListener('pointermove', handlePointerMove);
+      overlay.removeEventListener('pointerleave', handlePointerLeave);
+    };
+  }, []);
+
+  const isEnteringPortalRef = useRef(false);
+  const [isEnteringPortal, setIsEnteringPortal] = useState(false);
+  const navigationTimerRef = useRef(null);
+  const didRevealRef = useRef(false);
+
+  // Single deterministic portal revelation function
+  const revealPortalNow = useCallback(() => {
+    if (didRevealRef.current) return;
+    didRevealRef.current = true;
+    isCompletedRef.current = true;
+
     if (overlayRef.current) {
-      overlayRef.current.style.display = 'flex';
-      overlayRef.current.style.pointerEvents = 'auto';
+      overlayRef.current.style.opacity = '0';
+      overlayRef.current.style.pointerEvents = 'none';
+      overlayRef.current.style.display = 'none';
     }
-  };
+    if (loginStageRef.current) {
+      loginStageRef.current.style.opacity = '1';
+      loginStageRef.current.style.transform = 'translateY(0)';
+      loginStageRef.current.style.pointerEvents = 'auto';
+    }
+    setIsEnteringPortal(false);
+  }, []);
+
+  // Simple, freeze-proof portal entry trigger (Part 1: Guaranteed 480ms transition)
+  const triggerEnterPortal = useCallback(() => {
+    if (isEnteringPortalRef.current || didRevealRef.current) return;
+    isEnteringPortalRef.current = true;
+    setIsEnteringPortal(true);
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const duration = prefersReducedMotion ? 200 : 480;
+
+    if (overlayRef.current) {
+      overlayRef.current.classList.add('is-entering-portal');
+    }
+
+    targetProgressRef.current = 1;
+
+    if (navigationTimerRef.current) clearTimeout(navigationTimerRef.current);
+    navigationTimerRef.current = setTimeout(() => {
+      revealPortalNow();
+    }, duration);
+  }, [revealPortalNow]);
 
   // Interactive Dot Grid Canvas (Repels dots when cursor moves over using spring-back physics)
   useEffect(() => {
@@ -197,46 +307,44 @@ export default function Login() {
       return;
     }
 
-    // Animation Render Loop (60fps lerp)
+    // Animation Render Loop (60fps lerp continuous smooth scroll transition)
     const animate = () => {
       if (isCompletedRef.current) return;
 
       const diff = targetProgressRef.current - currentProgressRef.current;
-      currentProgressRef.current += diff * 0.045;
+      currentProgressRef.current += diff * 0.055;
 
       const progress = currentProgressRef.current;
 
-      // 1. Zoom Transform targeting inner cube center (50% X, 30% Y)
-      const scale = 1 + Math.pow(progress, 1.3) * 6.5;
-      const translateY = -progress * 8;
+      // 1. Transform targeting inner cube center with subtle zoom & rise
+      const scale = 1 + Math.pow(progress, 1.2) * 2.8;
+      const translateY = -progress * 12;
 
       if (artworkContainerRef.current) {
         artworkContainerRef.current.style.transform = `scale(${scale}) translateY(${translateY}%)`;
         artworkContainerRef.current.style.transformOrigin = '50% 30%';
       }
 
-      // 2. Opacity Fades
-      let artworkOpacity = 1;
-      if (progress > 0.70) {
-        artworkOpacity = 1 - (progress - 0.70) / 0.30;
+      // 2. Smooth opacity fade for intro viewport overlay
+      if (overlayRef.current && !isEnteringPortalRef.current) {
+        const overlayOpacity = Math.max(0, 1 - Math.pow(progress, 1.4));
+        overlayRef.current.style.opacity = overlayOpacity;
       }
 
-      if (overlayRef.current) {
-        overlayRef.current.style.opacity = Math.max(0, artworkOpacity);
-      }
-
-      let loginOpacity = 0;
-      if (progress > 0.65) {
-        loginOpacity = (progress - 0.65) / 0.35;
-      }
-
+      // 3. Continuous smooth reveal of loginStage: opacity 0 -> 1 & rises 30px -> 0px
       if (loginStageRef.current) {
-        loginStageRef.current.style.opacity = Math.min(1, loginOpacity);
+        const loginOpacity = Math.min(1, Math.pow(progress, 0.9));
+        const riseY = (1 - Math.min(1, progress)) * 30;
+        loginStageRef.current.style.opacity = loginOpacity;
+        loginStageRef.current.style.transform = `translateY(${riseY.toFixed(2)}px)`;
+        if (progress > 0.15) {
+          loginStageRef.current.style.pointerEvents = 'auto';
+        }
       }
 
-      // Actions wrapper & hint fade out smoothly as zoom starts
-      if (hintRef.current) {
-        hintRef.current.style.opacity = Math.max(0, 1 - progress * 4);
+      // 4. Actions wrapper & scroll hint fade out early during scroll progress
+      if (hintRef.current && !isEnteringPortalRef.current) {
+        hintRef.current.style.opacity = Math.max(0, 1 - progress * 3.5);
         if (progress > 0.15) {
           hintRef.current.style.pointerEvents = 'none';
         } else {
@@ -253,6 +361,7 @@ export default function Login() {
         }
         if (loginStageRef.current) {
           loginStageRef.current.style.opacity = '1';
+          loginStageRef.current.style.transform = 'translateY(0)';
           loginStageRef.current.style.pointerEvents = 'auto';
         }
         return;
@@ -342,32 +451,109 @@ export default function Login() {
       </div>
 
       {/* INTRO CINEMATIC VIEWPORT OVERLAY */}
-      <div ref={overlayRef} className="intro-viewport">
+      <div ref={overlayRef} className={`intro-viewport ${isEnteringPortal ? 'is-entering-portal' : ''}`}>
+        {/* Subtle Vignette Overlay for Cinematic Depth */}
+        <div className="intro-vignette-overlay" aria-hidden="true" />
+
+        {/* Task 5: Cursor Radial Glow */}
+        <div className="intro-cursor-glow" aria-hidden="true" />
+
+        {/* Task 1: Radial Light Bloom during Portal Entry */}
+        <div className="intro-portal-bloom" aria-hidden="true" />
+
         <div ref={artworkContainerRef} className="intro-artwork-container">
-          <img
-            src="/main.png"
-            alt="SIET Inceptron Dark Intro Artwork"
-            className={`intro-artwork intro-artwork-dark ${theme === 'dark' ? 'active' : ''}`}
-          />
-          <img
-            src="/module.png"
-            alt="SIET Inceptron Light Intro Artwork"
-            className={`intro-artwork intro-artwork-light ${theme === 'light' ? 'active' : ''}`}
-          />
+          {/* Layer 1: Far Sky with Parallax */}
+          <div ref={parallaxFarRef} className="intro-sky-far" aria-hidden="true" />
+
+          {/* Layer 2: Mid Cloud with Parallax */}
+          <div ref={parallaxMidRef} className="intro-sky-mid" aria-hidden="true" />
+
+          {/* Faint Light Rays */}
+          <div className="intro-light-rays" aria-hidden="true" />
+
+          {/* Task 2: Portal Energy Rings behind cube */}
+          <div className="intro-energy-ring-1" aria-hidden="true" />
+          <div className="intro-energy-ring-2" aria-hidden="true" />
+
+          {/* Halo / Bloom Layer behind cube */}
+          <div className="intro-halo-bloom" aria-hidden="true" />
+
+          {/* Floating Premium Feature Chips */}
+          <div className="intro-feature-chips-wrapper" aria-hidden="true">
+            <div className="intro-feature-chip chip-1">
+              <Award size={13} className="chip-icon" />
+              <span>Achievements</span>
+            </div>
+            <div className="intro-feature-chip chip-2">
+              <Zap size={13} className="chip-icon" />
+              <span>Competitive Coding</span>
+            </div>
+            <div className="intro-feature-chip chip-3">
+              <Trophy size={13} className="chip-icon" />
+              <span>Leaderboard</span>
+            </div>
+          </div>
+
+          {/* Pointer Tilt & Floating Cube Visual Group */}
+          <div ref={parallaxCubeRef} className="intro-cube-tilt-wrapper">
+            <div className="intro-cube-float-wrapper">
+              <img
+                src="/main.png"
+                alt="SIET Inceptron Dark Intro Artwork"
+                className={`intro-artwork intro-artwork-dark ${theme === 'dark' ? 'active' : ''}`}
+              />
+              <img
+                src="/module.png"
+                alt="SIET Inceptron Light Intro Artwork"
+                className={`intro-artwork intro-artwork-light ${theme === 'light' ? 'active' : ''}`}
+              />
+            </div>
+          </div>
+
+          {/* Wordmark Light Sweep */}
+          <div className="intro-wordmark-sweep" aria-hidden="true" />
+
+          {/* Task 4: Foreground Haze/Mist */}
+          <div className="intro-sky-front" aria-hidden="true" />
+        </div>
+
+        {/* Ambient CSS Particles (12 max) */}
+        <div className="intro-particles-wrapper" aria-hidden="true">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <span key={i} className={`intro-particle intro-particle-${i + 1}`} />
+          ))}
         </div>
 
         <canvas ref={canvasRef} className="intro-particle-canvas" />
 
         <div ref={hintRef} className="intro-actions-wrapper">
-          <button
-            type="button"
-            className="intro-welcome-btn"
+          <div ref={parallaxCtaRef} className="intro-cta-parallax-group">
+            {/* Small Glass Pill */}
+            <div className="intro-glass-pill">
+              <span className="intro-pill-dot" />
+              <span>CSE Achievement Portal • SIET</span>
+            </div>
+
+            {/* Premium CTA Button */}
+            <button
+              type="button"
+              className="intro-welcome-btn"
+              onClick={triggerEnterPortal}
+              disabled={isEnteringPortal}
+            >
+              <span>WELCOME TO PORTAL</span>
+              <ArrowRight size={20} className="intro-btn-icon" />
+            </button>
+          </div>
+
+          {/* Scroll Cue with Animated Downward Chevron */}
+          <div
+            className="intro-scroll-hint"
             onClick={triggerEnterPortal}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && triggerEnterPortal()}
           >
-            <span>Welcome to Portal</span>
-            <ArrowRight size={20} className="intro-btn-icon" />
-          </button>
-          <div className="intro-scroll-hint">
             <span>OR SCROLL TO ENTER</span>
             <ChevronDown size={14} className="intro-hint-arrow" />
           </div>
@@ -381,16 +567,16 @@ export default function Login() {
           <div className="auth-07-left-panel">
             <div className="auth-07-panel-artwork-bg">
               <img
-                src="/real inceptron.png"
+                src="/main.png"
                 alt="SIET Inceptron Dark Artwork"
-                className={`auth-07-bg-img auth-07-bg-dark ${theme === 'dark' ? 'active' : ''}`}
+                className={`login-hero-image login-hero-image-dark ${theme === 'dark' ? 'active' : ''}`}
               />
               <img
-                src="/Screenshot 2026-09-19 162820.png"
+                src="/module.png"
                 alt="SIET Inceptron Light Artwork"
-                className={`auth-07-bg-img auth-07-bg-light ${theme === 'light' ? 'active' : ''}`}
+                className={`login-hero-image login-hero-image-light ${theme === 'light' ? 'active' : ''}`}
               />
-              <div className="auth-07-panel-gradient-overlay" />
+              <div className="login-left-overlay" />
             </div>
 
             <div className="auth-07-logo-wrapper">
@@ -742,16 +928,423 @@ export default function Login() {
           transition: background-color 750ms cubic-bezier(0.22, 1, 0.36, 1);
         }
 
+        /* Task 5: Cursor Glow Overlay */
+        .intro-cursor-glow {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 500px;
+          height: 500px;
+          border-radius: 50%;
+          pointer-events: none;
+          z-index: 102;
+          transform: translate(-50%, -50%);
+          left: var(--mouse-x, -500px);
+          top: var(--mouse-y, -500px);
+          background: radial-gradient(
+            circle at center,
+            rgba(132, 204, 22, 0.08) 0%,
+            rgba(56, 189, 248, 0.04) 45%,
+            transparent 70%
+          );
+          filter: blur(40px);
+          transition: opacity 0.3s ease;
+        }
+
+        [data-theme="light"] .intro-cursor-glow {
+          background: radial-gradient(
+            circle at center,
+            rgba(42, 125, 20, 0.06) 0%,
+            rgba(56, 189, 248, 0.03) 45%,
+            transparent 70%
+          );
+        }
+
+        /* Task 1: Radial Light Bloom during Portal Entry */
+        .intro-portal-bloom {
+          position: absolute;
+          top: 30%;
+          left: 50%;
+          transform: translate(-50%, -50%) scale(0.6);
+          width: min(650px, 90vw);
+          height: min(650px, 90vw);
+          border-radius: 50%;
+          pointer-events: none;
+          z-index: 104;
+          opacity: 0;
+          background: radial-gradient(
+            circle at center,
+            rgba(255, 255, 255, 0.95) 0%,
+            rgba(132, 204, 22, 0.65) 35%,
+            rgba(255, 255, 255, 0.8) 65%,
+            transparent 100%
+          );
+          filter: blur(25px);
+          transition: opacity 300ms ease, transform 300ms ease;
+        }
+
+        [data-theme="dark"] .intro-portal-bloom {
+          background: radial-gradient(
+            circle at center,
+            rgba(132, 204, 22, 0.75) 0%,
+            rgba(6, 182, 212, 0.55) 40%,
+            rgba(15, 23, 42, 0.9) 70%,
+            transparent 100%
+          );
+        }
+
+        .intro-viewport.is-entering-portal .intro-portal-bloom {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(1.4);
+          transition: opacity 500ms ease 100ms, transform 550ms cubic-bezier(0.16, 1, 0.3, 1) 100ms;
+        }
+
+        .intro-viewport.is-entering-portal .intro-glass-pill {
+          opacity: 0;
+          transform: translateY(-10px);
+          transition: opacity 200ms ease, transform 200ms ease;
+        }
+
+        .intro-viewport.is-entering-portal .intro-scroll-hint {
+          opacity: 0;
+          transform: translateY(10px);
+          transition: opacity 200ms ease 100ms, transform 200ms ease 100ms;
+        }
+
+        .intro-viewport.is-entering-portal .intro-welcome-btn {
+          transform: scale(0.96);
+          opacity: 0;
+          transition: transform 150ms ease, opacity 250ms ease 250ms;
+        }
+
+        .intro-viewport.is-entering-portal .intro-cube-float-wrapper {
+          transform: translateY(-10px) scale(1.08);
+          transition: transform 450ms cubic-bezier(0.16, 1, 0.3, 1) 100ms;
+        }
+
+        .intro-viewport.is-entering-portal .intro-halo-bloom {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(1.35);
+          filter: blur(40px);
+          transition: opacity 450ms ease 100ms, transform 500ms cubic-bezier(0.16, 1, 0.3, 1) 100ms;
+        }
+
+        /* Task A: Cinematic Depth Vignette Overlay */
+        .intro-vignette-overlay {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          z-index: 101;
+          background: radial-gradient(
+            circle at center,
+            rgba(255, 255, 255, 0.02) 0%,
+            rgba(0, 0, 0, 0.05) 55%,
+            rgba(0, 20, 40, 0.18) 100%
+          );
+        }
+
+        /* Task A & K: Staged Entrance & Artwork Container */
         .intro-artwork-container {
           position: absolute;
           inset: 0;
           width: 100vw;
           height: 100vh;
-          will-change: transform, opacity;
           transform-origin: 50% 30%;
+          animation: heroBgEntrance 400ms ease-out forwards;
         }
 
-        /* Dual-Artwork Crossfade Layering with 800ms Smooth Transition */
+        @keyframes heroBgEntrance {
+          0% { opacity: 0; }
+          100% { opacity: 1; }
+        }
+
+        /* Task A: 3 Sky Depth Layers (Far, Mid, Front) */
+        .intro-sky-far {
+          position: absolute;
+          inset: -5%;
+          background: radial-gradient(ellipse at 50% 30%, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
+          animation: skyDriftFar 36s ease-in-out infinite alternate;
+          pointer-events: none;
+          z-index: 0;
+        }
+
+        .intro-sky-mid {
+          position: absolute;
+          inset: -5%;
+          background: radial-gradient(circle at 45% 40%, rgba(255, 255, 255, 0.05) 0%, transparent 60%);
+          animation: skyDriftMid 24s ease-in-out infinite alternate;
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        .intro-sky-front {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(180deg, transparent 65%, rgba(255, 255, 255, 0.12) 100%);
+          animation: skyDriftFront 16s ease-in-out infinite alternate;
+          pointer-events: none;
+          z-index: 4;
+        }
+
+        @keyframes skyDriftFar {
+          0% { transform: translateY(0) scale(1); }
+          100% { transform: translateY(-10px) scale(1.02); }
+        }
+
+        @keyframes skyDriftMid {
+          0% { transform: translate(0, 0); }
+          100% { transform: translate(-8px, -6px); }
+        }
+
+        @keyframes skyDriftFront {
+          0% { transform: translateY(0); opacity: 0.7; }
+          100% { transform: translateY(-5px); opacity: 0.95; }
+        }
+
+        /* Task E: Faint Light Rays */
+        .intro-light-rays {
+          position: absolute;
+          top: 30%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: min(700px, 90vw);
+          height: min(700px, 90vw);
+          background: conic-gradient(
+            from 0deg at 50% 50%,
+            transparent 0deg,
+            rgba(255, 255, 255, 0.04) 20deg,
+            transparent 40deg,
+            rgba(255, 255, 255, 0.06) 80deg,
+            transparent 120deg,
+            rgba(255, 255, 255, 0.05) 180deg,
+            transparent 220deg,
+            rgba(255, 255, 255, 0.04) 280deg,
+            transparent 320deg
+          );
+          border-radius: 50%;
+          pointer-events: none;
+          z-index: 1;
+          mask-image: radial-gradient(circle at center, black 20%, transparent 70%);
+          -webkit-mask-image: radial-gradient(circle at center, black 20%, transparent 70%);
+          animation: raysBreathing 14s ease-in-out infinite alternate;
+        }
+
+        @keyframes raysBreathing {
+          0% { transform: translate(-50%, -50%) rotate(0deg) scale(0.98); opacity: 0.6; }
+          100% { transform: translate(-50%, -50%) rotate(6deg) scale(1.03); opacity: 0.9; }
+        }
+
+        /* Task D: Soft Halo / Bloom Layer Behind Cube */
+        .intro-halo-bloom {
+          position: absolute;
+          top: 30%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: min(520px, 80vw);
+          height: min(520px, 80vw);
+          border-radius: 50%;
+          pointer-events: none;
+          z-index: 2;
+          background: radial-gradient(
+            circle at center,
+            rgba(255, 255, 255, 0.25) 0%,
+            rgba(132, 204, 22, 0.16) 35%,
+            rgba(56, 189, 248, 0.08) 60%,
+            transparent 75%
+          );
+          filter: blur(30px);
+          will-change: transform, opacity;
+          animation: haloPulse 5s ease-in-out infinite alternate;
+        }
+
+        [data-theme="dark"] .intro-halo-bloom {
+          background: radial-gradient(
+            circle at center,
+            rgba(255, 255, 255, 0.3) 0%,
+            rgba(132, 204, 22, 0.22) 35%,
+            rgba(56, 189, 248, 0.12) 60%,
+            transparent 75%
+          );
+        }
+
+        @keyframes haloPulse {
+          0% { opacity: 0.55; transform: translate(-50%, -50%) scale(0.97); }
+          100% { opacity: 0.85; transform: translate(-50%, -50%) scale(1.02); }
+        }
+
+        /* Task 2: Energy Rings behind cube */
+        .intro-energy-ring-1,
+        .intro-energy-ring-2 {
+          position: absolute;
+          top: 30%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          border-radius: 50%;
+          pointer-events: none;
+          z-index: 2;
+          will-change: transform, opacity;
+        }
+
+        .intro-energy-ring-1 {
+          width: min(440px, 75vw);
+          height: min(440px, 75vw);
+          border: 1px solid rgba(132, 204, 22, 0.25);
+          box-shadow: 0 0 30px rgba(132, 204, 22, 0.12), inset 0 0 20px rgba(132, 204, 22, 0.08);
+          animation: energyRingPulse1 6s ease-in-out infinite alternate;
+        }
+
+        .intro-energy-ring-2 {
+          width: min(560px, 85vw);
+          height: min(560px, 85vw);
+          border: 1px dashed rgba(56, 189, 248, 0.2);
+          animation: energyRingPulse2 8s ease-in-out infinite alternate-reverse;
+        }
+
+        [data-theme="light"] .intro-energy-ring-1 {
+          border-color: rgba(42, 125, 20, 0.3);
+          box-shadow: 0 0 25px rgba(42, 125, 20, 0.1), inset 0 0 15px rgba(42, 125, 20, 0.05);
+        }
+
+        [data-theme="light"] .intro-energy-ring-2 {
+          border-color: rgba(56, 189, 248, 0.25);
+        }
+
+        @keyframes energyRingPulse1 {
+          0% { transform: translate(-50%, -50%) scale(0.96) rotate(0deg); opacity: 0.5; }
+          100% { transform: translate(-50%, -50%) scale(1.04) rotate(180deg); opacity: 0.85; }
+        }
+
+        @keyframes energyRingPulse2 {
+          0% { transform: translate(-50%, -50%) scale(0.98) rotate(0deg); opacity: 0.4; }
+          100% { transform: translate(-50%, -50%) scale(1.03) rotate(-180deg); opacity: 0.7; }
+        }
+
+        /* Task 3: 3 Floating Feature Chips */
+        .intro-feature-chips-wrapper {
+          position: absolute;
+          top: 30%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: min(600px, 92vw);
+          height: min(400px, 60vh);
+          pointer-events: none;
+          z-index: 3;
+        }
+
+        .intro-feature-chip {
+          position: absolute;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 6px 14px;
+          border-radius: 9999px;
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 0.02em;
+          background: rgba(15, 23, 42, 0.65);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          color: rgba(255, 255, 255, 0.9);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+          will-change: transform;
+        }
+
+        [data-theme="light"] .intro-feature-chip {
+          background: rgba(255, 255, 255, 0.75);
+          border-color: rgba(0, 0, 0, 0.1);
+          color: #1e293b;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        }
+
+        .chip-icon {
+          color: #84cc16;
+          filter: drop-shadow(0 0 6px rgba(132, 204, 22, 0.6));
+          flex-shrink: 0;
+          transition: transform 0.3s ease, color 0.3s ease;
+        }
+
+        [data-theme="light"] .chip-icon {
+          color: #2A7D14;
+          filter: drop-shadow(0 0 5px rgba(42, 125, 20, 0.4));
+        }
+
+        .intro-feature-chip:hover .chip-icon {
+          transform: scale(1.15) rotate(5deg);
+        }
+
+        .chip-1 {
+          top: 15%;
+          left: 5%;
+          animation: chipFloat1 7s ease-in-out infinite alternate;
+        }
+
+        .chip-2 {
+          top: 70%;
+          right: 5%;
+          animation: chipFloat2 8.5s ease-in-out infinite alternate;
+        }
+
+        .chip-3 {
+          top: 80%;
+          left: 10%;
+          animation: chipFloat3 9s ease-in-out infinite alternate;
+        }
+
+        @keyframes chipFloat1 {
+          0% { transform: translateY(0px) rotate(-1deg); }
+          100% { transform: translateY(-10px) rotate(1deg); }
+        }
+
+        @keyframes chipFloat2 {
+          0% { transform: translateY(0px) rotate(1deg); }
+          100% { transform: translateY(-12px) rotate(-1deg); }
+        }
+
+        @keyframes chipFloat3 {
+          0% { transform: translateY(0px) rotate(-0.5deg); }
+          100% { transform: translateY(-8px) rotate(1.5deg); }
+        }
+
+        /* Task B & C: Pointer Tilt & Floating Cube Visual Group */
+        .intro-cube-tilt-wrapper {
+          position: absolute;
+          inset: 0;
+          width: 100vw;
+          height: 100vh;
+          z-index: 3;
+          pointer-events: none;
+          transform-style: preserve-3d;
+          animation: heroCubeEntrance 500ms cubic-bezier(0.16, 1, 0.3, 1) 150ms backwards;
+        }
+
+        @keyframes heroCubeEntrance {
+          0% { opacity: 0; transform: translateY(10px) scale(0.98); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .intro-cube-float-wrapper {
+          position: absolute;
+          inset: 0;
+          width: 100vw;
+          height: 100vh;
+          will-change: transform;
+          animation: cubeFloatIdle 6.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes cubeFloatIdle {
+          0% {
+            transform: translateY(0) rotateX(0deg) rotateY(0deg) scale(1);
+          }
+          50% {
+            transform: translateY(-5px) rotateX(1deg) rotateY(-1deg) scale(1.005);
+          }
+          100% {
+            transform: translateY(-8px) rotateX(-1.5deg) rotateY(1.5deg) scale(1.01);
+          }
+        }
+
+        /* Dual-Artwork Crossfade Layering */
         .intro-artwork {
           position: absolute;
           inset: 0;
@@ -764,7 +1357,6 @@ export default function Login() {
           transform: scale(1.018);
           transition: opacity 800ms cubic-bezier(0.22, 1, 0.36, 1), transform 800ms cubic-bezier(0.22, 1, 0.36, 1), filter 700ms ease;
           pointer-events: none;
-          will-change: opacity, transform;
         }
 
         .intro-artwork.active {
@@ -774,16 +1366,77 @@ export default function Login() {
           filter: blur(0);
         }
 
+        /* Task G: Soft Wordmark Light Sweep */
+        .intro-wordmark-sweep {
+          position: absolute;
+          top: 48%;
+          left: -20%;
+          width: 40%;
+          height: 10%;
+          background: linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.18) 50%,
+            transparent 100%
+          );
+          transform: skewX(-25deg);
+          pointer-events: none;
+          z-index: 4;
+          animation: wordmarkSweep 7.5s ease-in-out infinite 300ms;
+        }
+
+        @keyframes wordmarkSweep {
+          0%, 75% { left: -30%; opacity: 0; }
+          85% { opacity: 0.8; }
+          100% { left: 130%; opacity: 0; }
+        }
+
+        /* Task F: 12 Ambient CSS Particles */
+        .intro-particles-wrapper {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          z-index: 102;
+          overflow: hidden;
+        }
+
+        .intro-particle {
+          position: absolute;
+          border-radius: 50%;
+          pointer-events: none;
+          will-change: transform, opacity;
+          animation: particleDrift linear infinite alternate;
+        }
+
+        @keyframes particleDrift {
+          0% { transform: translateY(0) translateX(0); opacity: 0.2; }
+          100% { transform: translateY(-18px) translateX(6px); opacity: 0.45; }
+        }
+
+        .intro-particle-1  { top: 26%; left: 44%; width: 3px; height: 3px; background: rgba(255, 255, 255, 0.35); animation-duration: 9s; }
+        .intro-particle-2  { top: 22%; left: 54%; width: 4px; height: 4px; background: rgba(132, 204, 22, 0.35); animation-duration: 11s; animation-delay: -2s; }
+        .intro-particle-3  { top: 36%; left: 40%; width: 2px; height: 2px; background: rgba(56, 189, 248, 0.3); animation-duration: 7s; animation-delay: -4s; }
+        .intro-particle-4  { top: 32%; left: 60%; width: 3px; height: 3px; background: rgba(255, 255, 255, 0.25); animation-duration: 10s; animation-delay: -1s; }
+        .intro-particle-5  { top: 18%; left: 48%; width: 4px; height: 4px; background: rgba(244, 63, 94, 0.25); animation-duration: 13s; animation-delay: -3s; }
+        .intro-particle-6  { top: 42%; left: 52%; width: 2px; height: 2px; background: rgba(255, 255, 255, 0.3); animation-duration: 8s; animation-delay: -5s; }
+        .intro-particle-7  { top: 35%; left: 45%; width: 3px; height: 3px; background: rgba(56, 189, 248, 0.32); animation-duration: 12s; animation-delay: -6s; }
+        .intro-particle-8  { top: 28%; left: 58%; width: 4px; height: 4px; background: rgba(132, 204, 22, 0.3); animation-duration: 9.5s; animation-delay: -2.5s; }
+        .intro-particle-9  { top: 40%; left: 48%; width: 3px; height: 3px; background: rgba(255, 255, 255, 0.28); animation-duration: 10.5s; animation-delay: -3.5s; }
+        .intro-particle-10 { top: 20%; left: 41%; width: 2px; height: 2px; background: rgba(244, 63, 94, 0.22); animation-duration: 8.5s; animation-delay: -1.5s; }
+        .intro-particle-11 { top: 38%; left: 63%; width: 3px; height: 3px; background: rgba(132, 204, 22, 0.28); animation-duration: 11.5s; animation-delay: -4.5s; }
+        .intro-particle-12 { top: 24%; left: 37%; width: 3px; height: 3px; background: rgba(56, 189, 248, 0.28); animation-duration: 9.8s; animation-delay: -0.5s; }
+
         .intro-particle-canvas {
           position: absolute;
           inset: 0;
           width: 100vw;
           height: 100%;
           pointer-events: none;
-          z-index: 102;
+          z-index: 103;
           transition: opacity 0.3s ease;
         }
 
+        /* Task K: Actions Wrapper Staged Entrance */
         .intro-actions-wrapper {
           position: absolute;
           bottom: 44px;
@@ -792,77 +1445,196 @@ export default function Login() {
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 14px;
+          gap: 12px;
           z-index: 105;
           pointer-events: auto;
           transition: opacity 0.3s ease;
         }
 
+        /* Task I & K: Small Glass Pill */
+        .intro-glass-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 6px 16px;
+          background: rgba(255, 255, 255, 0.55);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.55);
+          border-radius: 9999px;
+          font-size: 12.5px;
+          font-weight: 600;
+          color: #0f172a;
+          letter-spacing: 0.02em;
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+          user-select: none;
+          animation: heroPillEntrance 400ms cubic-bezier(0.16, 1, 0.3, 1) 450ms backwards;
+        }
+
+        @keyframes heroPillEntrance {
+          0% { opacity: 0; transform: translateY(8px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+
+        [data-theme="dark"] .intro-glass-pill {
+          background: rgba(15, 23, 42, 0.55);
+          border-color: rgba(255, 255, 255, 0.18);
+          color: rgba(255, 255, 255, 0.9);
+        }
+
+        .intro-pill-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #6fd000;
+          box-shadow: 0 0 8px rgba(111, 208, 0, 0.6);
+          flex-shrink: 0;
+        }
+
+        /* Task H & K: Premium CTA Button */
         .intro-welcome-btn {
           display: inline-flex;
           align-items: center;
           gap: 12px;
-          padding: 16px 36px;
-          background: #84cc16;
+          padding: 15px 34px;
+          background: linear-gradient(135deg, #8be000 0%, #6fd000 100%);
           color: #0a0a0a;
           font-family: 'Space Grotesk', -apple-system, sans-serif;
-          font-size: 16px;
+          font-size: 15px;
           font-weight: 700;
-          border: 1px solid rgba(255, 255, 255, 0.3);
+          border: 1px solid rgba(255, 255, 255, 0.35);
           border-radius: 9999px;
           cursor: pointer;
-          box-shadow: 
-            0 10px 30px -5px rgba(132, 204, 22, 0.6),
-            0 0 22px rgba(132, 204, 22, 0.45);
-          transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease, box-shadow 0.3s ease;
-          letter-spacing: 0.03em;
+          box-shadow: 0 10px 35px rgba(120, 220, 0, 0.28);
+          transition: transform 220ms ease, background 220ms ease, box-shadow 220ms ease;
+          letter-spacing: 0.04em;
           text-transform: uppercase;
+          animation: heroCTAEntrance 450ms cubic-bezier(0.16, 1, 0.3, 1) 550ms backwards;
+        }
+
+        @keyframes heroCTAEntrance {
+          0% { opacity: 0; transform: translateY(8px); }
+          100% { opacity: 1; transform: translateY(0); }
         }
 
         .intro-welcome-btn:hover {
-          background: #93d926;
-          transform: translateY(-3px) scale(1.04);
-          box-shadow: 
-            0 16px 38px -4px rgba(132, 204, 22, 0.75),
-            0 0 35px rgba(132, 204, 22, 0.6);
+          background: linear-gradient(135deg, #95eb00 0%, #78db00 100%);
+          transform: translateY(-2px);
+          box-shadow: 0 14px 40px rgba(120, 220, 0, 0.45);
         }
 
         .intro-welcome-btn:active {
-          transform: translateY(0) scale(0.97);
+          transform: translateY(0);
         }
 
         .intro-btn-icon {
           color: #0a0a0a;
-          transition: transform 0.2s ease;
+          transition: transform 220ms ease;
         }
 
         .intro-welcome-btn:hover .intro-btn-icon {
           transform: translateX(4px);
         }
 
-        /* Scroll Hint Theme-Aware Contrast & Floating Motion */
+        /* Task J & K: Scroll Hint with Animated Downward Chevron */
         .intro-scroll-hint {
           display: flex;
           align-items: center;
           gap: 8px;
           color: var(--intro-hint-color);
-          font-size: 13px;
+          font-size: 12.5px;
           font-weight: 700;
           letter-spacing: 0.08em;
           text-transform: uppercase;
-          text-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+          text-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
           transition: color 550ms ease;
+          animation: heroScrollCueEntrance 400ms cubic-bezier(0.16, 1, 0.3, 1) 700ms backwards;
+        }
+
+        @keyframes heroScrollCueEntrance {
+          0% { opacity: 0; transform: translateY(6px); }
+          100% { opacity: 1; transform: translateY(0); }
         }
 
         .intro-hint-arrow {
           color: var(--intro-hint-accent);
           transition: color 550ms ease;
-          animation: introFloat 1.8s ease-in-out infinite;
+          animation: chevronBounce 1.6s ease-in-out infinite;
         }
 
-        @keyframes introFloat {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(5px); }
+        @keyframes chevronBounce {
+          0%, 100% {
+            transform: translateY(0);
+            opacity: 0.7;
+          }
+          50% {
+            transform: translateY(4px);
+            opacity: 1;
+          }
+        }
+
+        /* Task N: Reduced Motion Handling */
+        @media (prefers-reduced-motion: reduce) {
+          .intro-artwork-container,
+          .intro-cube-tilt-wrapper,
+          .intro-glass-pill,
+          .intro-welcome-btn,
+          .intro-scroll-hint {
+            animation: none !important;
+            opacity: 1 !important;
+            transform: none !important;
+          }
+          .intro-sky-far,
+          .intro-sky-mid,
+          .intro-sky-front,
+          .intro-light-rays,
+          .intro-halo-bloom,
+          .intro-energy-ring-1,
+          .intro-energy-ring-2,
+          .chip-1,
+          .chip-2,
+          .chip-3,
+          .intro-cube-float-wrapper,
+          .intro-wordmark-sweep,
+          .intro-hint-arrow,
+          .intro-particle {
+            animation: none !important;
+          }
+          .intro-particles-wrapper,
+          .intro-feature-chips-wrapper {
+            display: none !important;
+          }
+        }
+
+        /* Task O: Responsive scaling for small screens / mobile */
+        @media (max-width: 768px) {
+          .intro-particles-wrapper,
+          .intro-feature-chips-wrapper {
+            display: none;
+          }
+          .intro-energy-ring-1,
+          .intro-energy-ring-2 {
+            opacity: 0.35;
+          }
+          .intro-halo-bloom {
+            width: 320px;
+            height: 320px;
+          }
+          .intro-light-rays {
+            display: none;
+          }
+          .intro-actions-wrapper {
+            bottom: 28px;
+            gap: 10px;
+          }
+          .intro-welcome-btn {
+            padding: 13px 26px;
+            font-size: 14px;
+          }
+          .intro-glass-pill {
+            font-size: 11.5px;
+            padding: 5px 12px;
+          }
         }
 
         /* Auth-07 Dual-Panel Architecture */
@@ -903,37 +1675,33 @@ export default function Login() {
           z-index: 1;
         }
 
-        .auth-07-bg-img {
+        .login-hero-image {
           position: absolute;
           inset: 0;
           width: 100%;
           height: 100%;
           object-fit: cover;
-          object-position: center center;
+          object-position: center;
+          filter: none;
           opacity: 0;
-          transform: scale(1.018);
-          transition: opacity 800ms cubic-bezier(0.22, 1, 0.36, 1), transform 800ms cubic-bezier(0.22, 1, 0.36, 1), filter 700ms ease;
+          transition: opacity 700ms cubic-bezier(0.22, 1, 0.36, 1);
           pointer-events: none;
-          will-change: opacity, transform;
         }
 
-        .auth-07-bg-img.active {
+        .login-hero-image.active {
           opacity: 1;
-          transform: scale(1);
-          pointer-events: auto;
-          filter: blur(0);
         }
 
-        .auth-07-panel-gradient-overlay {
+        .login-left-overlay {
           position: absolute;
           inset: 0;
           z-index: 2;
-          background: linear-gradient(to top, rgba(5, 7, 11, 0.92) 0%, rgba(5, 7, 11, 0.35) 45%, rgba(5, 7, 11, 0.05) 100%);
-          transition: background 750ms cubic-bezier(0.22, 1, 0.36, 1);
-        }
-
-        [data-theme="light"] .auth-07-panel-gradient-overlay {
-          background: linear-gradient(to top, rgba(15, 23, 42, 0.65) 0%, rgba(15, 23, 42, 0.15) 45%, transparent 100%) !important;
+          background: linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, 0.02),
+            rgba(0, 0, 0, 0.18)
+          );
+          pointer-events: none;
         }
 
         .auth-07-logo-wrapper {
