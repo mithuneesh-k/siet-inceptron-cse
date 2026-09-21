@@ -65,61 +65,55 @@ async function fetchHackerRankUser(normalizedHandle) {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'application/json, text/javascript, */*; q=0.01'
-      }
+      },
+      signal: AbortSignal.timeout(8000)
     });
 
     if (res.status === 404) {
-      return { found: false, error: 'HackerRank handle not found.' };
+      return { found: false, isOutage: false, error: 'HackerRank handle not found.' };
     }
 
     if (res.status >= 500 || res.status === 429 || res.status === 403) {
-      return { found: false, isOutage: true };
+      return { found: false, isOutage: true, error: `HackerRank server returned status ${res.status}.` };
     }
 
     const data = await res.json();
     const model = data ? data.model : null;
 
     if (!model || !model.username) {
-      return { found: false, error: 'HackerRank handle not found.' };
+      return { found: false, isOutage: false, error: 'HackerRank handle not found.' };
     }
 
     const canonicalHandle = model.username;
 
-    // Optional secondary endpoints for badges and domain scores
-    let badgeList = [];
-    let domainScores = [];
+    // Concurrently fetch secondary endpoints (badges and domain scores) with Promise.allSettled
+    const [badgesResult, scoresResult] = await Promise.allSettled([
+      fetch(`https://www.hackerrank.com/rest/hackers/${encodeURIComponent(canonicalHandle)}/badges`, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+        signal: AbortSignal.timeout(8000)
+      }).then(r => r.ok ? r.json() : null),
 
-    try {
-      const badgesRes = await fetch(`https://www.hackerrank.com/rest/hackers/${encodeURIComponent(canonicalHandle)}/badges`, {
-        headers: { 'User-Agent': 'Mozilla/5.0' }
-      });
-      if (badgesRes.ok) {
-        const badgesData = await badgesRes.json();
-        badgeList = (badgesData.models || []).map(b => ({
-          badge: b.badge_name,
-          stars: b.stars || 0
-        }));
-      }
-    } catch (e) {
-      // Ignore non-fatal badge fetch error
+      fetch(`https://www.hackerrank.com/rest/hackers/${encodeURIComponent(canonicalHandle)}/scores`, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+        signal: AbortSignal.timeout(8000)
+      }).then(r => r.ok ? r.json() : null)
+    ]);
+
+    let badgeList = [];
+    if (badgesResult.status === 'fulfilled' && badgesResult.value && Array.isArray(badgesResult.value.models)) {
+      badgeList = badgesResult.value.models.map(b => ({
+        badge: b.badge_name,
+        stars: b.stars || 0
+      }));
     }
 
-    try {
-      const scoresRes = await fetch(`https://www.hackerrank.com/rest/hackers/${encodeURIComponent(canonicalHandle)}/scores`, {
-        headers: { 'User-Agent': 'Mozilla/5.0' }
-      });
-      if (scoresRes.ok) {
-        const scoresData = await scoresRes.json();
-        if (Array.isArray(scoresData)) {
-          domainScores = scoresData.map(s => ({
-            name: s.name,
-            score: s.practice ? s.practice.score || 0 : 0,
-            rank: s.practice ? s.practice.rank || 'N/A' : 'N/A'
-          })).filter(s => s.score > 0 || (typeof s.rank === 'number' && s.rank > 0));
-        }
-      }
-    } catch (e) {
-      // Ignore non-fatal scores fetch error
+    let domainScores = [];
+    if (scoresResult.status === 'fulfilled' && Array.isArray(scoresResult.value)) {
+      domainScores = scoresResult.value.map(s => ({
+        name: s.name,
+        score: s.practice ? s.practice.score || 0 : 0,
+        rank: s.practice ? s.practice.rank || 'N/A' : 'N/A'
+      })).filter(s => s.score > 0 || (typeof s.rank === 'number' && s.rank > 0));
     }
 
     const metrics = {
@@ -136,6 +130,7 @@ async function fetchHackerRankUser(normalizedHandle) {
 
     return {
       found: true,
+      isOutage: false,
       handle: canonicalHandle,
       normalizedHandle: canonicalHandle.toLowerCase(),
       metrics
@@ -143,7 +138,7 @@ async function fetchHackerRankUser(normalizedHandle) {
 
   } catch (err) {
     console.error(`[HACKERRANK ADAPTER ERROR] Failed fetching HackerRank user ${normalizedHandle}:`, err.message);
-    return { found: false, isOutage: true };
+    return { found: false, isOutage: true, error: err.message };
   }
 }
 

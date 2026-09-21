@@ -104,9 +104,11 @@ function fetchLeetCodeUser(handle) {
       headers: {
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(query),
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'https://leetcode.com/',
+        'Origin': 'https://leetcode.com'
       },
-      timeout: 10000
+      timeout: 8000
     };
 
     const req = https.request(options, (res) => {
@@ -114,11 +116,11 @@ function fetchLeetCodeUser(handle) {
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
         if (res.statusCode === 429 || res.statusCode >= 500) {
-          return resolve({ found: false, isOutage: true, statusCode: res.statusCode });
+          return resolve({ found: false, isOutage: true, error: `LeetCode API HTTP ${res.statusCode}`, statusCode: res.statusCode });
         }
 
         if (res.statusCode !== 200) {
-          return resolve({ found: false, isOutage: false, statusCode: res.statusCode });
+          return resolve({ found: false, isOutage: false, error: `LeetCode handle not found (HTTP ${res.statusCode})`, statusCode: res.statusCode });
         }
 
         try {
@@ -126,12 +128,12 @@ function fetchLeetCodeUser(handle) {
           if (json.errors && json.errors.length > 0) {
             const isUserNotFound = json.errors.some(e => (e.message || '').toLowerCase().includes('not exist') || (e.message || '').toLowerCase().includes('not found'));
             if (isUserNotFound) {
-              return resolve({ found: false, isOutage: false });
+              return resolve({ found: false, isOutage: false, error: 'LeetCode handle not found.' });
             }
           }
 
           if (!json.data || !json.data.matchedUser) {
-            return resolve({ found: false, isOutage: false });
+            return resolve({ found: false, isOutage: false, error: 'LeetCode handle not found.' });
           }
 
           const user = json.data.matchedUser;
@@ -149,6 +151,7 @@ function fetchLeetCodeUser(handle) {
 
           return resolve({
             found: true,
+            isOutage: false,
             handle: user.username || handle,
             normalizedHandle,
             realName,
@@ -165,10 +168,10 @@ function fetchLeetCodeUser(handle) {
       });
     });
 
-    req.on('error', () => resolve({ found: false, isOutage: true }));
+    req.on('error', (err) => resolve({ found: false, isOutage: true, error: err ? err.message : 'Network error' }));
     req.on('timeout', () => {
       req.destroy();
-      resolve({ found: false, isOutage: true });
+      resolve({ found: false, isOutage: true, error: 'LeetCode request timed out.' });
     });
 
     req.write(query);

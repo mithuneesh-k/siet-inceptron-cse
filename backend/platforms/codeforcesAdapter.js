@@ -52,17 +52,17 @@ async function fetchCodeforcesUser(handleInput) {
 
   let res;
   try {
-    res = await fetch(userInfoUrl, { headers: { 'User-Agent': 'SIET-Portal/1.0' } });
+    res = await fetch(userInfoUrl, {
+      headers: { 'User-Agent': 'SIET-Portal/1.0' },
+      signal: AbortSignal.timeout(8000)
+    });
   } catch (err) {
     console.error('Codeforces API fetch error:', err.message);
     return { found: false, error: 'Codeforces is temporarily unavailable.', isOutage: true };
   }
 
-  if (!res.ok) {
-    if (res.status === 429) {
-      return { found: false, error: 'Codeforces rate limit exceeded. Temporarily unavailable.', isOutage: true };
-    }
-    return { found: false, error: 'Codeforces is temporarily unavailable.', isOutage: true };
+  if (res.status === 429 || res.status >= 500) {
+    return { found: false, error: 'Codeforces rate limit exceeded or server unavailable.', isOutage: true };
   }
 
   let userRes;
@@ -103,7 +103,10 @@ async function fetchCodeforcesUser(handleInput) {
   for (let page = 0; page < MAX_PAGES; page++) {
     try {
       const statusUrl = `https://codeforces.com/api/user.status?handle=${encodeURIComponent(canonicalHandle)}&from=${from}&count=${PAGE_SIZE}`;
-      const statusRes = await fetch(statusUrl, { headers: { 'User-Agent': 'SIET-Portal/1.0' } });
+      const statusRes = await fetch(statusUrl, {
+        headers: { 'User-Agent': 'SIET-Portal/1.0' },
+        signal: AbortSignal.timeout(10000)
+      });
       if (!statusRes.ok) {
         paginationFailed = true;
         break;
@@ -165,7 +168,10 @@ async function fetchCodeforcesUser(handleInput) {
   let contestCount = null;
   try {
     const ratingUrl = `https://codeforces.com/api/user.rating?handle=${encodeURIComponent(canonicalHandle)}`;
-    const ratingRes = await fetch(ratingUrl, { headers: { 'User-Agent': 'SIET-Portal/1.0' } });
+    const ratingRes = await fetch(ratingUrl, {
+      headers: { 'User-Agent': 'SIET-Portal/1.0' },
+      signal: AbortSignal.timeout(8000)
+    });
     if (ratingRes.ok) {
       const ratingData = await ratingRes.json();
       if (ratingData && ratingData.status === 'OK' && Array.isArray(ratingData.result)) {

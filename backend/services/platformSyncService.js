@@ -580,17 +580,19 @@ async function syncStalePlatforms(userId) {
     };
   }
 
-  for (const pCode of stalePlatforms) {
-    const syncKey = `${userId}:${pCode}`;
-    ongoingSyncs.add(syncKey);
-    try {
-      await syncPlatform(userId, pCode);
-    } catch (err) {
-      console.error(`[AUTO-SYNC ERROR] Failed auto-sync for user ${userId} platform ${pCode}:`, err);
-    } finally {
-      ongoingSyncs.delete(syncKey);
-    }
-  }
+  await Promise.allSettled(
+    stalePlatforms.map(async (pCode) => {
+      const syncKey = `${userId}:${pCode}`;
+      ongoingSyncs.add(syncKey);
+      try {
+        await syncPlatform(userId, pCode);
+      } catch (err) {
+        console.error(`[AUTO-SYNC ERROR] Failed auto-sync for user ${userId} platform ${pCode}:`, err);
+      } finally {
+        ongoingSyncs.delete(syncKey);
+      }
+    })
+  );
 
   const newState = await getPlatformsState(userId);
 

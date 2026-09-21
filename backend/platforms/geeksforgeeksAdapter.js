@@ -64,15 +64,16 @@ async function fetchGFGUser(normalizedHandle) {
     const res = await fetch(targetUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-      }
+      },
+      signal: AbortSignal.timeout(8000)
     });
 
     if (res.status === 404) {
-      return { found: false, error: 'GeeksforGeeks handle not found.' };
+      return { found: false, isOutage: false, error: 'GeeksforGeeks handle not found.' };
     }
 
     if (res.status >= 500 || res.status === 429 || res.status === 403) {
-      return { found: false, isOutage: true };
+      return { found: false, isOutage: true, error: `GeeksforGeeks server returned status ${res.status}.` };
     }
 
     const html = await res.text();
