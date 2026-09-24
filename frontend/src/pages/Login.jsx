@@ -322,7 +322,7 @@ export default function Login() {
 
       if (artworkContainerRef.current) {
         artworkContainerRef.current.style.transform = `scale(${scale}) translateY(${translateY}%)`;
-        artworkContainerRef.current.style.transformOrigin = '50% 30%';
+        artworkContainerRef.current.style.transformOrigin = '50% 42%';
       }
 
       // 2. Smooth opacity fade for intro viewport overlay
@@ -342,12 +342,13 @@ export default function Login() {
         }
       }
 
-      // 4. Actions wrapper & scroll hint fade out early during scroll progress
+      // 4. Actions wrapper & scroll hint opacity stable while hero is active
       if (hintRef.current && !isEnteringPortalRef.current) {
-        hintRef.current.style.opacity = Math.max(0, 1 - progress * 3.5);
-        if (progress > 0.15) {
+        if (progress > 0.25) {
+          hintRef.current.style.opacity = Math.max(0, 1 - (progress - 0.25) * 2.5);
           hintRef.current.style.pointerEvents = 'none';
         } else {
+          hintRef.current.style.opacity = '1';
           hintRef.current.style.pointerEvents = 'auto';
         }
       }
@@ -452,111 +453,73 @@ export default function Login() {
 
       {/* INTRO CINEMATIC VIEWPORT OVERLAY */}
       <div ref={overlayRef} className={`intro-viewport ${isEnteringPortal ? 'is-entering-portal' : ''}`}>
-        {/* Subtle Vignette Overlay for Cinematic Depth */}
-        <div className="intro-vignette-overlay" aria-hidden="true" />
-
-        {/* Task 5: Cursor Radial Glow */}
-        <div className="intro-cursor-glow" aria-hidden="true" />
-
-        {/* Task 1: Radial Light Bloom during Portal Entry */}
-        <div className="intro-portal-bloom" aria-hidden="true" />
-
         <div ref={artworkContainerRef} className="intro-artwork-container">
-          {/* Layer 1: Far Sky with Parallax */}
-          <div ref={parallaxFarRef} className="intro-sky-far" aria-hidden="true" />
-
-          {/* Layer 2: Mid Cloud with Parallax */}
-          <div ref={parallaxMidRef} className="intro-sky-mid" aria-hidden="true" />
-
-          {/* Faint Light Rays */}
-          <div className="intro-light-rays" aria-hidden="true" />
-
-          {/* Task 2: Portal Energy Rings behind cube */}
-          <div className="intro-energy-ring-1" aria-hidden="true" />
-          <div className="intro-energy-ring-2" aria-hidden="true" />
-
-          {/* Halo / Bloom Layer behind cube */}
-          <div className="intro-halo-bloom" aria-hidden="true" />
-
-          {/* Floating Premium Feature Chips */}
-          <div className="intro-feature-chips-wrapper" aria-hidden="true">
-            <div className="intro-feature-chip chip-1">
-              <Award size={13} className="chip-icon" />
-              <span>Achievements</span>
-            </div>
-            <div className="intro-feature-chip chip-2">
-              <Zap size={13} className="chip-icon" />
-              <span>Competitive Coding</span>
-            </div>
-            <div className="intro-feature-chip chip-3">
-              <Trophy size={13} className="chip-icon" />
-              <span>Leaderboard</span>
-            </div>
-          </div>
-
           {/* Pointer Tilt & Floating Cube Visual Group */}
           <div ref={parallaxCubeRef} className="intro-cube-tilt-wrapper">
             <div className="intro-cube-float-wrapper">
-              <img
-                src="/main.png"
-                alt="SIET Inceptron Dark Intro Artwork"
+              <video
+                key="dark-bg-video"
+                autoPlay
+                loop
+                muted
+                playsInline
+                controls={false}
+                disablePictureInPicture
+                disableRemotePlayback
                 className={`intro-artwork intro-artwork-dark ${theme === 'dark' ? 'active' : ''}`}
-              />
-              <img
-                src="/module.png"
-                alt="SIET Inceptron Light Intro Artwork"
+              >
+                <source src="/videos/darkmain.mp4" type="video/mp4" />
+                <source src="/videos/DARK MAIN.mp4" type="video/mp4" />
+              </video>
+              <video
+                key="light-bg-video"
+                autoPlay
+                loop
+                muted
+                playsInline
+                controls={false}
+                disablePictureInPicture
+                disableRemotePlayback
                 className={`intro-artwork intro-artwork-light ${theme === 'light' ? 'active' : ''}`}
-              />
+              >
+                <source src="/videos/light (2).mp4" type="video/mp4" />
+                <source src="/videos/lightmain.mp4" type="video/mp4" />
+              </video>
             </div>
           </div>
-
-          {/* Wordmark Light Sweep */}
-          <div className="intro-wordmark-sweep" aria-hidden="true" />
-
-          {/* Task 4: Foreground Haze/Mist */}
-          <div className="intro-sky-front" aria-hidden="true" />
         </div>
 
-        {/* Ambient CSS Particles (12 max) */}
-        <div className="intro-particles-wrapper" aria-hidden="true">
-          {Array.from({ length: 12 }).map((_, i) => (
-            <span key={i} className={`intro-particle intro-particle-${i + 1}`} />
-          ))}
-        </div>
-
-        <canvas ref={canvasRef} className="intro-particle-canvas" />
-
-        <div ref={hintRef} className="intro-actions-wrapper">
-          <div ref={parallaxCtaRef} className="intro-cta-parallax-group">
-            {/* Small Glass Pill */}
-            <div className="intro-glass-pill">
-              <span className="intro-pill-dot" />
-              <span>CSE Achievement Portal • SIET</span>
-            </div>
-
-            {/* Premium CTA Button */}
-            <button
-              type="button"
-              className="intro-welcome-btn"
-              onClick={triggerEnterPortal}
-              disabled={isEnteringPortal}
-            >
-              <span>WELCOME TO PORTAL</span>
-              <ArrowRight size={20} className="intro-btn-icon" />
-            </button>
+        {/* Bottom-Right Action Group: Pill directly above CTA Button covering video diamond */}
+        <div ref={parallaxCtaRef} className="intro-bottom-right-group">
+          <div className="intro-glass-pill">
+            <span className="intro-pill-dot" />
+            <span>CSE Achievement Portal • SIET</span>
           </div>
 
-          {/* Scroll Cue with Animated Downward Chevron */}
-          <div
-            className="intro-scroll-hint"
+          <button
+            type="button"
+            className="intro-welcome-btn"
             onClick={triggerEnterPortal}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && triggerEnterPortal()}
+            onTouchStart={triggerEnterPortal}
+            disabled={isEnteringPortal}
           >
-            <span>OR SCROLL TO ENTER</span>
-            <ChevronDown size={14} className="intro-hint-arrow" />
-          </div>
+            <span>WELCOME TO PORTAL</span>
+            <ArrowRight size={20} className="intro-btn-icon" />
+          </button>
+        </div>
+
+        {/* Bottom-Center Scroll Cue */}
+        <div
+          ref={hintRef}
+          className="intro-scroll-hint"
+          onClick={triggerEnterPortal}
+          onTouchStart={triggerEnterPortal}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && triggerEnterPortal()}
+        >
+          <span>OR SCROLL TO ENTER</span>
+          <ChevronDown size={14} className="intro-hint-arrow" />
         </div>
       </div>
 
@@ -820,7 +783,7 @@ export default function Login() {
         }
 
         [data-theme="light"] .intro-viewport {
-          background: #ffffff !important;
+          background: #0a0e17 !important;
         }
 
         [data-theme="light"] .auth-07-container {
@@ -999,22 +962,16 @@ export default function Login() {
           transition: opacity 500ms ease 100ms, transform 550ms cubic-bezier(0.16, 1, 0.3, 1) 100ms;
         }
 
-        .intro-viewport.is-entering-portal .intro-glass-pill {
+        .intro-viewport.is-entering-portal .intro-bottom-right-group {
           opacity: 0;
-          transform: translateY(-10px);
-          transition: opacity 200ms ease, transform 200ms ease;
+          transform: translateY(12px);
+          transition: opacity 250ms ease, transform 250ms ease;
         }
 
         .intro-viewport.is-entering-portal .intro-scroll-hint {
           opacity: 0;
-          transform: translateY(10px);
+          transform: translate(-50%, 12px);
           transition: opacity 200ms ease 100ms, transform 200ms ease 100ms;
-        }
-
-        .intro-viewport.is-entering-portal .intro-welcome-btn {
-          transform: scale(0.96);
-          opacity: 0;
-          transition: transform 150ms ease, opacity 250ms ease 250ms;
         }
 
         .intro-viewport.is-entering-portal .intro-cube-float-wrapper {
@@ -1348,18 +1305,32 @@ export default function Login() {
         .intro-artwork {
           position: absolute;
           inset: 0;
-          width: 100vw;
+          width: 100%;
           height: 100%;
           object-fit: cover;
-          object-position: center 30%;
+          object-position: center center;
           display: block;
           opacity: 0;
-          transform: scale(1.018);
+          transform: scale(1);
           transition: opacity 800ms cubic-bezier(0.22, 1, 0.36, 1), transform 800ms cubic-bezier(0.22, 1, 0.36, 1), filter 700ms ease;
           pointer-events: none;
         }
 
         .intro-artwork.active {
+          opacity: 1;
+          transform: scale(1);
+          pointer-events: auto;
+          filter: blur(0);
+        }
+
+        [data-theme="dark"] .intro-artwork-dark,
+        [data-theme="light"] .intro-artwork-light {
+          object-fit: cover;
+          object-position: center center;
+        }
+
+        [data-theme="dark"] .intro-artwork-dark.active,
+        [data-theme="light"] .intro-artwork-light.active {
           opacity: 1;
           transform: scale(1);
           pointer-events: auto;
@@ -1436,37 +1407,36 @@ export default function Login() {
           transition: opacity 0.3s ease;
         }
 
-        /* Task K: Actions Wrapper Staged Entrance */
-        .intro-actions-wrapper {
+        /* Bottom-Right Action Group covering video diamond */
+        .intro-bottom-right-group {
           position: absolute;
-          bottom: 44px;
-          left: 50%;
-          transform: translateX(-50%);
+          right: clamp(28px, 4vw, 70px);
+          bottom: clamp(28px, 5vh, 60px);
           display: flex;
           flex-direction: column;
-          align-items: center;
+          align-items: flex-end;
           gap: 12px;
-          z-index: 105;
+          z-index: 20;
           pointer-events: auto;
-          transition: opacity 0.3s ease;
+          transition: opacity 0.3s ease, transform 0.3s ease;
         }
 
-        /* Task I & K: Small Glass Pill */
+        /* Small Glass Pill directly above CTA button */
         .intro-glass-pill {
           display: inline-flex;
           align-items: center;
           gap: 8px;
           padding: 6px 16px;
-          background: rgba(255, 255, 255, 0.55);
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.55);
+          background: rgba(15, 23, 42, 0.78);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border: 1px solid rgba(255, 255, 255, 0.25);
           border-radius: 9999px;
           font-size: 12.5px;
           font-weight: 600;
-          color: #0f172a;
+          color: #ffffff;
           letter-spacing: 0.02em;
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
           user-select: none;
           animation: heroPillEntrance 400ms cubic-bezier(0.16, 1, 0.3, 1) 450ms backwards;
         }
@@ -1476,10 +1446,11 @@ export default function Login() {
           100% { opacity: 1; transform: translateY(0); }
         }
 
-        [data-theme="dark"] .intro-glass-pill {
-          background: rgba(15, 23, 42, 0.55);
-          border-color: rgba(255, 255, 255, 0.18);
-          color: rgba(255, 255, 255, 0.9);
+        [data-theme="dark"] .intro-glass-pill,
+        [data-theme="light"] .intro-glass-pill {
+          background: rgba(15, 23, 42, 0.78);
+          border-color: rgba(255, 255, 255, 0.25);
+          color: #ffffff;
         }
 
         .intro-pill-dot {
@@ -1491,21 +1462,24 @@ export default function Login() {
           flex-shrink: 0;
         }
 
-        /* Task H & K: Premium CTA Button */
+        /* Premium CTA Button covering video diamond in bottom-right */
         .intro-welcome-btn {
           display: inline-flex;
           align-items: center;
+          justify-content: center;
           gap: 12px;
-          padding: 15px 34px;
+          width: clamp(300px, 22vw, 340px);
+          height: clamp(56px, 6vh, 62px);
+          padding: 0 28px;
           background: linear-gradient(135deg, #8be000 0%, #6fd000 100%);
           color: #0a0a0a;
           font-family: 'Space Grotesk', -apple-system, sans-serif;
           font-size: 15px;
           font-weight: 700;
-          border: 1px solid rgba(255, 255, 255, 0.35);
+          border: 1px solid rgba(255, 255, 255, 0.4);
           border-radius: 9999px;
           cursor: pointer;
-          box-shadow: 0 10px 35px rgba(120, 220, 0, 0.28);
+          box-shadow: 0 10px 35px rgba(120, 220, 0, 0.35);
           transition: transform 220ms ease, background 220ms ease, box-shadow 220ms ease;
           letter-spacing: 0.04em;
           text-transform: uppercase;
@@ -1536,8 +1510,12 @@ export default function Login() {
           transform: translateX(4px);
         }
 
-        /* Task J & K: Scroll Hint with Animated Downward Chevron */
+        /* Scroll Hint in Exact Bottom-Center */
         .intro-scroll-hint {
+          position: absolute;
+          left: 50%;
+          bottom: 24px;
+          transform: translateX(-50%);
           display: flex;
           align-items: center;
           gap: 8px;
@@ -1547,7 +1525,9 @@ export default function Login() {
           letter-spacing: 0.08em;
           text-transform: uppercase;
           text-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
-          transition: color 550ms ease;
+          z-index: 15;
+          cursor: pointer;
+          transition: color 550ms ease, opacity 0.3s ease;
           animation: heroScrollCueEntrance 400ms cubic-bezier(0.16, 1, 0.3, 1) 700ms backwards;
         }
 
@@ -1607,6 +1587,16 @@ export default function Login() {
         }
 
         /* Task O: Responsive scaling for small screens / mobile */
+        @media (max-width: 1024px) {
+          .intro-bottom-right-group {
+            right: 24px;
+            bottom: 42px;
+          }
+          .intro-welcome-btn {
+            width: min(320px, 42vw);
+          }
+        }
+
         @media (max-width: 768px) {
           .intro-particles-wrapper,
           .intro-feature-chips-wrapper {
@@ -1623,17 +1613,21 @@ export default function Login() {
           .intro-light-rays {
             display: none;
           }
-          .intro-actions-wrapper {
-            bottom: 28px;
-            gap: 10px;
+          .intro-bottom-right-group {
+            left: 50%;
+            right: auto;
+            bottom: 72px;
+            transform: translateX(-50%);
+            align-items: center;
           }
           .intro-welcome-btn {
-            padding: 13px 26px;
+            width: min(88vw, 330px);
+            height: 54px;
+            padding: 0 20px;
             font-size: 14px;
           }
-          .intro-glass-pill {
-            font-size: 11.5px;
-            padding: 5px 12px;
+          .intro-scroll-hint {
+            bottom: 20px;
           }
         }
 

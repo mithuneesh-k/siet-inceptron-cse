@@ -135,22 +135,23 @@ router.put('/:id', authMiddleware, async (req, res) => {
     avatar_url, phone, phone_public, dob_public 
   } = req.body;
   
-  // Determine which profile table to update
-  const table = req.user.role === 'student' ? 'students' : 'faculty';
+  const isStudent = req.user.role === 'student';
+  const table = isStudent ? 'students' : 'faculty';
   const updates = {};
+
   if (name !== undefined) updates.name = name;
-  if (bio !== undefined) updates.bio = bio;
-  if (github !== undefined) updates.github = github;
-  if (linkedin !== undefined) updates.linkedin = linkedin;
-  if (instagram !== undefined) updates.instagram = instagram;
-  if (twitter !== undefined) updates.twitter = twitter;
-  if (portfolio !== undefined) updates.portfolio = portfolio;
   if (avatar_url !== undefined) updates.avatar_url = avatar_url;
   
-  if (req.user.role === 'student') {
+  if (isStudent) {
+    if (bio !== undefined) updates.bio = typeof bio === 'string' ? bio.slice(0, 160) : bio;
+    if (github !== undefined) updates.github = github;
+    if (linkedin !== undefined) updates.linkedin = linkedin;
+    if (instagram !== undefined) updates.instagram = instagram;
+    if (twitter !== undefined) updates.twitter = twitter;
+    if (portfolio !== undefined) updates.portfolio = portfolio;
     if (phone !== undefined) updates.phone = phone;
-    if (phone_public !== undefined) updates.phone_public = phone_public;
-    if (dob_public !== undefined) updates.dob_public = dob_public;
+    if (phone_public !== undefined) updates.phone_public = Boolean(phone_public);
+    if (dob_public !== undefined) updates.dob_public = Boolean(dob_public);
   }
   
   updates.updated_at = new Date().toISOString();

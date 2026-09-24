@@ -7,6 +7,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import AnnouncementsFeed from '../components/AnnouncementsFeed';
 import AchieversCarousel from '../components/ui/achievers-carousel';
 import MarqueeSection from '../components/ui/marquee-section';
+import Hero360 from '../components/Hero360';
 import { Users, Award, Trophy, Briefcase, Star, Zap, BookOpen, Rocket, Medal, Target } from 'lucide-react';
 
 const RANK_ICONS = [
@@ -286,7 +287,7 @@ function HeroInteractiveVideo({ videoSrc, fallbackImgSrc, theme }) {
 export default function Landing() {
   const { user } = useAuth();
   const { theme } = useTheme();
-  const videoSrc = theme === 'dark' ? '/videos/dark.mp4' : '/videos/light.mp4';
+  const videoSrc = theme === 'dark' ? '/videos/darkmain.mp4' : '/videos/light (2).mp4';
   const fallbackImgSrc = theme === 'dark' ? '/dark.png?v=2' : '/inceptron-logo.png?v=2';
   const [stats, setStats] = useState({ totalStudents: 0, totalAchievements: 0, totalHackathonWins: 0, totalInternships: 0 });
   const [topStudents, setTopStudents] = useState([]);
@@ -344,7 +345,7 @@ export default function Landing() {
         <div className="container">
           <div className="lp-hero-inner animate-fadeInUp">
             <div className="lp-hero-logo-col">
-              <HeroInteractiveVideo videoSrc={videoSrc} fallbackImgSrc={fallbackImgSrc} theme={theme} />
+              <Hero360 theme={theme} />
             </div>
             <div className="lp-hero-text">
               <div className="lp-pill">

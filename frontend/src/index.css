@@ -1141,5 +1141,59 @@ button.stat-card,
   }
 }
 
+/* ─── 360 Hero Interactive Component ─── */
+.hero-360-container {
+  position: relative;
+  width: 100%;
+  max-width: clamp(520px, 48vw, 680px);
+  height: clamp(440px, 46vh, 560px);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
 
+.hero-360-container:active {
+  cursor: grabbing;
+}
+
+.hero-360-fallback {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.hero-360-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  transition: opacity 0.25s ease;
+}
+
+@media (max-width: 991px) {
+  .hero-360-container {
+    max-width: 440px;
+    height: 380px;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-360-container {
+    max-width: 100%;
+    height: 300px;
+    margin: 0 auto;
+  }
+}
 
