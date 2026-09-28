@@ -118,12 +118,12 @@ export function ExpandableEventCard({
       className={`card update-expandable-card ${isExpanded ? 'expanded' : ''}`}
       style={{
         background: isExpanded ? 'var(--bg-expanded, #f5faf2)' : 'var(--color-card, #ffffff)',
-        border: `1px solid ${isExpanded ? 'var(--color-green, #84cc16)' : 'var(--color-border, #d7e2d3)'}`,
+        border: `1px solid ${isExpanded ? 'var(--theme-primary)' : 'var(--color-border, #d7e2d3)'}`,
         borderRadius: 16,
         padding: '18px 20px',
         transition: 'all 0.25s ease',
         boxShadow: isExpanded
-          ? '0 8px 24px -4px rgba(22, 101, 52, 0.12), 0 4px 12px -2px rgba(0, 0, 0, 0.05)'
+          ? '0 8px 24px -4px var(--theme-shadow), 0 4px 12px -2px rgba(0, 0, 0, 0.05)'
           : '0 2px 8px rgba(0, 0, 0, 0.04)',
         cursor: 'pointer',
         position: 'relative'

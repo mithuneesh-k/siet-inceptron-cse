@@ -98,13 +98,13 @@ export function CardSwipe({
   const cardBorder = isLight ? '#d7e2d3' : 'var(--border, rgba(132, 204, 22, 0.22))';
   const cardShadow = isLight ? '0 8px 24px rgba(15, 23, 42, 0.08)' : '0 12px 30px rgba(0, 0, 0, 0.3)';
   const titleColor = isLight ? '#111827' : '#ffffff';
-  const studentColor = isLight ? '#166534' : '#84cc16';
+  const studentColor = 'var(--color-green)';
   const bodyColor = isLight ? '#4b5563' : '#cbd5e1';
   const metaColor = isLight ? '#6b7280' : '#94a3b8';
 
-  const badgeBg = isLight ? '#f0fdf4' : 'rgba(132, 204, 22, 0.15)';
-  const badgeColor = isLight ? '#166534' : '#84cc16';
-  const badgeBorder = isLight ? '#bbf7d0' : 'rgba(132, 204, 22, 0.3)';
+  const badgeBg = 'var(--green-100)';
+  const badgeColor = 'var(--color-green)';
+  const badgeBorder = 'var(--border-strong)';
 
   if (loading) {
     return (

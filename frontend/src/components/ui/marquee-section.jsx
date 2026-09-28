@@ -272,8 +272,8 @@ export default function MarqueeSection() {
           color: #111827;
         }
         [data-theme="light"] .lp-ticker-pill:hover {
-          background: #f0fdf4;
-          border-color: #84cc16;
+          background: var(--theme-soft);
+          border-color: var(--theme-primary);
         }
         [data-theme="light"] .lp-ticker-pill.important-pill {
           background: #fef2f2;
@@ -281,7 +281,7 @@ export default function MarqueeSection() {
         }
         [data-theme="light"] .lp-tk-title { color: #111827; }
         [data-theme="light"] .lp-tk-sub { color: #4b5563; }
-        [data-theme="light"] .lp-marquee-label { color: #166534; }
+        [data-theme="light"] .lp-marquee-label { color: var(--theme-primary); }
       `}</style>
 
       <div className="container">

@@ -279,16 +279,16 @@ export default function Leaderboard() {
         .lb-row:last-child { border-bottom: none; }
         .lb-row:hover { background: var(--green-50); }
 
-        [data-theme="light"] .lb-table-header { background: #f6f8f5; border-bottom: 1.5px solid #d7e2d3; color: #4b5563; }
-        [data-theme="light"] .lb-row { background: #ffffff; border-bottom: 1px solid #d7e2d3; color: #111827; }
-        [data-theme="light"] .lb-row:hover { background: #f0fdf4 !important; border-color: #84cc16; }
-        [data-theme="light"] .lb-row.active, [data-theme="light"] .lb-row.selected { background: #ecfdf5 !important; border-color: #84cc16; }
-        [data-theme="light"] .lb-name { color: #111827 !important; }
-        [data-theme="light"] .lb-year, [data-theme="light"] .lb-cell { color: #4b5563 !important; }
-        [data-theme="light"] .lb-score { color: #166534 !important; }
-        [data-theme="light"] .lb-rank { color: #111827 !important; }
-        [data-theme="light"] .podium-student { background: #ffffff; border: 2px solid #d7e2d3; color: #111827; }
-        [data-theme="light"] .podium-student:hover { background: #f5faf2; border-color: #84cc16; }
+        [data-theme="light"] .lb-table-header { background: var(--bg-alt); border-bottom: 1.5px solid var(--border); color: var(--color-text-muted); }
+        [data-theme="light"] .lb-row { background: var(--bg-card); border-bottom: 1px solid var(--border); color: var(--color-text); }
+        [data-theme="light"] .lb-row:hover { background: var(--green-50) !important; border-color: var(--color-green); }
+        [data-theme="light"] .lb-row.active, [data-theme="light"] .lb-row.selected { background: var(--green-100) !important; border-color: var(--color-green); }
+        [data-theme="light"] .lb-name { color: var(--color-text) !important; }
+        [data-theme="light"] .lb-year, [data-theme="light"] .lb-cell { color: var(--color-text-muted) !important; }
+        [data-theme="light"] .lb-score { color: var(--color-green) !important; }
+        [data-theme="light"] .lb-rank { color: var(--color-text) !important; }
+        [data-theme="light"] .podium-student { background: var(--bg-card); border: 2px solid var(--border); color: var(--color-text); }
+        [data-theme="light"] .podium-student:hover { background: var(--green-50); border-color: var(--color-green); }
         [data-theme="light"] .podium-sname { color: #111827; }
         [data-theme="light"] .podium-sclass { color: #4b5563; }
         .lb-rank-container { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; }

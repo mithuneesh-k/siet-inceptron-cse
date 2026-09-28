@@ -686,7 +686,7 @@ export default function Login() {
         /* ─── CSS Variables & Theme Transition Defaults ─── */
         :root, [data-theme="dark"] {
           --intro-hint-color: rgba(255, 255, 255, 0.85);
-          --intro-hint-accent: #84cc16;
+          --intro-hint-accent: var(--color-green);
         }
 
         [data-theme="light"] {
@@ -715,7 +715,7 @@ export default function Login() {
           border-radius: 50%;
           border: 1.5px solid var(--border-strong, rgba(255, 255, 255, 0.2));
           background: var(--bg-card, rgba(15, 23, 42, 0.85));
-          color: var(--color-green, #84cc16);
+          color: var(--theme-primary);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -828,35 +828,35 @@ export default function Login() {
         [data-theme="light"] .auth-07-input::placeholder { color: #94a3b8 !important; }
 
         [data-theme="light"] .auth-07-input:focus {
-          border-color: #2A7D14 !important;
+          border-color: var(--theme-primary) !important;
           background: #ffffff !important;
-          box-shadow: 0 0 0 3px rgba(42, 125, 20, 0.2) !important;
+          box-shadow: 0 0 0 3px var(--theme-focus) !important;
         }
 
         [data-theme="light"] .auth-07-toggle-slider { background-color: #cbd5e1 !important; }
         [data-theme="light"] .auth-07-remember-label { color: #475569 !important; }
-        [data-theme="light"] .auth-07-forgot-pass { color: #2A7D14 !important; }
+        [data-theme="light"] .auth-07-forgot-pass { color: var(--theme-primary) !important; }
 
         [data-theme="light"] .auth-07-divider::before,
         [data-theme="light"] .auth-07-divider::after { border-bottom-color: #e2e8f0 !important; }
         [data-theme="light"] .auth-07-divider span { color: #64748b !important; }
 
         [data-theme="light"] .auth-07-demo-btn {
-          background: #f8fafc !important;
+          background: #ffffff !important;
           border: 1px solid #e2e8f0 !important;
         }
 
         [data-theme="light"] .auth-07-demo-btn:hover {
-          background: #f1f5f9 !important;
-          border-color: #2A7D14 !important;
+          background: var(--bg-hover, #f8fafc) !important;
+          border-color: var(--theme-primary) !important;
         }
 
-        [data-theme="light"] .auth-07-demo-badge { color: #2A7D14 !important; }
+        [data-theme="light"] .auth-07-demo-badge { color: var(--color-text, #0f172a) !important; }
 
         [data-theme="light"] .auth-07-demo-val {
-          background: #e2e8f0 !important;
-          color: #0f172a !important;
-          border: 1px solid #cbd5e1 !important;
+          background: var(--theme-soft, #f0fdf4) !important;
+          color: var(--theme-primary) !important;
+          border: 1px solid var(--theme-border, #cbd5e1) !important;
         }
 
         [data-theme="light"] .auth-07-input-icon,
@@ -865,15 +865,16 @@ export default function Login() {
         [data-theme="light"] .auth-07-password-toggle:hover { color: #0f172a !important; }
 
         [data-theme="light"] .auth-07-submit-btn {
-          background: #84cc16 !important;
-          color: #070a0f !important;
+          background: var(--btn-primary-bg) !important;
+          color: var(--btn-primary-color, #070a0f) !important;
           font-weight: 800 !important;
-          box-shadow: 0 4px 18px rgba(132, 204, 22, 0.4) !important;
+          box-shadow: 0 4px 18px var(--green-200) !important;
         }
 
         [data-theme="light"] .auth-07-submit-btn:hover:not(:disabled) {
-          background: #93d926 !important;
-          box-shadow: 0 6px 24px rgba(132, 204, 22, 0.6) !important;
+          background: var(--btn-primary-bg) !important;
+          filter: brightness(1.1);
+          box-shadow: 0 6px 24px var(--green-200) !important;
         }
 
         /* Intro Viewport */
@@ -1215,15 +1216,15 @@ export default function Login() {
         }
 
         .chip-icon {
-          color: #84cc16;
-          filter: drop-shadow(0 0 6px rgba(132, 204, 22, 0.6));
+          color: var(--theme-primary);
+          filter: drop-shadow(0 0 6px var(--theme-glow));
           flex-shrink: 0;
           transition: transform 0.3s ease, color 0.3s ease;
         }
 
         [data-theme="light"] .chip-icon {
-          color: #2A7D14;
-          filter: drop-shadow(0 0 5px rgba(42, 125, 20, 0.4));
+          color: var(--theme-primary);
+          filter: drop-shadow(0 0 5px var(--theme-glow));
         }
 
         .intro-feature-chip:hover .chip-icon {
@@ -1868,7 +1869,7 @@ export default function Login() {
         .auth-07-forgot-pass {
           font-size: 13.5px;
           font-weight: 600;
-          color: #84cc16;
+          color: var(--color-green);
           cursor: pointer;
           transition: opacity 0.2s ease, color 0.45s ease;
         }
@@ -1922,13 +1923,13 @@ export default function Login() {
 
         .auth-07-input:focus {
           outline: none;
-          border-color: #84cc16;
+          border-color: var(--color-green);
           background: #151924;
-          box-shadow: 0 0 0 3px rgba(132, 204, 22, 0.2);
+          box-shadow: 0 0 0 3px var(--green-200);
         }
 
         .auth-07-input-wrapper:focus-within .auth-07-input-icon {
-          color: #84cc16;
+          color: var(--color-green);
         }
 
         .auth-07-password-toggle {
@@ -1998,7 +1999,7 @@ export default function Login() {
         }
 
         .auth-07-toggle-switch input:checked + .auth-07-toggle-slider {
-          background-color: #84cc16;
+          background-color: var(--color-green);
         }
 
         .auth-07-toggle-switch input:checked + .auth-07-toggle-slider:before {
@@ -2018,8 +2019,8 @@ export default function Login() {
           width: 100%;
           padding: 15px;
           margin-top: 4px;
-          background: #84cc16;
-          color: #0a0a0a;
+          background: var(--btn-primary-bg);
+          color: var(--btn-primary-color, #0a0a0a);
           font-size: 16px;
           font-weight: 700;
           border: none;
@@ -2087,7 +2088,7 @@ export default function Login() {
           font-size: 11px;
           font-weight: 700;
           letter-spacing: 0.1em;
-          color: #6b7280;
+          color: var(--color-text-muted, #94a3b8);
           text-transform: uppercase;
           transition: color 0.45s ease;
         }
@@ -2112,26 +2113,26 @@ export default function Login() {
 
         .auth-07-demo-btn:hover {
           background: #161a26;
-          border-color: #84cc16;
+          border-color: var(--theme-primary);
           transform: translateY(-1px);
         }
 
         .auth-07-demo-badge {
-          font-size: 12px;
+          font-size: 13px;
           font-weight: 700;
-          color: #84cc16;
+          color: var(--color-text, #f1f5f9);
           transition: color 0.45s ease;
         }
 
         .auth-07-demo-val {
           font-size: 12px;
           font-family: monospace;
-          color: #f3f4f6;
+          color: var(--theme-primary);
           font-weight: 600;
-          background: #1a1e2b;
+          background: var(--theme-soft, rgba(132, 204, 22, 0.12));
           padding: 4px 10px;
           border-radius: 6px;
-          border: 1px solid #2d3345;
+          border: 1px solid var(--theme-border, rgba(132, 204, 22, 0.25));
           transition: background-color 0.45s ease, border-color 0.45s ease, color 0.45s ease;
         }
 

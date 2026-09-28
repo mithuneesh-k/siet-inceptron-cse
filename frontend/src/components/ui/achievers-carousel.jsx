@@ -236,7 +236,7 @@ export function AchieversCarousel({ achievers = [] }) {
                   width: idx === currentIndex ? 18 : 7,
                   height: 7,
                   borderRadius: 4,
-                  background: idx === currentIndex ? (isLight ? '#166534' : '#84cc16') : (isLight ? '#cbd5e1' : 'rgba(255, 255, 255, 0.2)'),
+                  background: idx === currentIndex ? 'var(--color-green)' : (isLight ? '#cbd5e1' : 'rgba(255, 255, 255, 0.2)'),
                   border: 'none',
                   cursor: 'pointer',
                   transition: 'all 0.3s ease'
@@ -284,7 +284,7 @@ function AchieverSlideContent({ achiever, rank, isLight }) {
     if (rank === 3) {
       return { label: '#3 Bronze Medalist', color: '#B45309', bg: 'rgba(180, 83, 9, 0.12)', border: 'rgba(180, 83, 9, 0.3)', icon: Medal };
     }
-    return { label: `#${rank} Top Achiever`, color: isLight ? '#166534' : '#84cc16', bg: isLight ? '#f0fdf4' : 'rgba(34, 197, 94, 0.12)', border: isLight ? '#bbf7d0' : 'rgba(34, 197, 94, 0.3)', icon: Trophy };
+    return { label: `#${rank} Top Achiever`, color: 'var(--color-green)', bg: 'var(--green-100)', border: 'var(--border-strong)', icon: Trophy };
   };
 
   const badge = getRankBadge();
@@ -359,7 +359,7 @@ function AchieverSlideContent({ achiever, rank, isLight }) {
       </div>
 
       {/* Score Pill */}
-      <div style={{ fontSize: 16, fontWeight: 900, color: isLight ? '#166534' : '#84cc16' }}>
+      <div style={{ fontSize: 16, fontWeight: 900, color: 'var(--color-green)' }}>
         {totalScore} <span style={{ fontSize: 11, fontWeight: 700, color: isLight ? '#6b7280' : '#94a3b8' }}>PTS</span>
       </div>
 

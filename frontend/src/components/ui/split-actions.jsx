@@ -47,8 +47,8 @@ export function SplitActions({
   // Color theme mapping
   const primaryBg = isLight ? '#ffffff' : 'var(--bg-card, #0f172a)';
   const primaryBorder = isLight ? '#d7e2d3' : 'var(--border, rgba(132, 204, 22, 0.25))';
-  const primaryText = isLight ? '#166534' : '#84cc16';
-  const primaryHover = isLight ? '#f0fdf4' : 'rgba(132, 204, 22, 0.12)';
+  const primaryText = 'var(--color-green)';
+  const primaryHover = 'var(--green-50)';
 
   const menuBg = isLight ? '#ffffff' : '#0f172a';
   const menuBorder = isLight ? '#d7e2d3' : 'rgba(132, 204, 22, 0.25)';

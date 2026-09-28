@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import client from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
+import ThemeSection from '../components/ThemeSection';
 
 export default function EditProfile() {
   const { user: authUser, refreshUser } = useAuth();
@@ -102,13 +103,17 @@ export default function EditProfile() {
 
   return (
     <div className="page-content">
-      <div className="container" style={{ maxWidth: '600px' }}>
+      <div className="container" style={{ maxWidth: '640px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
           <button className="btn btn-ghost" onClick={() => navigate(`/profile/${authUser.id}`)}>← Back</button>
           <h1 className="section-title">Edit Profile</h1>
         </div>
 
+        {/* Dedicated Theme & Color Section */}
+        <ThemeSection title="Theme & Color Customization" showPreview={true} />
+
         <div className="card" style={{ padding: '24px', marginBottom: '24px' }}>
+
           <h2 style={{ fontSize: '18px', marginBottom: '16px' }}>Public Details</h2>
           <form onSubmit={handleProfileSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             

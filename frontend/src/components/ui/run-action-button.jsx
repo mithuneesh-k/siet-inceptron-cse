@@ -140,7 +140,7 @@ export function RunActionButton({
           justifyContent: 'space-between',
           overflow: 'hidden',
           borderRadius: '9999px',
-          border: status === 'running' ? '2px dashed #84cc16' : '1.5px solid var(--border-strong)',
+          border: status === 'running' ? '2px dashed var(--theme-primary)' : '1.5px solid var(--border-strong)',
         }}
       >
         <AnimatePresence mode="popLayout" initial={false}>

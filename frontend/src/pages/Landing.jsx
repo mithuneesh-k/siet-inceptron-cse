@@ -671,16 +671,16 @@ export default function Landing() {
         .lp-pm-meta { font-size: 12px; color: var(--color-text-muted); margin-top: 1px; }
         .lp-pm-score { font-size: 18px; font-weight: 900; color: var(--color-green); font-family: 'Space Grotesk', sans-serif; flex-shrink: 0; }
 
-        [data-theme="light"] .lp-carousel-card { background: #ffffff; border: 2px solid #d7e2d3; border-top: 4px solid #84cc16; }
-        [data-theme="light"] .lp-carousel-name { color: #111827; }
-        [data-theme="light"] .lp-carousel-meta { color: #4b5563; }
-        [data-theme="light"] .lp-carousel-rank { color: #166534; }
-        [data-theme="light"] .lp-podium-row { background: #ffffff; border: 1px solid #d7e2d3; color: #111827; }
-        [data-theme="light"] .lp-podium-row:hover { background: #f0fdf4 !important; border-color: #84cc16; box-shadow: 0 4px 14px rgba(22, 101, 52, 0.08); }
-        [data-theme="light"] .lp-podium-row.active, [data-theme="light"] .lp-podium-row.selected { background: #ecfdf5 !important; border-color: #84cc16; }
-        [data-theme="light"] .lp-pm-name { color: #111827 !important; }
-        [data-theme="light"] .lp-pm-meta { color: #4b5563 !important; }
-        [data-theme="light"] .lp-pm-score { color: #166534 !important; }
+        [data-theme="light"] .lp-carousel-card { background: var(--bg-card); border: 2px solid var(--border); border-top: 4px solid var(--color-green); }
+        [data-theme="light"] .lp-carousel-name { color: var(--color-text); }
+        [data-theme="light"] .lp-carousel-meta { color: var(--color-text-muted); }
+        [data-theme="light"] .lp-carousel-rank { color: var(--color-green); }
+        [data-theme="light"] .lp-podium-row { background: var(--bg-card); border: 1px solid var(--border); color: var(--color-text); }
+        [data-theme="light"] .lp-podium-row:hover { background: var(--green-50) !important; border-color: var(--color-green); box-shadow: 0 4px 14px var(--green-100); }
+        [data-theme="light"] .lp-podium-row.active, [data-theme="light"] .lp-podium-row.selected { background: var(--green-100) !important; border-color: var(--color-green); }
+        [data-theme="light"] .lp-pm-name { color: var(--color-text) !important; }
+        [data-theme="light"] .lp-pm-meta { color: var(--color-text-muted) !important; }
+        [data-theme="light"] .lp-pm-score { color: var(--color-green) !important; }
 
         /* ── Scoring ── */
         .lp-score-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 28px; }

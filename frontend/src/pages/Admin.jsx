@@ -715,7 +715,7 @@ export default function Admin() {
                       <div
                         key={s.id}
                         className="manage-table-row"
-                        style={{ background: selectedIds.has(s.id) ? 'rgba(132, 204, 22, 0.08)' : undefined, animation: `fadeInUp 0.25s ease ${i * 0.015}s both` }}
+                        style={{ background: selectedIds.has(s.id) ? 'var(--green-50)' : undefined, animation: `fadeInUp 0.25s ease ${i * 0.015}s both` }}
                       >
                         {isFullAdmin ? (
                           <input
@@ -728,7 +728,7 @@ export default function Admin() {
                           <div /> 
                         )}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <div style={{ width: 34, height: 34, background: '#84cc16', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#070a0f', fontSize: 13, flexShrink: 0 }}>
+                          <div style={{ width: 34, height: 34, background: 'var(--btn-primary-bg)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: 'var(--btn-primary-color)', fontSize: 13, flexShrink: 0 }}>
                             {s.name[0]}
                           </div>
                           <div style={{ minWidth: 0 }}>
@@ -1003,7 +1003,7 @@ export default function Admin() {
                                 </td>
                                 <td style={{ padding: '12px' }}>
                                   {conn.ownershipVerified ? (
-                                    <span className="badge" style={{ fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(132, 204, 22, 0.15)', color: 'var(--color-green)', border: '1px solid rgba(132, 204, 22, 0.3)' }}>
+                                    <span className="badge" style={{ fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4, background: 'var(--green-100)', color: 'var(--color-green)', border: '1px solid var(--border-strong)' }}>
                                       <CheckCircle size={12} /> Verified
                                     </span>
                                   ) : (
