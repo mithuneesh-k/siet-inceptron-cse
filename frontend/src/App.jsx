@@ -25,9 +25,10 @@ const EditProfile = lazyWithPreload(() => import('./pages/EditProfile'));
 const Updates = lazyWithPreload(() => import('./pages/Updates'));
 const Platforms = lazyWithPreload(() => import('./pages/Platforms'));
 const News = lazyWithPreload(() => import('./pages/News'));
+const ThemeSettings = lazyWithPreload(() => import('./pages/ThemeSettings'));
 
 const priorityPreloads = [Leaderboard, CompetitiveLeaderboard, Students, Updates, Platforms, News];
-const backgroundPreloads = [Landing, Login, Profile, Teams, Admin, Approvals, EditProfile];
+const backgroundPreloads = [Landing, Login, Profile, Teams, Admin, Approvals, EditProfile, ThemeSettings];
 
 function preloadRoutes(routes) {
   routes.forEach((route) => {
@@ -79,6 +80,7 @@ function AppContent() {
           <Route path="/students" element={<ProtectedRoute><Students /></ProtectedRoute>} />
           <Route path="/profile/:id" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+          <Route path="/theme" element={<ProtectedRoute><ThemeSettings /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
           <Route path="/approvals" element={<ProtectedRoute adminOnly><Approvals /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to={user ? "/" : "/login"} replace />} />
@@ -86,6 +88,7 @@ function AppContent() {
       </Suspense>
       {showHeaderFooter && <Footer />}
     </>
+
   );
 }
 

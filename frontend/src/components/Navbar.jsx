@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import SwitchMode from './ui/switch-mode';
 import client from '../api/client';
-import { Home, Zap, Trophy, GraduationCap, Users, User, Shield, CheckCircle, Code, Sun, Moon, Bell, AlertCircle, ChevronRight } from 'lucide-react';
+import { Home, Zap, Trophy, GraduationCap, Users, User, Shield, CheckCircle, Code, Sun, Moon, Bell, AlertCircle, ChevronRight, Palette } from 'lucide-react';
 import { subscribeAchievementEvents } from '../utils/achievementEvents';
 import { AnnouncementImage } from '../utils/announcementHelpers';
 import './Navbar.css';
@@ -233,6 +233,9 @@ export default function Navbar() {
 
         <div className="navbar-actions">
           <SwitchMode width={64} height={32} />
+          <Link to="/theme" className="btn btn-ghost btn-sm nav-theme-btn" title="Theme & Color Settings" aria-label="Theme Settings" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px 10px', color: 'var(--color-green)' }}>
+            <Palette size={18} />
+          </Link>
           {user && (
             <div className="user-menu">
               <Link to={`/profile/${user.id}`} className="user-chip">

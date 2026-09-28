@@ -237,11 +237,11 @@ export default function News() {
                               borderRadius: 20,
                               background: isImportant
                                 ? 'rgba(239, 68, 68, 0.18)'
-                                : (isLight ? '#EEF8E8' : 'rgba(132, 204, 22, 0.15)'),
+                                : 'var(--green-100)',
                               color: isImportant
                                 ? '#ef4444'
-                                : (isLight ? '#2A7D14' : '#84cc16'),
-                              border: `1px solid ${isImportant ? 'rgba(239, 68, 68, 0.3)' : (isLight ? '#A8D98E' : 'rgba(132, 204, 22, 0.3)')}`
+                                : 'var(--color-green)',
+                              border: `1px solid ${isImportant ? 'rgba(239, 68, 68, 0.3)' : 'var(--border-strong)'}`
                             }}
                           >
                             {typeIcon} {ann.type || 'General'}
@@ -433,9 +433,9 @@ export default function News() {
                     style={{
                       display: 'inline-flex', alignItems: 'center', gap: 6,
                       fontSize: 12, fontWeight: 700, padding: '4px 12px', borderRadius: 20,
-                      background: activeDetailModal.is_important ? 'rgba(239, 68, 68, 0.18)' : (isLight ? '#EEF8E8' : 'rgba(132, 204, 22, 0.15)'),
-                      color: activeDetailModal.is_important ? '#ef4444' : (isLight ? '#2A7D14' : '#84cc16'),
-                      border: `1px solid ${activeDetailModal.is_important ? 'rgba(239, 68, 68, 0.3)' : (isLight ? '#A8D98E' : 'rgba(132, 204, 22, 0.3)')}`
+                      background: activeDetailModal.is_important ? 'rgba(239, 68, 68, 0.18)' : 'var(--green-100)',
+                      color: activeDetailModal.is_important ? '#ef4444' : 'var(--color-green)',
+                      border: `1px solid ${activeDetailModal.is_important ? 'rgba(239, 68, 68, 0.3)' : 'var(--border-strong)'}`
                     }}
                   >
                     {TYPE_ICONS[activeDetailModal.type] || <Bell size={15} />} {activeDetailModal.type || 'General'}

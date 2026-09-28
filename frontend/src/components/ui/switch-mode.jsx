@@ -8,10 +8,10 @@ export function SwitchMode({
   height = 34,
   darkColor = '#090d14',
   lightColor = '#ffffff',
-  knobDarkColor = '#166534',
-  knobLightColor = '#84cc16',
-  borderDarkColor = 'rgba(132, 204, 22, 0.4)',
-  borderLightColor = '#d7e2d3',
+  knobDarkColor = 'var(--theme-primary)',
+  knobLightColor = 'var(--theme-primary)',
+  borderDarkColor = 'var(--theme-border-strong)',
+  borderLightColor = 'var(--theme-border)',
 }) {
   const [mounted, setMounted] = useState(false);
   const { theme, toggleTheme } = useTheme();
