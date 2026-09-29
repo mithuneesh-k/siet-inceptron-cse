@@ -1410,6 +1410,32 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
     assert.strictEqual(typeof uploadUserLimiter, 'function');
   });
 
+  await asyncTest('66. Faculty-only certificate approval authorization: Student and Admin return 403, Faculty passes', async () => {
+    const { facultyOnlyMiddleware } = require('../middleware/auth');
+
+    const testReq = (role) => {
+      let code = null;
+      let body = null;
+      let nextCalled = false;
+      const req = role ? { user: { id: 'u1', role } } : {};
+      const res = {
+        status: (c) => { code = c; return res; },
+        json: (b) => { body = b; return res; }
+      };
+      facultyOnlyMiddleware(req, res, () => { nextCalled = true; });
+      return { code, body, nextCalled };
+    };
+
+    // Unauthenticated -> 403 (or 401 from authMiddleware)
+    assert.strictEqual(testReq(null).code, 403);
+    // Student -> 403 Forbidden
+    assert.strictEqual(testReq('student').code, 403);
+    // Admin -> 403 Forbidden (Certificate approvals transferred to Faculty)
+    assert.strictEqual(testReq('admin').code, 403);
+    // Faculty -> Passes middleware
+    assert.strictEqual(testReq('faculty').nextCalled, true);
+  });
+
   const { runPlatformTests } = require('./platform.test');
   await runPlatformTests();
 

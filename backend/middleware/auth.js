@@ -180,11 +180,19 @@ const strictAdminMiddleware = (req, res, next) => {
   next();
 };
 
+const facultyOnlyMiddleware = (req, res, next) => {
+  if (!req.user || req.user.role !== 'faculty') {
+    return res.status(403).json({ error: 'Faculty access required' });
+  }
+  next();
+};
+
 module.exports = {
   authMiddleware,
   optionalAuthMiddleware,
   adminMiddleware,
   strictAdminMiddleware,
   hodMiddleware,
-  facultyAdvisorMiddleware
+  facultyAdvisorMiddleware,
+  facultyOnlyMiddleware
 };

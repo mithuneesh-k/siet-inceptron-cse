@@ -106,20 +106,21 @@ function HeroInteractiveVideo({ videoSrc, fallbackImgSrc, theme }) {
     };
   }, [themeKey]);
 
-  const drawFrameToCanvas = useCallback((frameIdx) => {
-    const canvas = canvasRef.current;
+  const widthRef = useRef(0);
+  const heightRef = useRef(0);
+
+  const updateCanvasSize = useCallback(() => {
     const container = containerRef.current;
-    const frames = framesRef.current;
-
-    if (!canvas || !container || !frames || frames.length === 0) return;
-
-    const img = frames[frameIdx % TOTAL_FRAMES];
-    if (!img || !img.complete) return;
+    const canvas = canvasRef.current;
+    if (!container || !canvas) return;
 
     const rect = container.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return;
 
-    const dpr = window.devicePixelRatio || 1;
+    widthRef.current = rect.width;
+    heightRef.current = rect.height;
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
     const targetW = Math.round(rect.width * dpr);
     const targetH = Math.round(rect.height * dpr);
 
@@ -127,14 +128,35 @@ function HeroInteractiveVideo({ videoSrc, fallbackImgSrc, theme }) {
       canvas.width = targetW;
       canvas.height = targetH;
     }
+  }, []);
+
+  const drawFrameToCanvas = useCallback((frameIdx) => {
+    const canvas = canvasRef.current;
+    const frames = framesRef.current;
+    const w = widthRef.current;
+    const h = heightRef.current;
+
+    if (!canvas || w <= 0 || h <= 0 || !frames || frames.length === 0) return;
+
+    const rawIdx = ((Math.round(frameIdx) % TOTAL_FRAMES) + TOTAL_FRAMES) % TOTAL_FRAMES;
+    let img = frames[rawIdx];
+
+    if (!img || !img.complete) {
+      const fallbackIdx = lastDrawnFrameRef.current >= 0 ? lastDrawnFrameRef.current : 0;
+      img = frames[fallbackIdx];
+    }
+    if (!img || !img.complete) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    const targetW = canvas.width;
+    const targetH = canvas.height;
+
     ctx.clearRect(0, 0, targetW, targetH);
 
     const imgAspect = img.width / img.height;
-    const containerAspect = rect.width / rect.height;
+    const containerAspect = w / h;
 
     let drawW, drawH, drawX, drawY;
     if (containerAspect > imgAspect) {
@@ -150,7 +172,7 @@ function HeroInteractiveVideo({ videoSrc, fallbackImgSrc, theme }) {
     }
 
     ctx.drawImage(img, drawX, drawY, drawW, drawH);
-    lastDrawnFrameRef.current = frameIdx % TOTAL_FRAMES;
+    lastDrawnFrameRef.current = rawIdx;
   }, []);
 
   const loop = useCallback(() => {
@@ -174,7 +196,7 @@ function HeroInteractiveVideo({ videoSrc, fallbackImgSrc, theme }) {
       displayFrameRef.current = currentDisplay;
     }
 
-    const roundedFrame = Math.round(currentDisplay) % TOTAL_FRAMES;
+    const roundedFrame = ((Math.round(currentDisplay) % TOTAL_FRAMES) + TOTAL_FRAMES) % TOTAL_FRAMES;
     if (roundedFrame !== lastDrawnFrameRef.current) {
       drawFrameToCanvas(roundedFrame);
     }
@@ -190,6 +212,7 @@ function HeroInteractiveVideo({ videoSrc, fallbackImgSrc, theme }) {
     const video = videoRef.current;
     if (!video || !framesLoaded || framesRef.current.length < TOTAL_FRAMES) return;
 
+    updateCanvasSize();
     isHoveringRef.current = true;
     lastXRef.current = e.clientX;
 
@@ -213,14 +236,13 @@ function HeroInteractiveVideo({ videoSrc, fallbackImgSrc, theme }) {
   };
 
   const handlePointerMove = (e) => {
-    if (!isHoveringRef.current || !containerRef.current) return;
+    if (!isHoveringRef.current || widthRef.current <= 0) return;
 
     if (lastXRef.current !== null) {
       const deltaX = e.clientX - lastXRef.current;
-      const rect = containerRef.current.getBoundingClientRect();
-      if (rect.width > 0) {
-        const deltaFrames = (deltaX / rect.width) * (TOTAL_FRAMES * ROTATION_SENSITIVITY * 5);
-        targetFrameRef.current += deltaFrames;
+      if (Math.abs(deltaX) > 0.5) {
+        const deltaFrames = (deltaX / widthRef.current) * (TOTAL_FRAMES * ROTATION_SENSITIVITY * 5);
+        targetFrameRef.current = ((targetFrameRef.current + deltaFrames) % TOTAL_FRAMES + TOTAL_FRAMES) % TOTAL_FRAMES;
       }
     }
     lastXRef.current = e.clientX;

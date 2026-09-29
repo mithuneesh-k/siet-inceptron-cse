@@ -576,7 +576,7 @@ export default function Login() {
               <form onSubmit={handleSubmit} className="auth-07-form">
                 <div className="auth-07-field">
                   <label htmlFor="login-email" className="auth-07-label">
-                    Register No
+                    Email / Register No
                   </label>
                   <div className="auth-07-input-wrapper">
                     <User size={18} className="auth-07-input-icon" />
@@ -584,7 +584,7 @@ export default function Login() {
                       id="login-email"
                       type="text"
                       className="auth-07-input"
-                      placeholder="e.g. 714025104173"
+                      placeholder="e.g. hodcse@siet.ac.in or 714025104173"
                       value={form.email}
                       onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                       required
@@ -670,9 +670,17 @@ export default function Login() {
                   <button
                     type="button"
                     className="auth-07-demo-btn"
+                    onClick={() => setForm({ email: 'hodcse@siet.ac.in', password: 'password123' })}
+                  >
+                    <span className="auth-07-demo-badge">Faculty</span>
+                    <span className="auth-07-demo-val">hodcse@siet.ac.in</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="auth-07-demo-btn"
                     onClick={() => setForm({ email: '714025104144', password: '25CS144' })}
                   >
-                    <span className="auth-07-demo-badge">Mithuneesh</span>
+                    <span className="auth-07-demo-badge">Student</span>
                     <span className="auth-07-demo-val">714025104144</span>
                   </button>
                 </div>

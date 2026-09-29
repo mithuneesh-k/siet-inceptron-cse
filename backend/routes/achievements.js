@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { supabase, getAdminScope } = require('../db/supabase');
-const { authMiddleware, adminMiddleware, optionalAuthMiddleware } = require('../middleware/auth');
+const { authMiddleware, adminMiddleware, facultyOnlyMiddleware, optionalAuthMiddleware } = require('../middleware/auth');
 const cache = require('../services/cache');
 
 function isMissingColumnError(error) {
@@ -123,7 +123,7 @@ router.get('/recent/approved', optionalAuthMiddleware, async (req, res) => {
 });
 
 // ─── GET /api/achievements/pending/count ─────────────────────────────────────
-router.get('/pending/count', authMiddleware, adminMiddleware, async (req, res) => {
+router.get('/pending/count', authMiddleware, facultyOnlyMiddleware, async (req, res) => {
   res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   try {
     const scope = await getAdminScope(req.user.id, req.user.role);
@@ -159,7 +159,7 @@ router.get('/pending/count', authMiddleware, adminMiddleware, async (req, res) =
 });
 
 // ─── GET /api/achievements/all/pending ───────────────────────────────────────
-router.get('/all/pending', authMiddleware, adminMiddleware, async (req, res) => {
+router.get('/all/pending', authMiddleware, facultyOnlyMiddleware, async (req, res) => {
   res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.set('Pragma', 'no-cache');
   res.set('Expires', '0');
@@ -390,7 +390,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 });
 
 // ─── PATCH /api/achievements/:id/approve ─────────────────────────────────────
-router.patch('/:id/approve', authMiddleware, adminMiddleware, async (req, res) => {
+router.patch('/:id/approve', authMiddleware, facultyOnlyMiddleware, async (req, res) => {
   const scope = await getAdminScope(req.user.id, req.user.role);
 
   let { data: ach, error: fetchErr } = await supabase
@@ -468,7 +468,7 @@ router.patch('/:id/approve', authMiddleware, adminMiddleware, async (req, res) =
 });
 
 // ─── PATCH /api/achievements/:id/reject ──────────────────────────────────────
-router.patch('/:id/reject', authMiddleware, adminMiddleware, async (req, res) => {
+router.patch('/:id/reject', authMiddleware, facultyOnlyMiddleware, async (req, res) => {
   const { rejection_reason } = req.body;
   if (!rejection_reason || !rejection_reason.trim()) {
     return res.status(400).json({ error: 'Rejection reason is required.' });

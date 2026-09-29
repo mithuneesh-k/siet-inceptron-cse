@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import client from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { useUndoableDelete } from '../contexts/UndoDeleteContext';
@@ -11,6 +11,7 @@ import FacultyAdvisorModal from '../components/FacultyAdvisorModal';
 import FacultyActionModal from '../components/FacultyActionModal';
 import ConfirmModal from '../components/ConfirmModal';
 import SplitActions from '../components/ui/split-actions';
+import Approvals from './Approvals';
 import { 
   Shield, BarChart2, Users, Settings, GraduationCap, Hourglass, 
   Award, TrendingUp, List, RefreshCw, Trash2, Download, Plus, 
@@ -22,10 +23,15 @@ const CLASSES = ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D', 'CSE-E'];
 export default function Admin() {
   const { user, refreshUser } = useAuth();
   const { requestUndoableDelete } = useUndoableDelete();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const searchParams = new URLSearchParams(location.search);
+  const tabFromUrl = searchParams.get('tab');
+
   const [students, setStudents] = useState([]);
   const [achievements, setAchievements] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState('overview');
+  const [tab, setTab] = useState(tabFromUrl || 'overview');
   const [toast, setToast] = useState(null);
 
   // Manage Students state
@@ -73,17 +79,44 @@ export default function Admin() {
   const [recentApproved, setRecentApproved] = useState([]);
   const [overviewStats, setOverviewStats] = useState(null);
 
+  const isAdmin = Boolean(user && (user.is_admin || user.role === 'admin' || user.role === 'faculty'));
+  const isFullAdmin = Boolean(user && (user.role === 'admin' || user.is_admin || user.is_hod || user.designation?.toUpperCase() === 'HOD'));
+  const isFacultyRole = Boolean(user && user.role === 'faculty');
+  const panelTitle = isFacultyRole ? 'Faculty Panel' : 'Admin Panel';
+
+  const tabs = [
+    { id: 'overview', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><BarChart2 size={16} /> Overview</span> },
+    { id: 'students', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Users size={16} /> Students</span> },
+    { id: 'manage', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Settings size={16} /> Manage</span> },
+    ...(isFullAdmin ? [{ id: 'faculty', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><GraduationCap size={16} /> Faculty</span> }] : []),
+    { id: 'platforms', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Code size={16} /> Platform Verification</span> },
+    ...(isFullAdmin ? [{ id: 'notify', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Send size={16} /> Post & Notify</span> }] : []),
+    ...(isFacultyRole ? [{ id: 'approvals', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><CheckCircle size={16} /> Approvals</span> }] : []),
+  ];
+
+  useEffect(() => {
+    if (tabFromUrl && tabs.some(t => t.id === tabFromUrl)) {
+      setTab(tabFromUrl);
+    } else if (tabFromUrl === 'approvals' && !isFacultyRole) {
+      setTab('overview');
+    }
+  }, [tabFromUrl, isFacultyRole]);
+
+  const handleTabClick = (tabId) => {
+    setTab(tabId);
+    navigate(`/admin?tab=${tabId}`, { replace: true });
+  };
+
+
   // Load overview data
   useEffect(() => {
     refreshUser();
     Promise.allSettled([
       client.get('/admin/students'),
-      client.get('/achievements/all/pending'),
       client.get('/achievements/recent/approved'),
       client.get('/admin/overview-stats')
-    ]).then(([uRes, aRes, recRes, statRes]) => {
+    ]).then(([uRes, recRes, statRes]) => {
       if (uRes.status === 'fulfilled') setStudents(uRes.value.data);
-      if (aRes.status === 'fulfilled') setAchievements(aRes.value.data);
       if (recRes.status === 'fulfilled' && Array.isArray(recRes.value.data)) {
         setRecentApproved(recRes.value.data);
       }
@@ -305,9 +338,6 @@ export default function Admin() {
     }
   };
 
-  const isAdmin = Boolean(user && (user.is_admin || user.role === 'admin' || user.role === 'faculty'));
-  const isFullAdmin = Boolean(user && (user.role === 'admin' || user.is_admin || user.is_hod || user.designation?.toUpperCase() === 'HOD'));
-
   const totalScore = students.reduce((s, u) => s + u.score, 0);
   const avgScore = students.length ? Math.round(totalScore / students.length) : 0;
 
@@ -426,22 +456,12 @@ export default function Admin() {
 
   if (!isAdmin) return <Navigate to="/" replace />;
 
-  const tabs = [
-    { id: 'overview', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><BarChart2 size={16} /> Overview</span> },
-    { id: 'students', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Users size={16} /> Students</span> },
-    { id: 'manage', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Settings size={16} /> Manage</span> },
-    ...(isFullAdmin ? [{ id: 'faculty', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><GraduationCap size={16} /> Faculty</span> }] : []),
-    { id: 'platforms', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Code size={16} /> Platform Verification</span> },
-    ...(isFullAdmin ? [{ id: 'notify', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Send size={16} /> Post & Notify</span> }] : []),
-    { id: 'pending', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Hourglass size={16} /> Pending ({achievements.length})</span> },
-  ];
-
   return (
     <div className="page-content">
       <div className="container">
         <div className="admin-header animate-fadeInUp">
           <div>
-            <h1 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Shield size={28} className="text-gradient" /> <span className="text-gradient">Admin Panel</span></h1>
+            <h1 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Shield size={28} className="text-gradient" /> <span className="text-gradient">{panelTitle}</span></h1>
             <p className="section-subtitle">Sri Shakthi Institute of Engineering and Technology — CSE Department</p>
           </div>
           <div className="badge badge-gold" style={{ padding: '8px 16px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}><Shield size={14} /> {user.name}</div>
@@ -449,7 +469,7 @@ export default function Admin() {
 
         <div className="tab-bar animate-fadeInUp delay-1" style={{ marginBottom: 28, flexWrap: 'wrap' }}>
           {tabs.map(t => (
-            <button key={t.id} className={`tab-item ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>{t.l}</button>
+            <button key={t.id} className={`tab-item ${tab === t.id ? 'active' : ''}`} onClick={() => handleTabClick(t.id)}>{t.l}</button>
           ))}
         </div>
 
@@ -485,7 +505,6 @@ export default function Admin() {
                       { n: totalStudentsCount, l: 'Total Students', i: <Users size={28} />, c: 'var(--color-violet)' },
                       { n: totalAchievementsCount, l: 'Total Achievements', i: <Award size={28} />, c: 'var(--color-gold)' },
                       { n: computedAvg, l: 'Avg Score', i: <TrendingUp size={28} />, c: 'var(--color-blue)' },
-                      { n: achievements.length, l: 'Pending Reviews', i: <Hourglass size={28} />, c: 'var(--color-orange)' },
                     ].map((s, i) => (
                       <div key={i} className="admin-stat card" style={{ borderTop: `3px solid ${s.c}` }}>
                         <div>{s.i}</div>
@@ -838,50 +857,6 @@ export default function Admin() {
         />
       )}
 
-            {/* ── PENDING ACHIEVEMENTS ── */}
-            {tab === 'pending' && (
-              <div className="animate-fadeIn">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
-                  <p style={{ color: 'var(--color-text-muted)', fontSize: 14 }}>
-                    Review pending student submissions or switch to the dedicated inspection portal.
-                  </p>
-                  <Link to="/approvals" className="btn btn-primary btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    <CheckCircle size={15} /> Open Full Approvals Portal →
-                  </Link>
-                </div>
-                {achievements.length === 0 ? (
-                  <div className="empty-state">
-                    <div className="empty-icon" style={{ marginBottom: '16px' }}>
-                      <Inbox size={48} color="var(--color-green)" strokeWidth={1.5} opacity={0.6} />
-                    </div>
-                    <h3>All caught up!</h3>
-                    <p>No pending achievement reviews.</p>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {achievements.map(a => (
-                      <div key={a.id} className="card" style={{ padding: '18px 20px' }}>
-                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                              <span className={`badge type-${a.type} badge`}>{a.type}</span>
-                              <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>by {a.student_name} ({a.roll_no})</span>
-                            </div>
-                            <h4 style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{a.title}</h4>
-                            {a.description && <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{a.description}</p>}
-                            {a.proof_url && <a href={a.proof_url} target="_blank" rel="noopener noreferrer" className="badge badge-violet" style={{ marginTop: 8, display: 'inline-flex', alignItems: 'center', gap: 4 }}><ExternalLink size={12} /> View Proof</a>}
-                          </div>
-                          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                            <button className="btn btn-primary btn-sm" onClick={() => verifyAch(a.id, true)} style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Check size={14} /> Verify</button>
-                            <button className="btn btn-danger btn-sm" onClick={() => verifyAch(a.id, false)} style={{ display: 'flex', alignItems: 'center', gap: 4 }}><X size={14} /> Reject</button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
 
             {/* ── PLATFORM VERIFICATION ── */}
             {tab === 'platforms' && (
@@ -1287,6 +1262,11 @@ export default function Admin() {
                   </div>
                 )}
               </div>
+            )}
+
+            {/* ── APPROVALS (Faculty embedded tab) ── */}
+            {tab === 'approvals' && isFacultyRole && (
+              <Approvals embedded />
             )}
           </>
         )}

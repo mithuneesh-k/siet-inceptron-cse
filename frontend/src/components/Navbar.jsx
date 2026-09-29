@@ -43,8 +43,8 @@ export default function Navbar() {
   }, [location.pathname]);
 
   useEffect(() => {
-    const isAdmin = Boolean(user && (user.is_admin || user.role === 'admin' || user.role === 'faculty'));
-    if (!isAdmin) {
+    const isFaculty = Boolean(user && user.role === 'faculty');
+    if (!isFaculty) {
       setPendingCount(0);
       return;
     }
@@ -93,9 +93,8 @@ export default function Navbar() {
     { to: '/updates', label: 'Updates', shortLabel: 'Updates', icon: <Zap size={16} />, studentOnly: true },
     { to: '/news', label: 'News', shortLabel: 'News', icon: <Bell size={16} />, isNews: true },
     { to: '/leaderboard', label: 'Leaderboard', shortLabel: 'Leaderboard', icon: <Trophy size={16} /> },
-    { to: '/competitive-leaderboard', label: 'Competitive Leaderboard', shortLabel: 'Competitive', icon: <Trophy size={16} /> },
     { to: '/platforms', label: 'Platforms', shortLabel: 'Platforms', icon: <Code size={16} /> },
-    { to: '/students', label: 'Students', shortLabel: 'Students', icon: <GraduationCap size={16} /> },
+    { to: '/students', label: 'Students', shortLabel: 'Students', icon: <GraduationCap size={16} />, staffOnly: true },
   ];
 
   return (
@@ -115,6 +114,8 @@ export default function Navbar() {
           {navLinks.map(link => {
             // Hide student-only links from non-student accounts (Faculty / Admin)
             if (link.studentOnly && (user?.is_admin || (user?.role && user?.role !== 'student'))) return null;
+            // Hide staff-only links (Students directory) from student accounts
+            if (link.staffOnly && (!user?.is_admin && (!user?.role || user?.role === 'student'))) return null;
 
             if (link.isNews) {
               return (
@@ -214,26 +215,19 @@ export default function Navbar() {
             );
           })}
 
-          {user?.is_admin && (
-            <>
-              <Link to="/admin" className={`nav-link ${isActive('/admin') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
-                <span className="nav-icon"><Shield size={16} /></span>
-                <span className="nav-label-full">Admin</span>
-                <span className="nav-label-short">Admin</span>
-              </Link>
-              <Link to="/approvals" className={`nav-link ${isActive('/approvals') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
-                <span className="nav-icon"><CheckCircle size={16} /></span>
-                <span className="nav-label-full">Approvals</span>
-                <span className="nav-label-short">Approvals</span>
-                {pendingCount > 0 && <span className="nav-pending-badge">{pendingCount}</span>}
-              </Link>
-            </>
+          {user && (user.is_admin || user.role === 'admin' || user.role === 'faculty') && (
+            <Link to="/admin" className={`nav-link ${isActive('/admin') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
+              <span className="nav-icon"><Shield size={16} /></span>
+              <span className="nav-label-full">{user.role === 'faculty' ? 'Management' : 'Admin'}</span>
+              <span className="nav-label-short">{user.role === 'faculty' ? 'Manage' : 'Admin'}</span>
+              {user.role === 'faculty' && pendingCount > 0 && <span className="nav-pending-badge">{pendingCount}</span>}
+            </Link>
           )}
         </div>
 
         <div className="navbar-actions">
           <SwitchMode width={64} height={32} />
-          <Link to="/theme" className="btn btn-ghost btn-sm nav-theme-btn" title="Theme & Color Settings" aria-label="Theme Settings" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px 10px', color: 'var(--color-green)' }}>
+          <Link to="/theme" className="btn btn-ghost btn-sm nav-theme-btn" title="Theme & Color Settings" aria-label="Theme Settings" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px 10px' }}>
             <Palette size={18} />
           </Link>
           {user && (

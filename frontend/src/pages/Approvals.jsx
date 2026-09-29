@@ -31,7 +31,7 @@ const DURATION_LABEL = {
   long: '⏱️ 3+ Months' 
 };
 
-export default function Approvals() {
+export default function Approvals({ embedded = false }) {
   const { user } = useAuth();
   const [achievements, setAchievements] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -123,8 +123,8 @@ export default function Approvals() {
     };
   }, []);
 
-  const isAdmin = Boolean(user && (user.is_admin || user.role === 'admin' || user.role === 'faculty'));
-  if (!isAdmin) {
+  const isFaculty = Boolean(user && user.role === 'faculty');
+  if (!isFaculty) {
     return <Navigate to="/" replace />;
   }
 
@@ -226,10 +226,9 @@ export default function Approvals() {
   const totalPendingPoints = achievements.reduce((sum, a) => sum + (a.points || 0), 0);
   const classes = [...new Set(achievements.map(a => a.class).filter(Boolean))].sort();
 
-  return (
-    <div className="page-content">
-      <div className="container">
-        {/* Header */}
+  const contentJsx = (
+    <div className="approvals-content-area animate-fadeIn">
+      {!embedded && (
         <div className="approvals-header animate-fadeInUp">
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
@@ -252,6 +251,8 @@ export default function Approvals() {
             </button>
           </div>
         </div>
+      )}
+
 
         {/* Stats Strip */}
         <div className="approvals-stats animate-fadeInUp delay-1">
@@ -726,9 +727,18 @@ export default function Approvals() {
             background: rgba(34, 197, 94, 0.04);
             border: 1px solid rgba(34, 197, 94, 0.15);
             border-radius: 10px;
-            margin-top: 14px;
-          }
         `}</style>
+    </div>
+  );
+
+  if (embedded) {
+    return contentJsx;
+  }
+
+  return (
+    <div className="page-content">
+      <div className="container">
+        {contentJsx}
       </div>
     </div>
   );

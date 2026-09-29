@@ -11,7 +11,7 @@ import RunActionButton from '../components/ui/run-action-button';
 const BATCH_OPTIONS = ['2026-2030', '2025-2029', '2024-2028', '2023-2027', '2022-2026'];
 const CLASS_OPTIONS = ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D', 'CSE-E'];
 
-export default function CompetitiveLeaderboard() {
+export default function CompetitiveLeaderboard({ embedded = false }) {
   const { user } = useAuth();
 
   const [leaderboard, setLeaderboard] = useState([]);
@@ -196,8 +196,8 @@ export default function CompetitiveLeaderboard() {
   }, [scoredStudents]);
 
   if (loading) {
-    return (
-      <div className="page-content container">
+    const loaderContent = (
+      <>
         <div style={{ marginBottom: 24 }}>
           <div className="skeleton skeleton-text" style={{ width: 280, height: 32 }} />
           <div className="skeleton skeleton-text" style={{ width: 420, height: 16, marginTop: 8 }} />
@@ -208,8 +208,11 @@ export default function CompetitiveLeaderboard() {
           ))}
         </div>
         <div className="skeleton skeleton-card" style={{ height: 420 }} />
-      </div>
+      </>
     );
+
+    if (embedded) return loaderContent;
+    return <div className="page-content container">{loaderContent}</div>;
   }
 
   const platformsList = [
@@ -223,11 +226,9 @@ export default function CompetitiveLeaderboard() {
     user && selectedStudent && user.id === selectedStudent.userId && !user.is_admin && user.role !== 'admin' && user.role !== 'faculty'
   );
 
-  return (
-    <div className="page-content">
-      <div className="container">
-
-        {/* HERO PAGE HEADER */}
+  const content = (
+    <>
+      {!embedded && (
         <div className="animate-fadeInUp" style={{ marginBottom: 28 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
             <div style={{ width: 44, height: 44, borderRadius: 'var(--radius-md)', background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(16, 185, 129, 0.25))', border: '1px solid rgba(34, 197, 94, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-green)' }}>
@@ -243,6 +244,7 @@ export default function CompetitiveLeaderboard() {
             </div>
           </div>
         </div>
+      )}
 
         {errorMsg && (
           <div className="card" style={{ padding: 16, marginBottom: 24, textAlign: 'center', borderColor: '#DC2626', color: '#DC2626', fontWeight: 600 }}>
@@ -641,8 +643,6 @@ export default function CompetitiveLeaderboard() {
 
         </div>
 
-      </div>
-
       {/* PLATFORM BREAKDOWN MODAL */}
       {selectedStudent && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setSelectedStudent(null)}>
@@ -957,7 +957,16 @@ export default function CompetitiveLeaderboard() {
           </div>
         </div>
       )}
+    </>
+  );
 
+  if (embedded) return content;
+
+  return (
+    <div className="page-content">
+      <div className="container">
+        {content}
+      </div>
     </div>
   );
 }

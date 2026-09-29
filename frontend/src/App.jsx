@@ -50,6 +50,13 @@ function ProtectedRoute({ children, adminOnly = false }) {
   return children;
 }
 
+function FacultyOnlyRoute({ children }) {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role !== 'faculty') return <Navigate to="/" replace />;
+  return children;
+}
+
 function StudentOnlyRoute({ children }) {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
@@ -74,21 +81,20 @@ function AppContent() {
           <Route path="/updates" element={<StudentOnlyRoute><Updates /></StudentOnlyRoute>} />
           <Route path="/news" element={<ProtectedRoute><News /></ProtectedRoute>} />
           <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
-          <Route path="/competitive-leaderboard" element={<ProtectedRoute><CompetitiveLeaderboard /></ProtectedRoute>} />
+          <Route path="/competitive-leaderboard" element={<Navigate to="/leaderboard?tab=competitive" replace />} />
           <Route path="/platforms" element={<ProtectedRoute><Platforms /></ProtectedRoute>} />
           <Route path="/teams" element={<ProtectedRoute><Teams /></ProtectedRoute>} />
-          <Route path="/students" element={<ProtectedRoute><Students /></ProtectedRoute>} />
+          <Route path="/students" element={<ProtectedRoute adminOnly><Students /></ProtectedRoute>} />
           <Route path="/profile/:id" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
           <Route path="/theme" element={<ProtectedRoute><ThemeSettings /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
-          <Route path="/approvals" element={<ProtectedRoute adminOnly><Approvals /></ProtectedRoute>} />
+          <Route path="/approvals" element={user?.role === 'faculty' ? <Navigate to="/admin?tab=approvals" replace /> : <Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to={user ? "/" : "/login"} replace />} />
         </Routes>
       </Suspense>
       {showHeaderFooter && <Footer />}
     </>
-
   );
 }
 

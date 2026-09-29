@@ -3,6 +3,50 @@ import { Link } from 'react-router-dom';
 import client from '../../api/client';
 import { Trophy, Code, Bell, Flame } from 'lucide-react';
 
+function NewsCardThumbnail({ item }) {
+  const imageUrl = (item?.image_url || item?.image || '').trim();
+  const [imgError, setImgError] = useState(false);
+
+  if (imageUrl && !imgError) {
+    return (
+      <div
+        className="lp-tk-thumb-box"
+        style={{
+          width: 44,
+          height: 44,
+          borderRadius: 10,
+          overflow: 'hidden',
+          flexShrink: 0,
+          background: 'var(--bg-secondary)',
+          border: '1px solid var(--border)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        <img
+          src={imageUrl}
+          alt={item?.title || 'News image'}
+          loading="lazy"
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            display: 'block'
+          }}
+          onError={() => setImgError(true)}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className={`lp-tk-icon-box ${item?.is_important ? 'red' : ''}`}>
+      <Bell size={18} />
+    </div>
+  );
+}
+
 export default function MarqueeSection() {
   const [leaderboardRows, setLeaderboardRows] = useState([]);
   const [competitiveRows, setCompetitiveRows] = useState([]);
@@ -204,7 +248,7 @@ export default function MarqueeSection() {
         /* Compact Ticker Pill Item */
         .lp-ticker-pill {
           height: 68px;
-          width: 270px;
+          width: 280px;
           flex-shrink: 0;
           background: var(--bg-card);
           border: 1.5px solid var(--border);
@@ -425,9 +469,7 @@ export default function MarqueeSection() {
                       to="/news"
                       className={`lp-ticker-pill ${item.is_important ? 'important-pill' : ''}`}
                     >
-                      <div className={`lp-tk-icon-box ${item.is_important ? 'red' : ''}`}>
-                        <Bell size={18} />
-                      </div>
+                      <NewsCardThumbnail item={item} />
                       <div className="lp-tk-info">
                         <div className="lp-tk-title">{item.title}</div>
                         <div className="lp-tk-sub">
@@ -451,9 +493,7 @@ export default function MarqueeSection() {
                       className={`lp-ticker-pill ${item.is_important ? 'important-pill' : ''}`}
                       tabIndex={-1}
                     >
-                      <div className={`lp-tk-icon-box ${item.is_important ? 'red' : ''}`}>
-                        <Bell size={18} />
-                      </div>
+                      <NewsCardThumbnail item={item} />
                       <div className="lp-tk-info">
                         <div className="lp-tk-title">{item.title}</div>
                         <div className="lp-tk-sub">
