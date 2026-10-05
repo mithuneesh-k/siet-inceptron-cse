@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import client from '../api/client';
+import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { AnnouncementImage } from '../utils/announcementHelpers';
 import {
-  Bell, Trophy, Briefcase, Award, BookOpen, Calendar, AlertCircle, ChevronLeft, ChevronRight, ExternalLink, X, Maximize2, Search, ArrowRight
+  Bell, Trophy, Briefcase, Award, BookOpen, Calendar, AlertCircle, ChevronLeft, ChevronRight, ExternalLink, X, Maximize2, Search, ArrowRight, Plus, Send, Image as ImageIcon, Upload, CheckCircle
 } from 'lucide-react';
 
 const TYPE_ICONS = {
@@ -20,6 +21,7 @@ const TYPE_ICONS = {
 const CATEGORIES = ['All', 'Hackathon', 'Internship', 'Achievement', 'Course', 'Placement', 'Event', 'General'];
 
 export default function News() {
+  const { user } = useAuth();
   const { theme } = useTheme();
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,7 +30,23 @@ export default function News() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeImageModal, setActiveImageModal] = useState(null);
   const [activeDetailModal, setActiveDetailModal] = useState(null);
+  const [toast, setToast] = useState(null);
   const pageSize = 5;
+
+  // Post News Bar state for Faculty / Admin
+  const [showPostForm, setShowPostForm] = useState(false);
+  const [notifyForm, setNotifyForm] = useState({ title: '', type: 'General', message: '', is_important: false, target: 'all', link: '', expires_at: '' });
+  const [notifyLoading, setNotifyLoading] = useState(false);
+  const [annImageFile, setAnnImageFile] = useState(null);
+  const [annImagePreview, setAnnImagePreview] = useState(null);
+  const [uploadingAnnImage, setUploadingAnnImage] = useState(false);
+
+  const canPostNews = Boolean(user && (user.role === 'faculty' || user.role === 'admin' || user.is_admin || user.is_hod || user.designation?.toUpperCase() === 'HOD'));
+
+  const showToast = (msg, type = 'success') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3500);
+  };
 
   const fetchAnnouncements = async () => {
     try {
@@ -45,6 +63,10 @@ export default function News() {
 
   useEffect(() => {
     fetchAnnouncements();
+
+    const handleAnnouncementPosted = () => fetchAnnouncements();
+    window.addEventListener('announcementPosted', handleAnnouncementPosted);
+    return () => window.removeEventListener('announcementPosted', handleAnnouncementPosted);
   }, []);
 
   useEffect(() => {
@@ -57,6 +79,80 @@ export default function News() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  const handleAnnImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type.toLowerCase())) {
+      showToast('Invalid file format. Please upload JPEG, PNG, or WEBP image.', 'error');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Image must be 5 MB or smaller.', 'error');
+      return;
+    }
+    setAnnImageFile(file);
+    setAnnImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleRemoveAnnImage = () => {
+    setAnnImageFile(null);
+    if (annImagePreview) {
+      URL.revokeObjectURL(annImagePreview);
+    }
+    setAnnImagePreview(null);
+  };
+
+  const handlePostNewsSubmit = async (e) => {
+    e.preventDefault();
+    if (!notifyForm.title.trim() || !notifyForm.message.trim()) {
+      showToast('Title and message are required.', 'error');
+      return;
+    }
+
+    setNotifyLoading(true);
+    let imageUrl = null;
+    let imageStoragePath = null;
+
+    try {
+      if (annImageFile) {
+        setUploadingAnnImage(true);
+        const formData = new FormData();
+        formData.append('file', annImageFile);
+        const uploadRes = await client.post('/uploads/announcement', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        if (uploadRes.data?.success) {
+          imageUrl = uploadRes.data.url;
+          imageStoragePath = uploadRes.data.storage_ref;
+        } else {
+          throw new Error('Image upload failed.');
+        }
+      }
+
+      const payload = {
+        ...notifyForm,
+        image_url: imageUrl,
+        image_storage_path: imageStoragePath
+      };
+
+      const res = await client.post('/announcements', payload);
+      if (res.data?.success) {
+        showToast('Announcement posted successfully! 📢');
+        setNotifyForm({ title: '', type: 'General', message: '', is_important: false, target: 'all', link: '', expires_at: '' });
+        handleRemoveAnnImage();
+        setShowPostForm(false);
+        fetchAnnouncements();
+        window.dispatchEvent(new Event('announcementPosted'));
+      }
+    } catch (err) {
+      showToast(err.response?.data?.error || err.message || 'Failed to post announcement.', 'error');
+    } finally {
+      setNotifyLoading(false);
+      setUploadingAnnImage(false);
+    }
+  };
 
   const isLight = theme === 'light';
 
@@ -92,8 +188,15 @@ export default function News() {
   return (
     <div className="page-content">
       <div className="container">
-        {/* Header */}
-        <div className="admin-header animate-fadeInUp" style={{ marginBottom: 24 }}>
+        {/* Toast Notification */}
+        {toast && (
+          <div className={`toast toast-${toast.type} animate-fadeIn`} style={{ position: 'fixed', top: 20, right: 20, zIndex: 10000, padding: '12px 20px', borderRadius: 10, color: '#fff', background: toast.type === 'error' ? '#ef4444' : '#22c55e', boxShadow: '0 8px 24px rgba(0,0,0,0.3)', fontWeight: 700 }}>
+            {toast.msg}
+          </div>
+        )}
+
+        {/* Header with Quick Post News Bar Button */}
+        <div className="admin-header animate-fadeInUp" style={{ marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
           <div>
             <h1 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 10, margin: 0 }}>
               <Bell size={28} className="text-gradient" />
@@ -103,7 +206,207 @@ export default function News() {
               Sri Shakthi Institute of Engineering and Technology — CSE Department Directives & Opportunities
             </p>
           </div>
+
+          {canPostNews && (
+            <button
+              className="btn btn-primary"
+              onClick={() => setShowPostForm(!showPostForm)}
+              style={{ padding: '10px 20px', borderRadius: 20, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 8 }}
+            >
+              {showPostForm ? <X size={18} /> : <Plus size={18} />}
+              <span>{showPostForm ? 'Close Post Form' : 'Post New Announcement 📢'}</span>
+            </button>
+          )}
         </div>
+
+        {/* ── COLLAPSIBLE POST NEWS BAR FORM (FACULTY / ADMIN) ── */}
+        {canPostNews && showPostForm && (
+          <div className="card animate-fadeInUp" style={{ padding: '24px 28px', marginBottom: 28, background: 'var(--bg-card)', border: '1.5px solid var(--color-green)', borderRadius: 18, boxShadow: '0 12px 36px rgba(0,0,0,0.25)' }}>
+            <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <h3 style={{ fontSize: 18, fontWeight: 800, margin: 0, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Send size={20} color="var(--color-green)" /> Post Announcement to Department
+                </h3>
+                <p style={{ fontSize: 12.5, color: 'var(--color-text-muted)', marginTop: 2, margin: 0 }}>
+                  Broadcast official notices, hackathons, internships, or achievements to students and faculty.
+                </p>
+              </div>
+              <button className="btn btn-ghost btn-xs" onClick={() => setShowPostForm(false)} title="Close">
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handlePostNewsSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 14 }}>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 700, fontSize: 12 }}>Announcement Title *</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="e.g. SIET CSE Hackathon 2026 Registrations Open"
+                    value={notifyForm.title}
+                    onChange={e => setNotifyForm(prev => ({ ...prev, title: e.target.value }))}
+                    style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--color-text)', fontSize: 13 }}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 700, fontSize: 12 }}>Category / Type *</label>
+                  <select
+                    className="form-select"
+                    value={notifyForm.type}
+                    onChange={e => setNotifyForm(prev => ({ ...prev, type: e.target.value }))}
+                    style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--color-text)', fontSize: 13 }}
+                  >
+                    <option value="General">General</option>
+                    <option value="Hackathon">Hackathon</option>
+                    <option value="Internship">Internship</option>
+                    <option value="Achievement">Achievement</option>
+                    <option value="Course">Course</option>
+                    <option value="Placement">Placement</option>
+                    <option value="Event">Event</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 700, fontSize: 12 }}>Target Audience</label>
+                  <select
+                    className="form-select"
+                    value={notifyForm.target}
+                    onChange={e => setNotifyForm(prev => ({ ...prev, target: e.target.value }))}
+                    style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--color-text)', fontSize: 13 }}
+                  >
+                    <option value="all">All Students & Faculty</option>
+                    <option value="students">Students Only</option>
+                    <option value="faculty">Faculty Only</option>
+                    <option value="cse-a">CSE-A Only</option>
+                    <option value="cse-b">CSE-B Only</option>
+                    <option value="cse-c">CSE-C Only</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 14 }}>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 700, fontSize: 12 }}>Action Link / URL (Optional)</label>
+                  <input
+                    type="url"
+                    className="form-input"
+                    placeholder="https://..."
+                    value={notifyForm.link}
+                    onChange={e => setNotifyForm(prev => ({ ...prev, link: e.target.value }))}
+                    style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--color-text)', fontSize: 13 }}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 700, fontSize: 12 }}>Expiry Date (Optional)</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={notifyForm.expires_at}
+                    onChange={e => setNotifyForm(prev => ({ ...prev, expires_at: e.target.value }))}
+                    style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--color-text)', fontSize: 13 }}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 700, fontSize: 12 }}>Announcement Message *</label>
+                <textarea
+                  className="form-input"
+                  rows={4}
+                  placeholder="Write full announcement details, guidelines, or instructions here..."
+                  value={notifyForm.message}
+                  onChange={e => setNotifyForm(prev => ({ ...prev, message: e.target.value }))}
+                  style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--color-text)', fontSize: 13, resize: 'vertical' }}
+                  required
+                />
+              </div>
+
+              {/* Photo / Poster Upload Attachment */}
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <ImageIcon size={15} color="var(--color-green)" /> Attach Photo / Poster (Optional)
+                </label>
+
+                {!annImagePreview ? (
+                  <div
+                    style={{
+                      border: '2px dashed var(--border-strong)',
+                      borderRadius: 12,
+                      padding: '16px',
+                      textAlign: 'center',
+                      background: 'var(--bg-input)',
+                      cursor: 'pointer',
+                      transition: 'all 200ms ease'
+                    }}
+                    onClick={() => document.getElementById('news-photo-input')?.click()}
+                  >
+                    <input
+                      id="news-photo-input"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handleAnnImageChange}
+                      style={{ display: 'none' }}
+                    />
+                    <Upload size={22} style={{ color: 'var(--color-green)', marginBottom: 6 }} />
+                    <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--color-text)' }}>Click to upload poster or photo</div>
+                    <div style={{ fontSize: 11, color: 'var(--color-text-faint)', marginTop: 2 }}>JPEG, PNG, or WEBP (Max size: 5 MB)</div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'var(--bg-input)', border: '1px solid var(--border)', padding: 10, borderRadius: 12 }}>
+                    <img
+                      src={annImagePreview}
+                      alt="Announcement Preview"
+                      style={{ width: 70, height: 50, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border-strong)' }}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {annImageFile?.name || 'Attached Image'}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--color-text-faint)', marginTop: 2 }}>
+                        {annImageFile ? `${(annImageFile.size / (1024 * 1024)).toFixed(2)} MB` : 'Ready to post'}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={handleRemoveAnnImage}
+                      style={{ color: '#ef4444', display: 'flex', alignItems: 'center', gap: 4 }}
+                    >
+                      <X size={15} /> Remove
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginTop: 10 }}>
+                <label className="checkbox-group" style={{ cursor: 'pointer', margin: 0, fontSize: 12.5 }}>
+                  <input
+                    type="checkbox"
+                    className="checkbox-custom"
+                    checked={notifyForm.is_important}
+                    onChange={e => setNotifyForm(prev => ({ ...prev, is_important: e.target.checked }))}
+                  />
+                  <span style={{ fontWeight: 700, color: notifyForm.is_important ? '#ef4444' : 'var(--color-text)' }}>
+                    Mark as IMPORTANT (Red Highlighted Banner)
+                  </span>
+                </label>
+
+                <button
+                  type="submit"
+                  disabled={notifyLoading || uploadingAnnImage}
+                  className="btn btn-primary"
+                  style={{ padding: '10px 22px', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}
+                >
+                  <Send size={15} /> {uploadingAnnImage ? 'Uploading Image...' : notifyLoading ? 'Broadcasting...' : 'Post News & Notify'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
 
         {/* Filter Toolbar */}
         <div className="card animate-fadeInUp delay-1" style={{ padding: '16px 20px', marginBottom: 24, maxWidth: 860, marginInline: 'auto' }}>
@@ -662,4 +965,3 @@ export default function News() {
     </div>
   );
 }
-

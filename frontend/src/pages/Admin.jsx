@@ -81,6 +81,7 @@ export default function Admin() {
 
   const isAdmin = Boolean(user && (user.is_admin || user.role === 'admin' || user.role === 'faculty'));
   const isFullAdmin = Boolean(user && (user.role === 'admin' || user.is_admin || user.is_hod || user.designation?.toUpperCase() === 'HOD'));
+  const isCanPostNotify = Boolean(user && (user.role === 'admin' || user.is_admin || user.role === 'faculty' || user.is_hod || user.designation?.toUpperCase() === 'HOD'));
   const isFacultyRole = Boolean(user && user.role === 'faculty');
   const panelTitle = isFacultyRole ? 'Faculty Panel' : 'Admin Panel';
 
@@ -90,7 +91,7 @@ export default function Admin() {
     { id: 'manage', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Settings size={16} /> Manage</span> },
     ...(isFullAdmin ? [{ id: 'faculty', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><GraduationCap size={16} /> Faculty</span> }] : []),
     { id: 'platforms', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Code size={16} /> Platform Verification</span> },
-    ...(isFullAdmin ? [{ id: 'notify', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Send size={16} /> Post & Notify</span> }] : []),
+    ...(isCanPostNotify ? [{ id: 'notify', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Send size={16} /> Post & Notify</span> }] : []),
     ...(isFacultyRole ? [{ id: 'approvals', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><CheckCircle size={16} /> Approvals</span> }] : []),
   ];
 
@@ -1024,7 +1025,7 @@ export default function Admin() {
             )}
 
             {/* ── POST & NOTIFY ── */}
-            {tab === 'notify' && isFullAdmin && (
+            {tab === 'notify' && isCanPostNotify && (
               <div className="card animate-fadeIn" style={{ padding: '28px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '16px', boxShadow: 'var(--shadow-md)' }}>
                 <div style={{ marginBottom: 24 }}>
                   <h2 style={{ fontSize: 20, fontWeight: 800, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 10, margin: 0 }}>

@@ -13,6 +13,8 @@ function lazyWithPreload(factory) {
 }
 
 const Landing = lazyWithPreload(() => import('./pages/Landing'));
+const Intro = lazyWithPreload(() => import('./pages/Intro'));
+const Showcase = lazyWithPreload(() => import('./pages/Showcase'));
 const Login = lazyWithPreload(() => import('./pages/Login'));
 const Profile = lazyWithPreload(() => import('./pages/Profile'));
 const Leaderboard = lazyWithPreload(() => import('./pages/Leaderboard'));
@@ -27,8 +29,8 @@ const Platforms = lazyWithPreload(() => import('./pages/Platforms'));
 const News = lazyWithPreload(() => import('./pages/News'));
 const ThemeSettings = lazyWithPreload(() => import('./pages/ThemeSettings'));
 
-const priorityPreloads = [Leaderboard, CompetitiveLeaderboard, Students, Updates, Platforms, News];
-const backgroundPreloads = [Landing, Login, Profile, Teams, Admin, Approvals, EditProfile, ThemeSettings];
+const priorityPreloads = [Leaderboard, CompetitiveLeaderboard, Students, Updates, Platforms, News, Showcase];
+const backgroundPreloads = [Landing, Intro, Login, Profile, Teams, Admin, Approvals, EditProfile, ThemeSettings];
 
 function preloadRoutes(routes) {
   routes.forEach((route) => {
@@ -68,16 +70,18 @@ function AppContent() {
   const { user } = useAuth();
   const location = useLocation();
 
-  const isLoginPage = location.pathname === '/login';
-  const showHeaderFooter = Boolean(user) && !isLoginPage;
+  const isPublicStandalone = location.pathname === '/login' || location.pathname === '/' || location.pathname === '/showcase';
+  const showHeaderFooter = Boolean(user) && !isPublicStandalone;
 
   return (
     <>
       {showHeaderFooter && <Navbar />}
       <Suspense fallback={<div className="p-4 text-center">Loading...</div>}>
         <Routes>
-          <Route path="/" element={<ProtectedRoute><Landing /></ProtectedRoute>} />
+          <Route path="/" element={user ? <Landing /> : <Intro />} />
+          <Route path="/showcase" element={<Showcase />} />
           <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
+          <Route path="/dashboard" element={<ProtectedRoute><Landing /></ProtectedRoute>} />
           <Route path="/updates" element={<StudentOnlyRoute><Updates /></StudentOnlyRoute>} />
           <Route path="/news" element={<ProtectedRoute><News /></ProtectedRoute>} />
           <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
@@ -90,7 +94,7 @@ function AppContent() {
           <Route path="/theme" element={<ProtectedRoute><ThemeSettings /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
           <Route path="/approvals" element={user?.role === 'faculty' ? <Navigate to="/admin?tab=approvals" replace /> : <Navigate to="/" replace />} />
-          <Route path="*" element={<Navigate to={user ? "/" : "/login"} replace />} />
+          <Route path="*" element={<Navigate to={user ? "/" : "/showcase"} replace />} />
         </Routes>
       </Suspense>
       {showHeaderFooter && <Footer />}
