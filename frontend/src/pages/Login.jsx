@@ -191,14 +191,6 @@ export default function Login() {
                     <span className="auth-07-demo-badge">Faculty</span>
                     <span className="auth-07-demo-val">hodcse@siet.ac.in</span>
                   </button>
-                  <button
-                    type="button"
-                    className="auth-07-demo-btn"
-                    onClick={() => setForm({ email: '714025104144', password: '25CS144' })}
-                  >
-                    <span className="auth-07-demo-badge">Student</span>
-                    <span className="auth-07-demo-val">714025104144</span>
-                  </button>
                 </div>
               </div>
             </div>
