@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import client from '../api/client';
-import { Lock, KeyRound, ShieldAlert, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { Lock, KeyRound, ShieldCheck, CheckCircle2, Eye, EyeOff, ArrowRight, LoaderCircle } from 'lucide-react';
+import './MandatoryPasswordChangeModal.css';
 
 export default function MandatoryPasswordChangeModal() {
   const { user, refreshUser } = useAuth();
@@ -83,211 +84,119 @@ export default function MandatoryPasswordChangeModal() {
     }
   };
 
+  const meetsLength = newPassword.length >= 8;
+  const isDifferent = Boolean(newPassword) && newPassword !== currentPassword;
+  const passwordsMatch = Boolean(confirmPassword) && newPassword === confirmPassword;
+
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 99999,
-        background: 'rgba(5, 15, 10, 0.85)',
-        backdropFilter: 'blur(8px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '16px'
-      }}
-    >
-      <div
-        className="card animate-fadeInUp"
-        style={{
-          width: '100%',
-          maxWidth: '460px',
-          background: 'var(--bg-card, #121c16)',
-          border: '1px solid var(--accent, #10b981)',
-          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(16, 185, 129, 0.2)',
-          borderRadius: 'var(--radius-lg, 16px)',
-          padding: '28px',
-          color: 'var(--text, #e2e8f0)'
-        }}
+    <div className="password-change-overlay">
+      <section
+        className="password-change-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="password-change-title"
+        aria-describedby="password-change-description"
       >
-        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-          <div
-            style={{
-              width: '56px',
-              height: '56px',
-              margin: '0 auto 12px',
-              borderRadius: '50%',
-              background: 'rgba(16, 185, 129, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--accent, #10b981)'
-            }}
-          >
-            <ShieldAlert size={28} />
-          </div>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: '0 0 6px' }}>
-            Action Required: Set New Password
-          </h2>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted, #94a3b8)', margin: 0 }}>
-            Welcome, <strong>{user.name || user.email}</strong>. For security reasons, you must change your initial temporary password before accessing the CSE Portal.
+        <header className="password-change-header">
+          <div className="password-change-badge"><ShieldCheck size={24} strokeWidth={1.8} /></div>
+          <span className="password-change-eyebrow">SECURE YOUR ACCOUNT</span>
+          <h2 id="password-change-title">A fresh password.<br />A safer start.</h2>
+          <p id="password-change-description">
+            Hi, <strong>{user.name || user.email}</strong>. Choose a personal password to continue to Inceptron.
           </p>
-        </div>
+        </header>
 
-        {error && (
-          <div
-            style={{
-              padding: '10px 14px',
-              marginBottom: '16px',
-              borderRadius: '8px',
-              background: 'rgba(239, 68, 68, 0.15)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              color: '#f87171',
-              fontSize: '0.85rem'
-            }}
-          >
-            {error}
-          </div>
-        )}
-
+        {error && <div className="password-change-notice is-error" role="alert">{error}</div>}
         {success && (
-          <div
-            style={{
-              padding: '12px 14px',
-              marginBottom: '16px',
-              borderRadius: '8px',
-              background: 'rgba(16, 185, 129, 0.2)',
-              border: '1px solid rgba(16, 185, 129, 0.4)',
-              color: '#34d399',
-              fontSize: '0.875rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
-          >
-            <CheckCircle2 size={18} /> Password updated successfully! Unlocking portal...
+          <div className="password-change-notice is-success" role="status">
+            <CheckCircle2 size={18} /> Password saved. Opening your portal…
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '6px' }}>
-              Current Password (DOB / Temporary)
-            </label>
-            <div style={{ position: 'relative' }}>
+        <form className="password-change-form" onSubmit={handleSubmit} aria-busy={loading}>
+          <div className="password-change-field">
+            <label htmlFor="password-current">Current password</label>
+            <div className="password-change-input-wrap">
+              <Lock size={17} className="password-change-input-icon" aria-hidden="true" />
               <input
+                id="password-current"
                 type={showCurrent ? 'text' : 'password'}
+                autoComplete="current-password"
+                autoFocus
                 required
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                placeholder="Enter current password"
-                className="input"
-                style={{ width: '100%', paddingRight: '40px', boxSizing: 'border-box' }}
+                placeholder="Your temporary password"
                 disabled={loading || success}
               />
-              <button
-                type="button"
-                onClick={() => setShowCurrent(!showCurrent)}
-                style={{
-                  position: 'absolute',
-                  right: '10px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--text-muted, #94a3b8)',
-                  cursor: 'pointer',
-                  padding: 0
-                }}
-              >
-                {showCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
+              <button className="password-change-reveal" type="button"
+                aria-label={showCurrent ? 'Hide current password' : 'Show current password'}
+                aria-pressed={showCurrent}
+                disabled={loading || success}
+                onClick={() => setShowCurrent(!showCurrent)}>
+                {showCurrent ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
+            <p className="password-change-hint">For imported accounts, use your registration number.</p>
           </div>
 
-          <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '6px' }}>
-              New Password (Min. 8 characters)
-            </label>
-            <div style={{ position: 'relative' }}>
+          <div className="password-change-field">
+            <label htmlFor="password-new">New password</label>
+            <div className="password-change-input-wrap">
+              <KeyRound size={17} className="password-change-input-icon" aria-hidden="true" />
               <input
+                id="password-new"
                 type={showNew ? 'text' : 'password'}
-                required
-                minLength={8}
+                autoComplete="new-password"
+                required minLength={8}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Choose a strong new password"
-                className="input"
-                style={{ width: '100%', paddingRight: '40px', boxSizing: 'border-box' }}
+                placeholder="Create a personal password"
+                aria-describedby="password-requirements"
                 disabled={loading || success}
               />
-              <button
-                type="button"
-                onClick={() => setShowNew(!showNew)}
-                style={{
-                  position: 'absolute',
-                  right: '10px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--text-muted, #94a3b8)',
-                  cursor: 'pointer',
-                  padding: 0
-                }}
-              >
-                {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
+              <button className="password-change-reveal" type="button"
+                aria-label={showNew ? 'Hide new password' : 'Show new password'}
+                aria-pressed={showNew}
+                disabled={loading || success}
+                onClick={() => setShowNew(!showNew)}>
+                {showNew ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
+            </div>
+            <div className="password-change-requirements" id="password-requirements">
+              <span className={meetsLength ? 'is-met' : ''}><CheckCircle2 size={13} /> At least 8 characters</span>
+              <span className={isDifferent ? 'is-met' : ''}><CheckCircle2 size={13} /> Different from current</span>
             </div>
           </div>
 
-          <div>
-            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '6px' }}>
-              Confirm New Password
-            </label>
-            <input
-              type="password"
-              required
-              minLength={8}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Re-type new password"
-              className="input"
-              style={{ width: '100%', boxSizing: 'border-box' }}
-              disabled={loading || success}
-            />
+          <div className="password-change-field">
+            <label htmlFor="password-confirm">Confirm new password</label>
+            <div className={`password-change-input-wrap ${passwordsMatch ? 'is-matched' : ''}`}>
+              <Lock size={17} className="password-change-input-icon" aria-hidden="true" />
+              <input
+                id="password-confirm" type="password"
+                autoComplete="new-password"
+                required minLength={8}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Enter it once more"
+                disabled={loading || success}
+              />
+              {passwordsMatch && <CheckCircle2 size={18} className="password-change-match-icon" aria-label="Passwords match" />}
+            </div>
           </div>
 
-          <button
-            type="submit"
-            className="btn btn-primary"
-            style={{
-              marginTop: '8px',
-              padding: '12px',
-              fontSize: '0.95rem',
-              fontWeight: 600,
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px'
-            }}
-            disabled={loading || success}
-          >
-            {loading ? (
-              'Saving New Password...'
-            ) : success ? (
-              <>
-                <CheckCircle2 size={18} /> Password Updated
-              </>
-            ) : (
-              <>
-                <KeyRound size={18} /> Update Password & Continue
-              </>
-            )}
+          <button type="submit" className="password-change-submit" disabled={loading || success}>
+            {loading ? <><LoaderCircle size={18} className="password-change-spinner" /> Saving password…</>
+              : success ? <><CheckCircle2 size={18} /> Password saved</>
+                : <>Save & continue <ArrowRight size={18} /></>}
           </button>
         </form>
-      </div>
+
+        <footer className="password-change-footer">
+          <ShieldCheck size={14} /> Your account, your password. Keep it private.
+        </footer>
+      </section>
     </div>
   );
 }
