@@ -3,11 +3,11 @@ const router = express.Router();
 const { supabase } = require('../db/supabase');
 const cache = require('../services/cache');
 
-const { 
-  isApprovedAchievement, 
-  fetchVerifiedAchievements, 
-  buildLeaderboardFromAchievements, 
-  getLeaderboardStats 
+const {
+  isApprovedAchievement,
+  fetchVerifiedAchievements,
+  buildLeaderboardFromAchievements,
+  getLeaderboardStats
 } = require('../services/scoringService');
 
 function isMissingColumnError(error) {
@@ -40,6 +40,28 @@ router.get('/top', async (req, res) => {
     res.json(top);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch top leaderboard' });
+  }
+});
+
+const { getCGPALeaderboard } = require('../services/academicService');
+
+// ─── GET /api/leaderboard/cgpa ────────────────────────────────────────────────
+router.get('/cgpa', async (req, res) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  try {
+    const result = await getCGPALeaderboard({
+      batch: req.query.batch,
+      class: req.query.class,
+      semester: req.query.semester,
+      exam_session: req.query.exam_session,
+      search: req.query.search,
+      page: req.query.page,
+      limit: req.query.limit
+    });
+    res.json(result);
+  } catch (err) {
+    console.error('Failed to fetch CGPA leaderboard:', err);
+    res.status(500).json({ error: 'Failed to fetch CGPA leaderboard' });
   }
 });
 

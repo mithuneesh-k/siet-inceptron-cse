@@ -5,6 +5,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { UndoDeleteProvider } from './contexts/UndoDeleteContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import MandatoryPasswordChangeModal from './components/MandatoryPasswordChangeModal';
 
 function lazyWithPreload(factory) {
   const Component = lazy(factory);
@@ -75,6 +76,7 @@ function AppContent() {
 
   return (
     <>
+      <MandatoryPasswordChangeModal />
       {showHeaderFooter && <Navbar />}
       <Suspense fallback={<div className="p-4 text-center">Loading...</div>}>
         <Routes>

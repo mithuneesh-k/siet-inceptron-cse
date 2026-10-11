@@ -174,4 +174,38 @@ router.post('/login', loginIpLimiter, loginIdentifierLimiter, async (req, res) =
   });
 });
 
+const { authMiddleware } = require('../middleware/auth');
+
+// ─── POST /api/auth/change-password ───────────────────────────────────────────
+router.post('/change-password', authMiddleware, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'Both current password and new password are required.' });
+  }
+  if (newPassword.length < 8) {
+    return res.status(400).json({ error: 'New password must be at least 8 characters long.' });
+  }
+
+  const { data: user, error: fetchErr } = await supabase
+    .from('users')
+    .select('id, email, password_hash')
+    .eq('id', req.user.id)
+    .single();
+
+  if (fetchErr || !user) return res.status(404).json({ error: 'User not found.' });
+
+  const isValid = bcrypt.compareSync(currentPassword, user.password_hash);
+  if (!isValid) return res.status(401).json({ error: 'Current password is incorrect.' });
+
+  const newHash = bcrypt.hashSync(newPassword, 10);
+  const { error: updateErr } = await supabase
+    .from('users')
+    .update({ password_hash: newHash, must_change_password: false })
+    .eq('id', req.user.id);
+
+  if (updateErr) return res.status(500).json({ error: 'Failed to update password.' });
+
+  res.json({ success: true, message: 'Password updated successfully.', must_change_password: false });
+});
+
 module.exports = router;

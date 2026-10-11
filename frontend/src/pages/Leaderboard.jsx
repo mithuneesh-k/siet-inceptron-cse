@@ -5,7 +5,8 @@ import ScoreBadge from '../components/ScoreBadge';
 import CustomSelect from '../components/CustomSelect';
 import FilterModal from '../components/FilterModal';
 import CompetitiveLeaderboard from './CompetitiveLeaderboard';
-import { Users, Award, Trophy, Briefcase, Medal, ArrowUp, ArrowDown, Minus, Code } from 'lucide-react';
+import CgpaLeaderboard from '../components/CgpaLeaderboard';
+import { Users, Award, Trophy, Briefcase, Medal, ArrowUp, ArrowDown, Minus, Code, GraduationCap } from 'lucide-react';
 import { subscribeAchievementEvents } from '../utils/achievementEvents';
 
 const BATCH_OPTIONS = ['2026-2030', '2025-2029', '2024-2028', '2023-2027', '2022-2026'];
@@ -13,7 +14,8 @@ const CLASS_OPTIONS = ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D', 'CSE-E'];
 
 export default function Leaderboard() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get('tab') === 'competitive' ? 'competitive' : 'achievement';
+  const tabParam = searchParams.get('tab');
+  const activeTab = tabParam === 'competitive' ? 'competitive' : tabParam === 'cgpa' ? 'cgpa' : 'achievement';
 
   const [students, setStudents] = useState([]);
   const [stats, setStats] = useState({ totalStudents: 0, totalAchievements: 0, totalHackathonWins: 0, totalInternships: 0 });
@@ -26,10 +28,10 @@ export default function Leaderboard() {
   const isFilterActive = (batchFilter && batchFilter !== 'all') || (classFilter && classFilter !== 'all');
 
   const handleTabChange = (newTab) => {
-    if (newTab === 'competitive') {
-      setSearchParams({ tab: 'competitive' });
-    } else {
+    if (newTab === 'achievement') {
       setSearchParams({});
+    } else {
+      setSearchParams({ tab: newTab });
     }
   };
 
@@ -111,11 +113,20 @@ export default function Leaderboard() {
             >
               <Code size={16} /> Competitive Coding Leaderboard
             </button>
+            <button
+              className={`btn btn-sm ${activeTab === 'cgpa' ? 'btn-primary' : 'btn-ghost'}`}
+              onClick={() => handleTabChange('cgpa')}
+              style={{ borderRadius: 'var(--radius-md)', padding: '8px 18px', fontWeight: 700, fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 8 }}
+            >
+              <GraduationCap size={16} /> Academic CGPA Leaderboard
+            </button>
           </div>
         </div>
 
         {activeTab === 'competitive' ? (
           <CompetitiveLeaderboard embedded={true} />
+        ) : activeTab === 'cgpa' ? (
+          <CgpaLeaderboard />
         ) : (
           <>
             {/* Dept Stats */}
@@ -136,7 +147,7 @@ export default function Leaderboard() {
 
         {/* Filters */}
         <div className="lb-filters animate-fadeInUp delay-2">
-          <button 
+          <button
             className={`btn ${isFilterActive ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => setShowFilters(true)}
           >
@@ -145,8 +156,8 @@ export default function Leaderboard() {
           </button>
         </div>
 
-        <FilterModal 
-          isOpen={showFilters} 
+        <FilterModal
+          isOpen={showFilters}
           onClose={() => setShowFilters(false)}
           onClear={() => { setBatchFilter('all'); setClassFilter('all'); }}
         >
@@ -304,7 +315,7 @@ export default function Leaderboard() {
         .podium-sname { font-size: 14px; font-weight: 700; margin-bottom: 2px; color: var(--color-text); }
         .podium-sclass { font-size: 12px; color: var(--color-text-muted); margin-bottom: 10px; }
         .podium-block { width: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-radius: 0 0 var(--radius-sm) var(--radius-sm); }
-        
+
         @media (max-width: 640px) {
           .podium { gap: 8px; }
           .podium-col { transform: scale(0.85); transform-origin: bottom center; }
@@ -341,12 +352,12 @@ export default function Leaderboard() {
         .lb-score { font-size: 18px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; color: var(--color-green); }
         @media (max-width: 640px) {
           .lb-table-header { display: none; }
-          .lb-row { 
-            display: flex; flex-wrap: wrap; 
-            padding: 16px; gap: 8px; 
-            border: 1px solid var(--border); 
-            border-radius: var(--radius-md); 
-            margin-bottom: 12px; 
+          .lb-row {
+            display: flex; flex-wrap: wrap;
+            padding: 16px; gap: 8px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            margin-bottom: 12px;
             position: relative;
           }
           .lb-row:last-child { border-bottom: 1px solid var(--border); }

@@ -7,9 +7,9 @@ import ScoreBadge from '../components/ScoreBadge';
 import AchievementCard from '../components/AchievementCard';
 import CustomSelect from '../components/CustomSelect';
 import TruncatedText from '../components/TruncatedText';
-import { 
-  Shield, Book, GraduationCap, Terminal, Briefcase, AtSign, 
-  Camera, Globe, Phone, Plus, Cake, Edit3, Award, Lightbulb, Hourglass, Upload, CheckCircle 
+import {
+  Shield, Book, GraduationCap, Terminal, Briefcase, AtSign,
+  Camera, Globe, Phone, Plus, Cake, Edit3, Award, Lightbulb, Hourglass, Upload, CheckCircle
 } from 'lucide-react';
 
 import { dispatchAchievementEvent, subscribeAchievementEvents } from '../utils/achievementEvents';
@@ -26,6 +26,7 @@ export default function Profile() {
   const [achievements, setAchievements] = useState([]);
   const [teams, setTeams] = useState([]);
   const [invites, setInvites] = useState([]);
+  const [academics, setAcademics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -52,6 +53,22 @@ export default function Profile() {
       setAchievements(achRes.data || []);
       setTeams(teamRes.data || []);
 
+      if (userRes.data?.roll_no) {
+        try {
+          const acRes = await client.get(`/academics/students/${userRes.data.roll_no}`);
+          setAcademics(acRes.data);
+        } catch {
+          setAcademics(null);
+        }
+      } else if (authUser?.id === id) {
+        try {
+          const acRes = await client.get('/academics/me');
+          setAcademics(acRes.data);
+        } catch {
+          setAcademics(null);
+        }
+      }
+
       if (authUser?.id === id) {
         const { data: invRes } = await client.get('/teams/my-invites').catch(() => ({ data: [] }));
         setInvites(invRes || []);
@@ -72,7 +89,7 @@ export default function Profile() {
     }
   };
 
-  useEffect(() => { 
+  useEffect(() => {
     fetchData();
 
     const unsubscribe = subscribeAchievementEvents((detail) => {
@@ -328,7 +345,11 @@ export default function Profile() {
         <div className="profile-header card animate-fadeInUp">
            <div className="profile-main">
              <div className="profile-avatar-wrap">
-               <div className="profile-avatar">{user.name?.[0] || '?'}</div>
+               {academics?.student?.photo_url ? (
+                 <img src={academics.student.photo_url} alt={user.name} className="profile-avatar" style={{ objectFit: 'cover' }} />
+               ) : (
+                 <div className="profile-avatar">{user.name?.[0] || '?'}</div>
+               )}
              </div>
             <div className="profile-info">
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
@@ -465,6 +486,75 @@ export default function Profile() {
           </div>
         )}
 
+        {/* Academic Performance Card */}
+        {academics?.student && (
+          <div className="card animate-fadeInUp delay-1" style={{ marginTop: '24px', marginBottom: '24px', padding: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: 12 }}>
+              <h2 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+                <GraduationCap size={22} className="text-gradient" /> Academic Performance
+              </h2>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                <span className="badge" style={{ background: 'var(--accent-soft)', color: 'var(--accent-text)', border: '1px solid var(--accent-border)', fontSize: '13px', padding: '4px 12px' }}>
+                  Roll No: {academics.student.roll_no}
+                </span>
+                {academics.student.register_no && (
+                  <span className="badge" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--color-text-muted)', fontSize: '13px', padding: '4px 12px' }}>
+                    Reg: {academics.student.register_no}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+              <div style={{ background: 'var(--bg-secondary)', padding: '16px', borderRadius: '12px', border: '1px solid var(--color-border)', textAlign: 'center' }}>
+                <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--accent-text)' }}>
+                  {academics.student.current_cgpa ? Number(academics.student.current_cgpa).toFixed(2) : '—'}
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: '4px' }}>
+                  Cumulative GPA
+                </div>
+              </div>
+              <div style={{ background: 'var(--bg-secondary)', padding: '16px', borderRadius: '12px', border: '1px solid var(--color-border)', textAlign: 'center' }}>
+                <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--color-text)' }}>
+                  {academics.student.total_credits_earned ?? 0}
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: '4px' }}>
+                  Credits Earned
+                </div>
+              </div>
+              <div style={{ background: 'var(--bg-secondary)', padding: '16px', borderRadius: '12px', border: '1px solid var(--color-border)', textAlign: 'center' }}>
+                <div style={{ fontSize: '28px', fontWeight: '800', color: (academics.student.standing_arrears || 0) > 0 ? '#ef4444' : '#10b981' }}>
+                  {academics.student.standing_arrears ?? 0}
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: '4px' }}>
+                  Standing Arrears
+                </div>
+              </div>
+            </div>
+
+            {academics.semesterSummaries && academics.semesterSummaries.length > 0 && (
+              <div>
+                <h4 style={{ fontSize: '13px', fontWeight: '600', color: 'var(--color-text-muted)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Semester Summary
+                </h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px' }}>
+                  {academics.semesterSummaries.map((s) => (
+                    <div key={s.semester} style={{ background: 'var(--bg-secondary)', padding: '12px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>Semester {s.semester}</div>
+                      <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--color-text)', marginTop: '2px' }}>
+                        SGPA: {s.sgpa ? Number(s.sgpa).toFixed(2) : '—'}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                        Credits: {s.credits_earned ?? 0}/{s.credits_registered ?? 0}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Achievements */}
         {user.role === 'student' && (
           <div className="animate-fadeInUp delay-2">
@@ -517,8 +607,8 @@ export default function Profile() {
 
               <div className="form-group">
                 <label className="form-label">Type *</label>
-                <CustomSelect 
-                  value={form.type} 
+                <CustomSelect
+                  value={form.type}
                   onChange={val => setForm(f => ({ ...f, type: val, position: '', duration: '' }))}
                   options={ACH_TYPES.map(t => ({ value: t, label: t.charAt(0).toUpperCase() + t.slice(1) }))}
                 />
@@ -537,8 +627,8 @@ export default function Profile() {
               {form.type === 'hackathon' && (
                 <div className="form-group">
                   <label className="form-label">Position *</label>
-                  <CustomSelect 
-                    value={form.position} 
+                  <CustomSelect
+                    value={form.position}
                     onChange={val => setForm(f => ({ ...f, position: val }))}
                     placeholder="Select position"
                     options={POSITIONS.map(p => ({ value: p, label: p === 'participated' ? 'Participated' : `${p} Place` }))}
@@ -549,8 +639,8 @@ export default function Profile() {
               {form.type === 'internship' && (
                 <div className="form-group">
                   <label className="form-label">Duration *</label>
-                  <CustomSelect 
-                    value={form.duration} 
+                  <CustomSelect
+                    value={form.duration}
                     onChange={val => setForm(f => ({ ...f, duration: val }))}
                     placeholder="Select duration"
                     options={[
@@ -584,9 +674,9 @@ export default function Profile() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--color-green)', fontWeight: 600 }}>
                         <CheckCircle size={16} /> {uploadedFileName}
                       </div>
-                      <button 
-                        type="button" 
-                        className="btn btn-ghost btn-xs" 
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-xs"
                         onClick={() => { setUploadedFileName(''); setForm(f => ({ ...f, proof_url: '' })); }}
                         style={{ color: '#DC2626', padding: '2px 6px' }}
                       >
@@ -595,16 +685,16 @@ export default function Profile() {
                     </div>
                   ) : (
                     <div>
-                      <input 
-                        type="file" 
+                      <input
+                        type="file"
                         id="proof-file-input"
                         accept="image/jpeg,image/png,image/webp,application/pdf"
                         onChange={e => e.target.files?.[0] && handleFileUpload(e.target.files[0])}
                         style={{ display: 'none' }}
                       />
-                      <label 
-                        htmlFor="proof-file-input" 
-                        className="btn btn-secondary btn-sm" 
+                      <label
+                        htmlFor="proof-file-input"
+                        className="btn btn-secondary btn-sm"
                         style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                       >
                         <Camera size={15} /> Upload Photo / PDF Certificate (Max 5MB)
@@ -622,12 +712,12 @@ export default function Profile() {
                   <div style={{ flex: 1, height: 1, background: 'var(--color-border)' }} />
                 </div>
 
-                <input 
-                  className="form-input" 
-                  type="text" 
-                  value={form.proof_url} 
-                  onChange={e => { setForm(f => ({ ...f, proof_url: e.target.value })); if (uploadedFileName) setUploadedFileName(''); }} 
-                  placeholder="https://drive.google.com/... or certificate link" 
+                <input
+                  className="form-input"
+                  type="text"
+                  value={form.proof_url}
+                  onChange={e => { setForm(f => ({ ...f, proof_url: e.target.value })); if (uploadedFileName) setUploadedFileName(''); }}
+                  placeholder="https://drive.google.com/... or certificate link"
                 />
               </div>
 
@@ -642,8 +732,8 @@ export default function Profile() {
 
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setShowAddModal(false)} disabled={submitting}>Cancel</button>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className="btn btn-primary"
                   disabled={submitting || uploadingFile}
                 >
