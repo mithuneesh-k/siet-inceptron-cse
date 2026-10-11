@@ -70,8 +70,8 @@ function AppContent() {
   const { user } = useAuth();
   const location = useLocation();
 
-  const isPublicStandalone = location.pathname === '/login' || location.pathname === '/' || location.pathname === '/showcase';
-  const showHeaderFooter = Boolean(user) && !isPublicStandalone;
+  const isStandalonePage = location.pathname === '/login' || location.pathname === '/showcase';
+  const showHeaderFooter = Boolean(user) && !isStandalonePage;
 
   return (
     <>

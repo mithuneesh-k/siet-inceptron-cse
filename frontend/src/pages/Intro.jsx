@@ -18,6 +18,8 @@ export default function Intro() {
   const artworkContainerRef = useRef(null);
   const hintRef = useRef(null);
   const canvasRef = useRef(null);
+  const darkVideoRef = useRef(null);
+  const lightVideoRef = useRef(null);
 
   // Parallax Refs
   const parallaxFarRef = useRef(null);
@@ -31,6 +33,22 @@ export default function Intro() {
     isCompletedRef.current = true;
     navigate('/showcase');
   }, [navigate]);
+
+  const handleEnterPortal = useCallback(() => {
+    if (isCompletedRef.current) return;
+    targetProgressRef.current = 1;
+    setTimeout(() => {
+      goToShowcase();
+    }, 450);
+  }, [goToShowcase]);
+
+  // Ensure active theme video plays immediately
+  useEffect(() => {
+    const activeVid = theme === 'dark' ? darkVideoRef.current : lightVideoRef.current;
+    if (activeVid) {
+      activeVid.play().catch(() => {});
+    }
+  }, [theme]);
 
   // Desktop Mouse Parallax & Cursor Glow Effect
   useEffect(() => {
@@ -353,6 +371,7 @@ export default function Intro() {
             <div className="intro-cube-float-wrapper">
               <video
                 key="dark-bg-video"
+                ref={darkVideoRef}
                 autoPlay
                 loop
                 muted
@@ -364,9 +383,11 @@ export default function Intro() {
               >
                 <source src="/videos/darkmain.mp4" type="video/mp4" />
                 <source src="/videos/DARK MAIN.mp4" type="video/mp4" />
+                <source src="/videos/dark.mp4" type="video/mp4" />
               </video>
               <video
                 key="light-bg-video"
+                ref={lightVideoRef}
                 autoPlay
                 loop
                 muted
@@ -377,6 +398,7 @@ export default function Intro() {
                 className={`intro-artwork intro-artwork-light ${theme === 'light' ? 'active' : ''}`}
               >
                 <source src="/videos/light (2).mp4" type="video/mp4" />
+                <source src="/videos/light.mp4" type="video/mp4" />
                 <source src="/videos/lightmain.mp4" type="video/mp4" />
               </video>
             </div>
@@ -393,8 +415,8 @@ export default function Intro() {
           <button
             type="button"
             className="intro-welcome-btn"
-            onClick={goToShowcase}
-            onTouchStart={goToShowcase}
+            onClick={handleEnterPortal}
+            onTouchStart={handleEnterPortal}
           >
             <span>WELCOME TO PORTAL</span>
             <ArrowRight size={20} className="intro-btn-icon" />
@@ -405,11 +427,11 @@ export default function Intro() {
         <div
           ref={hintRef}
           className="intro-scroll-hint"
-          onClick={goToShowcase}
-          onTouchStart={goToShowcase}
+          onClick={handleEnterPortal}
+          onTouchStart={handleEnterPortal}
           role="button"
           tabIndex={0}
-          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && goToShowcase()}
+          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleEnterPortal()}
         >
           <span>OR SCROLL TO ENTER</span>
           <ChevronDown size={14} className="intro-hint-arrow" />
@@ -473,9 +495,9 @@ export default function Intro() {
 
         .intro-artwork {
           position: absolute;
-          inset: 0;
-          width: 100%;
-          height: 100%;
+          inset: -2%;
+          width: 104%;
+          height: 104%;
           object-fit: cover;
           object-position: center;
           opacity: 0;
@@ -483,6 +505,14 @@ export default function Intro() {
         }
 
         .intro-artwork.active {
+          opacity: 1;
+        }
+
+        .intro-artwork-light.active {
+          opacity: 1;
+        }
+
+        .intro-artwork-dark.active {
           opacity: 1;
         }
 
@@ -556,13 +586,19 @@ export default function Intro() {
           display: flex;
           align-items: center;
           gap: 8px;
-          color: rgba(255, 255, 255, 0.85);
-          font-size: 12.5px;
+          color: rgba(255, 255, 255, 0.95);
+          font-size: 12px;
           font-weight: 700;
           letter-spacing: 0.08em;
           text-transform: uppercase;
-          z-index: 15;
+          z-index: 25;
           cursor: pointer;
+          padding: 8px 18px;
+          border-radius: 9999px;
+          background: rgba(15, 23, 42, 0.65);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
 
         .intro-hint-arrow {
