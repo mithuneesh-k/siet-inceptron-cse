@@ -5,9 +5,10 @@ const { authMiddleware, optionalAuthMiddleware } = require('../middleware/auth')
 
 const adminOnlyMiddleware = (req, res, next) => {
   if (!req.user) return res.status(401).json({ error: 'Authentication required' });
-  const isAuthorized = req.user.role === 'admin' || req.user.is_admin || req.user.role === 'faculty' || req.user.is_hod || req.user.designation?.toUpperCase() === 'HOD';
-  if (!isAuthorized) {
-    return res.status(403).json({ error: 'Faculty or Admin permission required to post news.' });
+  const isHOD = Boolean(req.user.is_hod || req.user.designation?.toUpperCase() === 'HOD');
+  const isAdmin = req.user.role === 'admin';
+  if (!isAdmin && !isHOD) {
+    return res.status(403).json({ error: 'Admin or HOD permission required to post news.' });
   }
   next();
 };
