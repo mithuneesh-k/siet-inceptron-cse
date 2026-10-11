@@ -1,8 +1,8 @@
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
-const rawPlatformUrl = process.env.PLATFORM_SUPABASE_URL;
-const rawPlatformKey = process.env.PLATFORM_SUPABASE_SERVICE_ROLE_KEY;
+const rawPlatformUrl = process.env.PLATFORM_SUPABASE_URL || process.env.SUPABASE_URL;
+const rawPlatformKey = process.env.PLATFORM_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
 
 const isPlatformConfigured = Boolean(
   rawPlatformUrl &&
