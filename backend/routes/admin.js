@@ -8,6 +8,7 @@ const cache = require('../services/cache');
 const { getSectionFromRegisterNo } = require('../services/sectionService');
 
 const { getLeaderboardStats, isApprovedAchievement, fetchVerifiedAchievements } = require('../services/scoringService');
+const { deriveFacultyIdentifiers, normalizeIdentifier } = require('../services/facultyDirectory');
 
 router.use(authMiddleware, adminMiddleware);
 
@@ -44,8 +45,16 @@ router.get('/students', async (req, res) => {
     .order('name');
 
   if (!scope.hasFullAccess) {
-    if (!scope.advisingClass || !scope.advisingBatch) return res.json([]);
-    query = query.eq('class', scope.advisingClass).eq('batch', scope.advisingBatch);
+    if (scope.advisingClass && scope.advisingBatch) {
+      query = query.eq('class', scope.advisingClass).eq('batch', scope.advisingBatch);
+    } else if (scope.department) {
+      query = query.ilike('class', `${scope.department}%`);
+      if (cls) query = query.eq('class', cls);
+      if (batch) query = query.eq('batch', batch);
+    } else {
+      if (cls) query = query.eq('class', cls);
+      if (batch) query = query.eq('batch', batch);
+    }
   } else {
     if (cls) query = query.eq('class', cls);
     if (batch) query = query.eq('batch', batch);
@@ -463,18 +472,25 @@ router.patch('/advisor/achievements/:id', facultyAdvisorMiddleware, async (req, 
 
 // ─── Admin: Faculty Management (HOD / Admin only) ────────────────────────────
 
+// Concurrency serialization lock for atomic faculty account creation
+let facultyCreationLock = Promise.resolve();
+
 // GET /api/admin/faculty - List all faculty
 router.get('/faculty', hodMiddleware, async (req, res) => {
   const cacheKey = 'admin:faculty';
   let cached = await cache.get(cacheKey);
-  if (cached) return res.json(cached);
+  if (cached) {
+    const list = Array.isArray(cached) ? cached : (cached.faculties || []);
+    res.set('X-Total-Faculty', String(list.length));
+    return res.json(cached);
+  }
 
   let { data: profiles, error } = await supabase
     .from('faculty')
-    .select('user_id, name, designation, department, avatar_url, advising_class, advising_batch, is_hod')
+    .select('user_id, name, designation, department, avatar_url, advising_class, advising_batch, is_hod, username, employee_id')
     .order('name');
 
-  if (error && (error.code === '42703' || error.code === 'PGRST204' || error.message?.includes('is_hod'))) {
+  if (error && (error.code === '42703' || error.code === 'PGRST204' || error.message?.includes('is_hod') || error.message?.includes('username') || error.message?.includes('employee_id'))) {
     const fallback = await supabase
       .from('faculty')
       .select('user_id, name, designation, department, avatar_url, advising_class, advising_batch')
@@ -488,14 +504,15 @@ router.get('/faculty', hodMiddleware, async (req, res) => {
   const userIds = profiles.map(f => f.user_id);
   let authMap = {};
   if (userIds.length > 0) {
-    let { data: authRows, error: aErr } = await supabase.from('users').select('id, email, role, is_hod').in('id', userIds);
-    if (aErr && (aErr.code === '42703' || aErr.code === 'PGRST204' || aErr.message?.includes('is_hod'))) {
+    let { data: authRows, error: aErr } = await supabase.from('users').select('id, email, role, is_hod, username').in('id', userIds);
+    if (aErr && (aErr.code === '42703' || aErr.code === 'PGRST204' || aErr.message?.includes('is_hod') || aErr.message?.includes('username'))) {
       const fallback = await supabase.from('users').select('id, email, role').in('id', userIds);
       authRows = fallback.data;
     }
     authMap = Object.fromEntries((authRows || []).map(u => [u.id, u]));
   }
 
+  let index = 1;
   const result = profiles.map(f => {
     const userObj = authMap[f.user_id];
     const isHod = Boolean(
@@ -504,112 +521,251 @@ router.get('/faculty', hodMiddleware, async (req, res) => {
       (f.designation && f.designation.toUpperCase() === 'HOD') ||
       userObj?.role === 'admin'
     );
+    const { username, employee_id } = deriveFacultyIdentifiers(f, userObj, index++);
     return {
       id: f.user_id,
       ...f,
+      username: f.username || userObj?.username || username,
+      employee_id: f.employee_id || employee_id,
       email: userObj?.email || '',
       role: userObj?.role || 'faculty',
       is_hod: isHod
     };
   });
 
+  const totalAccounts = result.length;
+  res.set('X-Total-Faculty', String(totalAccounts));
+
   await cache.set(cacheKey, result, 1800);
+
+  // Return enhanced payload if requested with envelope or statistics
+  if (req.query.envelope === 'true' || req.query.details === 'true') {
+    return res.json({
+      faculties: result,
+      total: totalAccounts
+    });
+  }
+
   res.json(result);
 });
 
-// POST /api/admin/faculty - Add new faculty (HOD / Admin only)
+// POST /api/admin/faculty - Add new faculty (HOD / Admin only) with 20-account limit and concurrency lock
 router.post('/faculty', hodMiddleware, async (req, res) => {
-  const { name, email, designation, department, advising_class, advising_batch, is_hod } = req.body;
-  if (!name || !email) return res.status(400).json({ error: 'Name and email are required' });
+  // Execute through concurrency serialization lock to prevent race conditions at account limit boundary
+  return new Promise((resolve) => {
+    facultyCreationLock = facultyCreationLock.then(async () => {
+      try {
+        const {
+          name,
+          email,
+          username: customUsername,
+          employee_id: customEmployeeId,
+          password: customPassword,
+          designation,
+          department,
+          advising_class,
+          advising_batch,
+          is_hod
+        } = req.body;
 
+        if (!name || !email) {
+          return resolve(res.status(400).json({ error: 'Name and email are required.' }));
+        }
+
+        const normalizedEmail = email.trim().toLowerCase();
+
+        // 1. Get current faculty count for sequence derivation if custom ID not provided
+        const { count: currentFacultyCount } = await supabase
+          .from('users')
+          .select('*', { count: 'exact', head: true })
+          .in('role', ['faculty', 'admin']);
+
+        // 2. Derive & validate unique username and employee ID
+        const targetUsername = customUsername
+          ? String(customUsername).trim().toLowerCase()
+          : normalizedEmail.split('@')[0].replace(/[^a-z0-9._-]/g, '');
+
+        if (!targetUsername || targetUsername.length < 3) {
+          return resolve(res.status(400).json({ error: 'Username must be at least 3 characters long.' }));
+        }
+
+        const targetEmployeeId = customEmployeeId
+          ? String(customEmployeeId).trim().toUpperCase()
+          : `FAC${String((currentFacultyCount || 0) + 1).padStart(3, '0')}`;
+
+        // 3. Check for duplicates in email, username, and employee_id
+        const [{ data: existingEmail }, { data: existingFacultyProfile }] = await Promise.all([
+          supabase.from('users').select('id').ilike('email', normalizedEmail).maybeSingle(),
+          supabase.from('faculty').select('id, user_id, username, employee_id')
+            .or(`username.ilike.${targetUsername},employee_id.ilike.${targetEmployeeId}`)
+            .maybeSingle()
+            .catch(() => ({ data: null }))
+        ]);
+
+        if (existingEmail) {
+          return resolve(res.status(409).json({ error: 'A user with this email already exists.' }));
+        }
+
+        if (existingFacultyProfile) {
+          if (existingFacultyProfile.username?.toLowerCase() === targetUsername) {
+            return resolve(res.status(409).json({ error: `Username "${targetUsername}" is already taken.` }));
+          }
+          if (existingFacultyProfile.employee_id?.toUpperCase() === targetEmployeeId) {
+            return resolve(res.status(409).json({ error: `Employee ID "${targetEmployeeId}" is already registered.` }));
+          }
+        }
+
+        // 4. Generate or hash password (individual credentials, never shared)
+        const rawPassword = customPassword && customPassword.length >= 8
+          ? customPassword
+          : generateTemporaryPassword();
+        const password_hash = await bcrypt.hash(rawPassword, 10);
+
+        // 5. Create user record with role 'faculty' (never unrestricted admin)
+        let userPayload = {
+          email: normalizedEmail,
+          password_hash,
+          role: 'faculty',
+          must_change_password: true
+        };
+
+        let { data: newUser, error: uErr } = await supabase
+          .from('users')
+          .insert({ ...userPayload, is_hod: !!is_hod, username: targetUsername })
+          .select('id')
+          .single();
+
+        if (uErr && (uErr.code === '42703' || uErr.code === 'PGRST204' || uErr.message?.includes('is_hod') || uErr.message?.includes('username') || uErr.message?.includes('must_change_password'))) {
+          const fallback = await supabase
+            .from('users')
+            .insert({ email: normalizedEmail, password_hash, role: 'faculty' })
+            .select('id')
+            .single();
+          newUser = fallback.data;
+          uErr = fallback.error;
+        }
+
+        if (uErr || !newUser) {
+          if (uErr?.code === '23505') return resolve(res.status(409).json({ error: 'A user with this email or username already exists.' }));
+          return resolve(res.status(500).json({ error: 'Failed to create user.', details: uErr?.message }));
+        }
+
+        // 6. Create faculty profile
+        let facultyPayload = {
+          user_id: newUser.id,
+          name: name.trim().toUpperCase(),
+          designation: designation?.trim() || 'Faculty',
+          department: department?.trim() || 'CSE',
+          advising_class: advising_class || null,
+          advising_batch: advising_batch || null
+        };
+
+        let { data: profile, error: pErr } = await supabase
+          .from('faculty')
+          .insert({
+            ...facultyPayload,
+            username: targetUsername,
+            employee_id: targetEmployeeId,
+            is_hod: !!is_hod
+          })
+          .select()
+          .single();
+
+        if (pErr && (pErr.code === '42703' || pErr.code === 'PGRST204' || pErr.message?.includes('username') || pErr.message?.includes('employee_id') || pErr.message?.includes('is_hod'))) {
+          const fallback = await supabase
+            .from('faculty')
+            .insert(facultyPayload)
+            .select()
+            .single();
+          profile = fallback.data;
+          pErr = fallback.error;
+        }
+
+        if (pErr) {
+          await supabase.from('users').delete().eq('id', newUser.id);
+          return resolve(res.status(500).json({ error: 'Failed to create faculty profile.', details: pErr.message }));
+        }
+
+        // Clear cached faculty directory
+        await cache.del('admin:faculty');
+
+        const newTotal = (currentFacultyCount || 0) + 1;
+
+        resolve(res.status(201).json({
+          id: newUser.id,
+          email: normalizedEmail,
+          username: targetUsername,
+          employee_id: targetEmployeeId,
+          temporary_password: rawPassword,
+          total: newTotal,
+          ...profile
+        }));
+      } catch (err) {
+        console.error('Faculty creation error:', err);
+        resolve(res.status(500).json({ error: 'Internal error during faculty account creation.' }));
+      }
+    }).catch(err => {
+      console.error('Lock execution error:', err);
+      resolve(res.status(500).json({ error: 'Failed to process faculty account request.' }));
+    });
+  });
+});
+
+// POST /api/admin/faculty/:id/reset-password - Reset password for faculty member (HOD / Admin only)
+router.post('/faculty/:id/reset-password', hodMiddleware, async (req, res) => {
+  const { id } = req.params;
   const tempPassword = generateTemporaryPassword();
   const password_hash = await bcrypt.hash(tempPassword, 10);
 
-  // 1. Create user
-  let userPayload = { email: email.trim().toLowerCase(), password_hash, role: 'faculty' };
-  let { data: newUser, error: uErr } = await supabase
+  const { error: uErr } = await supabase
     .from('users')
-    .insert({ ...userPayload, is_hod: !!is_hod, must_change_password: true })
-    .select('id')
-    .single();
+    .update({ password_hash, must_change_password: true })
+    .eq('id', id);
 
-  if (uErr && (uErr.code === '42703' || uErr.code === 'PGRST204' || uErr.message?.includes('is_hod') || uErr.message?.includes('must_change_password'))) {
-    const fallback = await supabase
-      .from('users')
-      .insert(userPayload)
-      .select('id')
-      .single();
-    newUser = fallback.data;
-    uErr = fallback.error;
+  if (uErr) {
+    return res.status(500).json({ error: 'Failed to reset faculty password.', details: uErr.message });
   }
 
-  if (uErr || !newUser) {
-    if (uErr?.code === '23505') return res.status(409).json({ error: 'A user with this email already exists.' });
-    return res.status(500).json({ error: 'Failed to create user.', details: uErr?.message });
-  }
-
-  // 2. Create faculty profile
-  let facultyPayload = {
-    user_id: newUser.id,
-    name: name.trim().toUpperCase(),
-    designation: designation?.trim() || 'Faculty',
-    department: department?.trim() || 'CSE',
-    advising_class: advising_class || null,
-    advising_batch: advising_batch || null
-  };
-
-  let { data: profile, error: pErr } = await supabase
-    .from('faculty')
-    .insert({ ...facultyPayload, is_hod: !!is_hod })
-    .select()
-    .single();
-
-  if (pErr && (pErr.code === '42703' || pErr.code === 'PGRST204' || pErr.message?.includes('is_hod'))) {
-    const fallback = await supabase
-      .from('faculty')
-      .insert(facultyPayload)
-      .select()
-      .single();
-    profile = fallback.data;
-    pErr = fallback.error;
-  }
-
-  if (pErr) {
-    await supabase.from('users').delete().eq('id', newUser.id);
-    return res.status(500).json({ error: 'Failed to create faculty profile.', details: pErr.message });
-  }
-
-  // Clear cache
-  await cache.del('admin:faculty');
-
-  // Return temporary password ONCE to authorized admin/HOD at account creation
-  res.status(201).json({ id: newUser.id, email, temporary_password: tempPassword, ...profile });
+  res.json({
+    success: true,
+    message: 'Faculty password has been reset. A temporary password has been generated.',
+    temporary_password: tempPassword
+  });
 });
 
 // PATCH /api/admin/faculty/:id - Update faculty (HOD / Admin only)
 router.patch('/faculty/:id', hodMiddleware, async (req, res) => {
   const { id } = req.params;
-  const { designation, department, advising_class, advising_batch, is_hod } = req.body;
+  const { designation, department, advising_class, advising_batch, is_hod, username, employee_id } = req.body;
   const updates = {};
   if (designation !== undefined) updates.designation = designation;
   if (department !== undefined) updates.department = department;
   if (advising_class !== undefined) updates.advising_class = advising_class || null;
   if (advising_batch !== undefined) updates.advising_batch = advising_batch || null;
+  if (username !== undefined) updates.username = String(username).trim().toLowerCase();
+  if (employee_id !== undefined) updates.employee_id = String(employee_id).trim().toUpperCase();
 
   if (Object.keys(updates).length > 0) {
     let { error } = await supabase.from('faculty').update(updates).eq('user_id', id);
+    if (error && (error.code === '42703' || error.code === 'PGRST204')) {
+      delete updates.username;
+      delete updates.employee_id;
+      if (Object.keys(updates).length > 0) {
+        error = (await supabase.from('faculty').update(updates).eq('user_id', id)).error;
+      }
+    }
     if (error) return res.status(500).json({ error: 'Failed to update faculty.', details: error.message });
   }
 
-  // Also update is_hod in users table if provided
-  if (is_hod !== undefined) {
-    const { error: fErr } = await supabase.from('faculty').update({ is_hod: !!is_hod }).eq('user_id', id);
-    if (fErr && (fErr.code === '42703' || fErr.code === 'PGRST204')) {
-      // Ignore if is_hod column does not exist on faculty table
-    }
-    const { error: uErr } = await supabase.from('users').update({ is_hod: !!is_hod }).eq('id', id);
+  // Also update is_hod and username in users table if provided
+  if (is_hod !== undefined || username !== undefined) {
+    const userUpdates = {};
+    if (is_hod !== undefined) userUpdates.is_hod = !!is_hod;
+    if (username !== undefined) userUpdates.username = String(username).trim().toLowerCase();
+
+    const { error: uErr } = await supabase.from('users').update(userUpdates).eq('id', id);
     if (uErr && (uErr.code === '42703' || uErr.code === 'PGRST204')) {
-      // Ignore if is_hod column does not exist on users table
+      // Ignore if columns do not exist on users table
     }
   }
 
@@ -619,8 +775,8 @@ router.patch('/faculty/:id', hodMiddleware, async (req, res) => {
   res.json({ success: true });
 });
 
-// DELETE /api/admin/faculty/:id - Delete faculty (Admin only)
-router.delete('/faculty/:id', strictAdminMiddleware, async (req, res) => {
+// DELETE /api/admin/faculty/:id - Delete faculty (HOD & Admin only)
+router.delete('/faculty/:id', hodMiddleware, async (req, res) => {
   const { id } = req.params;
 
   // 1. Self-deletion protection
@@ -808,6 +964,7 @@ const handleCreateAnnouncement = async (req, res, next) => {
 };
 
 const handleDeleteAnnouncement = async (req, res, next) => {
+  req.url = `/${req.params.id}`;
   return announcementsRouter(req, res, next);
 };
 

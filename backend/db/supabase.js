@@ -104,17 +104,24 @@ async function getUserWithScore(id) {
 // ─── getAdminScope ────────────────────────────────────────────────────────────
 // Identifies if user is full admin/HOD or restricted faculty advisor
 async function getAdminScope(userId, role) {
-  if (role === 'admin') return { hasFullAccess: true };
+  if (role === 'admin') return { hasFullAccess: true, isHod: true, department: 'CSE' };
   if (role === 'faculty') {
-    const { data } = await supabase.from('faculty').select('designation, advising_class, advising_batch').eq('user_id', userId).single();
-    if (data?.designation?.toUpperCase() === 'HOD') return { hasFullAccess: true };
+    const { data } = await supabase.from('faculty').select('designation, advising_class, advising_batch, is_hod, department').eq('user_id', userId).single();
+    const isHod = Boolean(
+      data?.is_hod || 
+      data?.designation?.toUpperCase()?.includes('HOD') || 
+      data?.designation?.toUpperCase() === 'HEAD OF DEPARTMENT'
+    );
+    if (isHod) return { hasFullAccess: true, isHod: true, department: data?.department || 'CSE' };
     return { 
       hasFullAccess: false, 
+      isHod: false,
+      department: data?.department || 'CSE',
       advisingClass: data?.advising_class || null, 
       advisingBatch: data?.advising_batch || null 
     };
   }
-  return { hasFullAccess: false };
+  return { hasFullAccess: false, isHod: false };
 }
 
 module.exports = { supabase, calcPoints, getUserWithScore, getAdminScope };

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import client from '../api/client';
 import CustomSelect from '../components/CustomSelect';
 import FilterModal from '../components/FilterModal';
-import { Search, Star, Link as LinkIcon, GraduationCap, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Star, Link as LinkIcon, GraduationCap, ChevronLeft, ChevronRight, AlertCircle, RefreshCw } from 'lucide-react';
 
 const ALL_SECTIONS = ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D', 'CSE-E'];
 const ALL_BATCHES = ['2024-2028', '2025-2029'];
@@ -13,6 +13,7 @@ export default function Students() {
   const [students, setStudents] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState(null);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [classFilter, setClassFilter] = useState('');
@@ -21,6 +22,7 @@ export default function Students() {
 
   const fetchStudents = async () => {
     setLoading(true);
+    setErrorMsg(null);
     try {
       const params = { page, limit: PAGE_SIZE };
       if (classFilter) params.class = classFilter;
@@ -32,6 +34,7 @@ export default function Students() {
       setTotal(res.data.total || 0);
     } catch (err) {
       console.error('Error fetching students:', err);
+      setErrorMsg(err.response?.data?.error || 'Unable to connect to student records directory.');
     } finally {
       setLoading(false);
     }
@@ -131,9 +134,18 @@ export default function Students() {
           <div style={{ height: '120px' }}></div>
         </FilterModal>
 
-        {/* Grid */}
+        {/* Grid / States */}
         {loading ? (
           <div className="loading-screen"><div className="spinner" /></div>
+        ) : errorMsg ? (
+          <div className="card" style={{ padding: 48, textAlign: 'center', maxWidth: 540, margin: '24px auto', border: '1px solid #ef4444', borderRadius: 16 }}>
+            <AlertCircle size={40} color="#ef4444" style={{ marginBottom: 12 }} />
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#ef4444', margin: 0 }}>Unable to load student records</h3>
+            <p style={{ fontSize: 14, color: 'var(--color-text-muted)', marginTop: 6, marginBottom: 16 }}>{errorMsg}</p>
+            <button className="btn btn-secondary btn-sm" onClick={fetchStudents} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <RefreshCw size={14} /> Retry
+            </button>
+          </div>
         ) : students.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon" style={{ marginBottom: '16px' }}><Search size={48} color="var(--color-green)" strokeWidth={1.5} opacity={0.6} /></div>

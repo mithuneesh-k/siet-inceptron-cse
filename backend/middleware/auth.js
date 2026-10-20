@@ -49,7 +49,12 @@ const authMiddleware = async (req, res, next) => {
         .eq('user_id', userRow.id)
         .maybeSingle();
 
-      const isHod = Boolean(fRow?.is_hod || fRow?.designation?.toUpperCase() === 'HOD' || userRow.role === 'admin');
+      const isHod = Boolean(
+        fRow?.is_hod || 
+        fRow?.designation?.toUpperCase()?.includes('HOD') || 
+        fRow?.designation?.toUpperCase() === 'HEAD OF DEPARTMENT' || 
+        userRow.role === 'admin'
+      );
       extraScope = {
         designation: fRow?.designation || null,
         department: fRow?.department || 'CSE',
@@ -155,7 +160,13 @@ const hodMiddleware = (req, res, next) => {
   if (!['admin', 'faculty'].includes(req.user?.role)) {
     return res.status(403).json({ error: 'HOD access required' });
   }
-  if (req.user.role === 'faculty' && !req.user.is_hod) {
+  const isHod = Boolean(
+    req.user.is_hod || 
+    req.user.role === 'admin' || 
+    req.user.designation?.toUpperCase()?.includes('HOD') || 
+    req.user.designation?.toUpperCase() === 'HEAD OF DEPARTMENT'
+  );
+  if (!isHod) {
     return res.status(403).json({ error: 'HOD access required' });
   }
   next();

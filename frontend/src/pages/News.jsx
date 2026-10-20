@@ -4,8 +4,9 @@ import client from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { AnnouncementImage } from '../utils/announcementHelpers';
+import { compressImage, formatFileSize } from '../utils/imageCompressor';
 import {
-  Bell, Trophy, Briefcase, Award, BookOpen, Calendar, AlertCircle, ChevronLeft, ChevronRight, ExternalLink, X, Maximize2, Search, ArrowRight, Plus, Send, Image as ImageIcon, Upload, CheckCircle
+  Bell, Trophy, Briefcase, Award, BookOpen, Calendar, AlertCircle, ChevronLeft, ChevronRight, ExternalLink, X, Maximize2, Search, ArrowRight, Plus, Send, Image as ImageIcon, Upload, CheckCircle, RefreshCw, Trash2
 } from 'lucide-react';
 
 const TYPE_ICONS = {
@@ -25,6 +26,7 @@ export default function News() {
   const { theme } = useTheme();
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
@@ -40,8 +42,42 @@ export default function News() {
   const [annImageFile, setAnnImageFile] = useState(null);
   const [annImagePreview, setAnnImagePreview] = useState(null);
   const [uploadingAnnImage, setUploadingAnnImage] = useState(false);
+  const [annUploadState, setAnnUploadState] = useState({ status: 'idle', text: '', data: null, error: null });
+  const annUploadPromiseRef = useRef(null);
 
   const canPostNews = Boolean(user && (user.role === 'faculty' || user.role === 'admin' || user.is_admin || user.is_hod || user.designation?.toUpperCase() === 'HOD'));
+  const isHOD = Boolean(user && (user.role === 'admin' || user.is_hod === true || user.designation?.toUpperCase()?.includes('HOD') || user.designation?.toUpperCase() === 'HEAD OF DEPARTMENT'));
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
+  const getActionErrorMessage = (err, defaultMsg = 'Operation failed.') => {
+    if (err?.response?.data?.error) return err.response.data.error;
+    const status = err?.response?.status;
+    if (status === 401) return 'Session expired. Please log in again.';
+    if (status === 403) return 'You do not have permission to delete this announcement.';
+    if (status === 404) return 'This announcement was not found or has already been removed.';
+    if (status === 409) return 'This item could not be deleted because it is still referenced by another record.';
+    if (status >= 500) return 'The database rejected the deletion. Please contact the administrator if the problem continues.';
+    if (!err?.response) return 'Could not connect to the server. Please try again.';
+    return defaultMsg;
+  };
+
+  const handleDeleteAnnouncement = async () => {
+    if (!deleteTarget) return;
+    const targetId = deleteTarget.id;
+    try {
+      const res = await client.delete(`/announcements/${targetId}`);
+      if (res.data?.success) {
+        setAnnouncements(prev => prev.filter(a => a.id !== targetId));
+        showToast('Announcement deleted successfully.');
+        setDeleteTarget(null);
+        if (activeDetailModal?.id === targetId) {
+          setActiveDetailModal(null);
+        }
+      }
+    } catch (err) {
+      showToast(getActionErrorMessage(err, 'Unable to delete announcement. Please try again.'), 'error');
+    }
+  };
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
@@ -49,13 +85,17 @@ export default function News() {
   };
 
   const fetchAnnouncements = async () => {
+    setLoading(true);
+    setErrorMsg(null);
     try {
       const res = await client.get('/announcements');
       if (res.data?.success) {
         setAnnouncements(res.data.announcements || []);
+      } else {
+        setErrorMsg('Failed to load announcements from server.');
       }
-    } catch {
-      setAnnouncements([]);
+    } catch (err) {
+      setErrorMsg(err.response?.data?.error || 'Unable to connect to announcements service.');
     } finally {
       setLoading(false);
     }
@@ -80,7 +120,7 @@ export default function News() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const handleAnnImageChange = (e) => {
+  const handleAnnImageChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
@@ -88,20 +128,72 @@ export default function News() {
       showToast('Invalid file format. Please upload JPEG, PNG, or WEBP image.', 'error');
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      showToast('Image must be 5 MB or smaller.', 'error');
+    if (file.size > 15 * 1024 * 1024) {
+      showToast('Image must be 15 MB or smaller.', 'error');
       return;
     }
+
+    if (annImagePreview) {
+      URL.revokeObjectURL(annImagePreview);
+    }
+    const previewUrl = URL.createObjectURL(file);
+    setAnnImagePreview(previewUrl);
     setAnnImageFile(file);
-    setAnnImagePreview(URL.createObjectURL(file));
+    setAnnUploadState({ status: 'compressing', text: 'Optimizing image...', data: null, error: null });
+
+    // Instantly compress and pre-upload in background while user types post details
+    const uploadPromise = (async () => {
+      try {
+        const compressed = await compressImage(file, { maxWidth: 1400, maxHeight: 1400, quality: 0.82 });
+        setAnnUploadState(prev => ({
+          ...prev,
+          status: 'uploading',
+          text: `Uploading in background (${formatFileSize(compressed.size)})...`
+        }));
+
+        const formData = new FormData();
+        formData.append('file', compressed);
+        const res = await client.post('/uploads/announcement', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+
+        if (res.data?.success) {
+          const uploadResult = {
+            url: res.data.url,
+            storage_ref: res.data.storage_ref,
+            compressedSize: formatFileSize(compressed.size),
+            originalSize: formatFileSize(file.size)
+          };
+          setAnnUploadState({
+            status: 'ready',
+            text: `Ready to post instantly (${formatFileSize(compressed.size)})`,
+            data: uploadResult,
+            error: null
+          });
+          return uploadResult;
+        } else {
+          throw new Error(res.data?.error || 'Upload failed');
+        }
+      } catch (err) {
+        const errMsg = err.response?.data?.error || err.message || 'Image upload failed';
+        setAnnUploadState({ status: 'error', text: errMsg, data: null, error: errMsg });
+        throw err;
+      }
+    })();
+
+    annUploadPromiseRef.current = uploadPromise;
   };
 
   const handleRemoveAnnImage = () => {
+    annUploadPromiseRef.current = null;
     setAnnImageFile(null);
     if (annImagePreview) {
       URL.revokeObjectURL(annImagePreview);
     }
     setAnnImagePreview(null);
+    setAnnUploadState({ status: 'idle', text: '', data: null, error: null });
+    const input = document.getElementById('news-photo-input');
+    if (input) input.value = '';
   };
 
   const handlePostNewsSubmit = async (e) => {
@@ -117,17 +209,18 @@ export default function News() {
 
     try {
       if (annImageFile) {
-        setUploadingAnnImage(true);
-        const formData = new FormData();
-        formData.append('file', annImageFile);
-        const uploadRes = await client.post('/uploads/announcement', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-        if (uploadRes.data?.success) {
-          imageUrl = uploadRes.data.url;
-          imageStoragePath = uploadRes.data.storage_ref;
-        } else {
-          throw new Error('Image upload failed.');
+        if (annUploadState.status === 'ready' && annUploadState.data) {
+          // Image already finished uploading in background — INSTANT!
+          imageUrl = annUploadState.data.url;
+          imageStoragePath = annUploadState.data.storage_ref;
+        } else if (annUploadState.status === 'error') {
+          throw new Error(annUploadState.error || 'Image upload failed. Please re-select the image.');
+        } else if (annUploadPromiseRef.current) {
+          // Upload is still finalizing in background; wait for it
+          setUploadingAnnImage(true);
+          const uploadResult = await annUploadPromiseRef.current;
+          imageUrl = uploadResult.url;
+          imageStoragePath = uploadResult.storage_ref;
         }
       }
 
@@ -353,7 +446,7 @@ export default function News() {
                     />
                     <Upload size={22} style={{ color: 'var(--color-green)', marginBottom: 6 }} />
                     <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--color-text)' }}>Click to upload poster or photo</div>
-                    <div style={{ fontSize: 11, color: 'var(--color-text-faint)', marginTop: 2 }}>JPEG, PNG, or WEBP (Max size: 5 MB)</div>
+                    <div style={{ fontSize: 11, color: 'var(--color-text-faint)', marginTop: 2 }}>JPEG, PNG, or WEBP (Auto-optimized for instant posting)</div>
                   </div>
                 ) : (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'var(--bg-input)', border: '1px solid var(--border)', padding: 10, borderRadius: 12 }}>
@@ -366,8 +459,32 @@ export default function News() {
                       <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {annImageFile?.name || 'Attached Image'}
                       </div>
-                      <div style={{ fontSize: 11, color: 'var(--color-text-faint)', marginTop: 2 }}>
-                        {annImageFile ? `${(annImageFile.size / (1024 * 1024)).toFixed(2)} MB` : 'Ready to post'}
+                      <div style={{ fontSize: 11, marginTop: 3 }}>
+                        {annUploadState.status === 'compressing' && (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--accent, #3b82f6)' }}>
+                            <RefreshCw size={11} className="spin" /> Optimizing image...
+                          </span>
+                        )}
+                        {annUploadState.status === 'uploading' && (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#f59e0b' }}>
+                            <RefreshCw size={11} className="spin" /> {annUploadState.text}
+                          </span>
+                        )}
+                        {annUploadState.status === 'ready' && (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#10b981', fontWeight: 600 }}>
+                            <CheckCircle size={12} /> Ready to post instantly ({annUploadState.data?.compressedSize})
+                          </span>
+                        )}
+                        {annUploadState.status === 'error' && (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#ef4444' }}>
+                            <AlertCircle size={11} /> {annUploadState.error}
+                          </span>
+                        )}
+                        {annUploadState.status === 'idle' && (
+                          <span style={{ color: 'var(--color-text-faint)' }}>
+                            {annImageFile ? formatFileSize(annImageFile.size) : 'Ready to post'}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <button
@@ -401,7 +518,7 @@ export default function News() {
                   className="btn btn-primary"
                   style={{ padding: '10px 22px', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}
                 >
-                  <Send size={15} /> {uploadingAnnImage ? 'Uploading Image...' : notifyLoading ? 'Broadcasting...' : 'Post News & Notify'}
+                  <Send size={15} /> {uploadingAnnImage ? 'Finalizing Image...' : notifyLoading ? 'Broadcasting...' : 'Post News & Notify'}
                 </button>
               </div>
             </form>
@@ -445,8 +562,17 @@ export default function News() {
           </div>
         </div>
 
-        {/* Loading State */}
-        {loading ? (
+        {/* Error State */}
+        {errorMsg ? (
+          <div className="card" style={{ padding: 48, textAlign: 'center', maxWidth: 860, marginInline: 'auto', border: '1px solid #ef4444' }}>
+            <AlertCircle size={40} style={{ color: '#ef4444', marginBottom: 12 }} />
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#ef4444', margin: 0 }}>Unable to load announcements</h3>
+            <p style={{ fontSize: 14, color: 'var(--color-text-muted)', marginTop: 6, marginBottom: 16 }}>{errorMsg}</p>
+            <button className="btn btn-secondary btn-sm" onClick={fetchAnnouncements} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <RefreshCw size={14} /> Retry
+            </button>
+          </div>
+        ) : loading ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 860, marginInline: 'auto' }}>
             {[1, 2, 3].map(i => (
               <div key={i} className="card" style={{ height: 260, padding: 20 }}>
@@ -457,7 +583,7 @@ export default function News() {
         ) : filteredAnnouncements.length === 0 ? (
           <div className="card" style={{ padding: 48, textAlign: 'center', maxWidth: 860, marginInline: 'auto' }}>
             <Bell size={40} style={{ color: 'var(--color-text-muted)', marginBottom: 12, opacity: 0.5 }} />
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--color-text)', margin: 0 }}>No announcements found.</h3>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--color-text)', margin: 0 }}>No news announcements available yet.</h3>
             <p style={{ fontSize: 14, color: 'var(--color-text-muted)', marginTop: 6, marginBottom: 0 }}>
               {searchTerm || selectedCategory !== 'All' ? 'Try adjusting your search or category filter.' : 'Check back later for new notices.'}
             </p>
@@ -604,6 +730,18 @@ export default function News() {
                             >
                               <ExternalLink size={12} /> Link
                             </a>
+                          )}
+
+                          {Boolean(isHOD || user?.role === 'admin' || (user && (user.id === ann.created_by || user.id === ann.author_id))) && (
+                            <button
+                              type="button"
+                              className="btn btn-ghost btn-xs"
+                              style={{ color: '#ef4444', fontSize: 12, padding: '4px 8px', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                              onClick={() => setDeleteTarget(ann)}
+                              title="Delete Announcement"
+                            >
+                              <Trash2 size={12} /> Delete
+                            </button>
                           )}
 
                           <button
@@ -830,6 +968,61 @@ export default function News() {
               />
               <div style={{ color: '#ffffff', marginTop: 14, textAlign: 'center', fontWeight: 700, fontSize: 16 }}>
                 {activeImageModal.title}
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Delete Confirmation Modal */}
+        {deleteTarget && (
+          <div
+            className="modal-overlay"
+            style={{
+              position: 'fixed',
+              top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(0, 0, 0, 0.7)',
+              backdropFilter: 'blur(6px)',
+              zIndex: 10000,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 16
+            }}
+            onClick={e => { if (e.target === e.currentTarget) setDeleteTarget(null); }}
+          >
+            <div
+              className="card"
+              style={{
+                width: '100%',
+                maxWidth: 420,
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border)',
+                borderRadius: 16,
+                padding: 24,
+                boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
+              }}
+            >
+              <h3 style={{ fontSize: 17, fontWeight: 800, margin: '0 0 10px', color: '#ef4444', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Trash2 size={18} /> Confirm Delete
+              </h3>
+              <p style={{ fontSize: 13.5, color: 'var(--color-text-muted)', margin: '0 0 20px', lineHeight: 1.5 }}>
+                Are you sure you want to permanently delete <strong>"{deleteTarget.title}"</strong>? This will remove it from all student and department feeds.
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setDeleteTarget(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={handleDeleteAnnouncement}
+                  style={{ padding: '8px 18px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer' }}
+                >
+                  Yes, Delete
+                </button>
               </div>
             </div>
           </div>

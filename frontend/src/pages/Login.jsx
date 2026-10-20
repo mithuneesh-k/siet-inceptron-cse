@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import SwitchMode from '../components/ui/switch-mode';
-import { Eye, EyeOff, Lock, User, ArrowRight, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, Lock, User, ArrowRight, AlertCircle, ArrowLeft, Shield } from 'lucide-react';
 
 export default function Login() {
   const { login } = useAuth();
@@ -22,7 +22,7 @@ export default function Login() {
       await login(form.email, form.password);
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.error || 'Login failed. Please try again.');
+      setError(err.response?.data?.error || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
@@ -78,8 +78,8 @@ export default function Login() {
               </div>
 
               <div className="auth-07-card-header">
-                <h2 className="auth-07-card-title">Welcome back</h2>
-                <p className="auth-07-card-subtitle">Sign in to pick up right where you left off.</p>
+                <h2 className="auth-07-card-title">Faculty Portal</h2>
+                <p className="auth-07-card-subtitle">Teacher-only authentication and student monitoring access.</p>
               </div>
 
               {error && (
@@ -92,7 +92,7 @@ export default function Login() {
               <form onSubmit={handleSubmit} className="auth-07-form">
                 <div className="auth-07-field">
                   <label htmlFor="login-email" className="auth-07-label">
-                    Email / Register No
+                    Username / Employee ID / Email
                   </label>
                   <div className="auth-07-input-wrapper">
                     <User size={18} className="auth-07-input-icon" />
@@ -100,7 +100,7 @@ export default function Login() {
                       id="login-email"
                       type="text"
                       className="auth-07-input"
-                      placeholder="e.g. hodcse@siet.ac.in or 714025104173"
+                      placeholder="e.g. hodcse, FAC002, or admin@siet.ac.in"
                       value={form.email}
                       onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                       required
@@ -158,40 +158,25 @@ export default function Login() {
                   {loading ? (
                     <>
                       <span className="auth-07-spinner" />
-                      <span>Signing In...</span>
+                      <span>Authenticating...</span>
                     </>
                   ) : (
                     <>
-                      <span>Sign In</span>
+                      <span>Sign In as Faculty</span>
                       <ArrowRight size={18} />
                     </>
                   )}
                 </button>
               </form>
 
-              {/* Test Credentials Helper */}
-              <div className="auth-07-demo-section">
-                <div className="auth-07-divider">
-                  <span>TEST CREDENTIALS</span>
+              {/* Faculty Access Policy Info */}
+              <div className="auth-07-demo-section" style={{ marginTop: 24, padding: '16px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: 12, border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-green, #10b981)', fontWeight: 700, fontSize: 13, marginBottom: 6 }}>
+                  <Shield size={16} /> Faculty Authentication Only
                 </div>
-                <div className="auth-07-demo-buttons">
-                  <button
-                    type="button"
-                    className="auth-07-demo-btn"
-                    onClick={() => setForm({ email: 'admin@siet.ac.in', password: 'password123' })}
-                  >
-                    <span className="auth-07-demo-badge">Admin</span>
-                    <span className="auth-07-demo-val">admin@siet.ac.in</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="auth-07-demo-btn"
-                    onClick={() => setForm({ email: 'hodcse@siet.ac.in', password: 'password123' })}
-                  >
-                    <span className="auth-07-demo-badge">Faculty</span>
-                    <span className="auth-07-demo-val">hodcse@siet.ac.in</span>
-                  </button>
-                </div>
+                <p style={{ margin: 0, fontSize: 12, color: 'var(--color-text-muted, #94a3b8)', lineHeight: 1.5 }}>
+                  Access is restricted to authorized faculty and departmental administrators. Students do not log in; student records and academic performance are monitored securely by faculty.
+                </p>
               </div>
             </div>
           </div>
@@ -334,7 +319,14 @@ export default function Login() {
           border-color: var(--theme-primary, #2A7D14) !important;
         }
 
+        [data-theme="light"] .auth-07-demo-btn:disabled {
+          opacity: 0.6 !important;
+          cursor: not-allowed !important;
+          transform: none !important;
+        }
+
         [data-theme="light"] .auth-07-demo-badge { color: var(--color-text, #0f172a) !important; }
+        [data-theme="light"] .auth-07-demo-subtext { color: #64748b !important; }
 
         [data-theme="light"] .auth-07-demo-val {
           background: var(--theme-soft, #f0fdf4) !important;
@@ -836,6 +828,26 @@ export default function Login() {
           background: #161a26;
           border-color: var(--theme-primary, #84cc16);
           transform: translateY(-1px);
+        }
+
+        .auth-07-demo-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+          transform: none;
+        }
+
+        .auth-07-demo-btn-left {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 2px;
+          text-align: left;
+        }
+
+        .auth-07-demo-subtext {
+          font-size: 11px;
+          color: var(--color-text-muted, #94a3b8);
+          font-weight: 500;
         }
 
         .auth-07-demo-badge {

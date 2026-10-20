@@ -643,6 +643,7 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
     assert.strictEqual(resBody.success, true);
     assert.strictEqual(resBody.announcement.title, 'Hackathon Alert');
     assert.strictEqual(resBody.announcement.is_important, false);
+    const hackathonAnnId = resBody.announcement.id;
 
     // 53B. Admin creates important announcement
     await runCall({
@@ -693,6 +694,7 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
       body: { title: 'Expired Event', message: 'Old event', expires_at: new Date(Date.now() - 3600000).toISOString() },
       user: { id: 'admin1', role: 'admin', is_admin: true }
     });
+    const expiredAnnId = resBody.announcement.id;
     await runCall({
       method: 'GET',
       url: '/',
@@ -747,8 +749,10 @@ test('29. Achievement mutation does not global-flush unrelated cache', () => {
     assert.strictEqual(resBody.success, true);
     assert.strictEqual(resBody.deletedId, imageAnnId);
 
-    // Clean up test state
-    if (announcementsRouter._resetInMemory) announcementsRouter._resetInMemory();
+    // Clean up remaining test announcements so database is not polluted
+    await runCall({ method: 'DELETE', url: `/${hackathonAnnId}`, user: { id: 'admin1', role: 'admin', is_admin: true } });
+    await runCall({ method: 'DELETE', url: `/${importantId}`, user: { id: 'admin1', role: 'admin', is_admin: true } });
+    await runCall({ method: 'DELETE', url: `/${expiredAnnId}`, user: { id: 'admin1', role: 'admin', is_admin: true } });
   });
 
   await asyncTest('54. Scoring Consistency: Canonical stats & Leaderboard vs Admin Overview alignment', async () => {

@@ -175,15 +175,26 @@ router.post('/announcement', authMiddleware, adminMiddleware, uploadUserLimiter,
     const uuid = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(8).toString('hex');
     const safeFilename = `${Date.now()}-${uuid}${ext}`;
 
-    const { data, error } = await supabase.storage
+    let uploadResult = await supabase.storage
       .from('department-posts')
       .upload(safeFilename, buffer, {
         contentType: mimetype,
         upsert: false
       });
 
-    if (error) {
-      return res.status(500).json({ error: 'Failed to upload announcement image' });
+    if (uploadResult.error && uploadResult.error.message?.includes('Bucket not found')) {
+      await supabase.storage.createBucket('department-posts', { public: true }).catch(() => {});
+      uploadResult = await supabase.storage
+        .from('department-posts')
+        .upload(safeFilename, buffer, {
+          contentType: mimetype,
+          upsert: false
+        });
+    }
+
+    if (uploadResult.error) {
+      console.error('Supabase announcement image upload error:', uploadResult.error);
+      return res.status(500).json({ error: 'Failed to upload announcement image: ' + (uploadResult.error.message || 'Storage error') });
     }
 
     const storageRef = `storage://department-posts/${safeFilename}`;

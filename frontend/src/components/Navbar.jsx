@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import SwitchMode from './ui/switch-mode';
 import client from '../api/client';
-import { Home, Zap, Trophy, GraduationCap, Users, User, Shield, CheckCircle, Code, Sun, Moon, Bell, AlertCircle, ChevronRight, Palette } from 'lucide-react';
+import { Home, Zap, Trophy, GraduationCap, Users, User, Shield, CheckCircle, Code, Sun, Moon, Bell, AlertCircle, ChevronRight, Palette, Laptop } from 'lucide-react';
 import { subscribeAchievementEvents } from '../utils/achievementEvents';
 import { AnnouncementImage } from '../utils/announcementHelpers';
 import './Navbar.css';
@@ -90,11 +90,10 @@ export default function Navbar() {
 
   const navLinks = [
     { to: '/', label: 'Home', shortLabel: 'Home', icon: <Home size={16} /> },
-    { to: '/updates', label: 'Updates', shortLabel: 'Updates', icon: <Zap size={16} />, studentOnly: true },
     { to: '/news', label: 'News', shortLabel: 'News', icon: <Bell size={16} />, isNews: true },
+    { to: '/showcase', label: 'Showcase', shortLabel: 'Showcase', icon: <Laptop size={16} /> },
     { to: '/leaderboard', label: 'Leaderboard', shortLabel: 'Leaderboard', icon: <Trophy size={16} /> },
-    { to: '/platforms', label: 'Platforms', shortLabel: 'Platforms', icon: <Code size={16} /> },
-    { to: '/students', label: 'Students', shortLabel: 'Students', icon: <GraduationCap size={16} />, staffOnly: true },
+    { to: '/students', label: 'Students', shortLabel: 'Students', icon: <GraduationCap size={16} /> },
   ];
 
   return (
@@ -112,10 +111,6 @@ export default function Navbar() {
 
         <div className={`navbar-links ${menuOpen ? 'open' : ''}`}>
           {navLinks.map(link => {
-            // Hide student-only links from non-student accounts (Faculty / Admin)
-            if (link.studentOnly && (user?.is_admin || (user?.role && user?.role !== 'student'))) return null;
-            // Hide staff-only links (Students directory) from student accounts
-            if (link.staffOnly && (!user?.is_admin && (!user?.role || user?.role === 'student'))) return null;
 
             if (link.isNews) {
               return (
@@ -216,12 +211,19 @@ export default function Navbar() {
           })}
 
           {user && (user.is_admin || user.role === 'admin' || user.role === 'faculty') && (
-            <Link to="/admin" className={`nav-link ${isActive('/admin') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
-              <span className="nav-icon"><Shield size={16} /></span>
-              <span className="nav-label-full">{user.role === 'faculty' ? 'Management' : 'Admin'}</span>
-              <span className="nav-label-short">{user.role === 'faculty' ? 'Manage' : 'Admin'}</span>
-              {user.role === 'faculty' && pendingCount > 0 && <span className="nav-pending-badge">{pendingCount}</span>}
-            </Link>
+            <>
+              <Link to="/showcase/manage" className={`nav-link ${isActive('/showcase/manage') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
+                <span className="nav-icon"><Laptop size={16} /></span>
+                <span className="nav-label-full">Manage Showcase</span>
+                <span className="nav-label-short">Showcase CMS</span>
+              </Link>
+              <Link to="/admin" className={`nav-link ${isActive('/admin') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
+                <span className="nav-icon"><Shield size={16} /></span>
+                <span className="nav-label-full">{user.role === 'faculty' ? 'Management' : 'Admin'}</span>
+                <span className="nav-label-short">{user.role === 'faculty' ? 'Manage' : 'Admin'}</span>
+                {user.role === 'faculty' && pendingCount > 0 && <span className="nav-pending-badge">{pendingCount}</span>}
+              </Link>
+            </>
           )}
         </div>
 

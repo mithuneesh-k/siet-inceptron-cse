@@ -88,121 +88,23 @@ router.get('/leaderboard', authMiddleware, async (req, res, next) => {
 });
 
 // ─── GET /api/platforms/admin/connections ────────────────────────────────────
-router.get('/admin/connections', authMiddleware, async (req, res, next) => {
-  try {
-    const isAuthorized = req.user && (req.user.is_admin || req.user.role === 'admin' || req.user.role === 'faculty');
-    if (!isAuthorized) {
-      return res.status(403).json({ error: 'Only faculty and admins may view platform connections.' });
-    }
-
-    const scope = await getAdminScope(req.user.id, req.user.role);
-
-    const { connections, error: connErr } = await platformStore.getAllPlatformConnections();
-    if (connErr) {
-      return res.status(500).json({ error: 'Failed to fetch platform connections.' });
-    }
-
-    let studentQuery = supabase
-      .from('students')
-      .select('user_id, name, roll_no, class, batch');
-
-    if (!scope.hasFullAccess) {
-      if (!scope.advisingClass || !scope.advisingBatch) {
-        return res.json({ success: true, connections: [] });
-      }
-      studentQuery = studentQuery.eq('class', scope.advisingClass).eq('batch', scope.advisingBatch);
-    }
-
-    const { data: students, error: studentErr } = await studentQuery;
-    if (studentErr) {
-      return res.status(500).json({ error: 'Failed to fetch student profile data.' });
-    }
-
-    const studentMap = new Map();
-    if (students) {
-      students.forEach(s => studentMap.set(s.user_id, s));
-    }
-
-    const result = [];
-    for (const conn of (connections || [])) {
-      if (studentMap.has(conn.user_id)) {
-        const student = studentMap.get(conn.user_id);
-        result.push({
-          userId: conn.user_id,
-          studentName: student.name || 'Unknown Student',
-          rollNo: student.roll_no || student.rollNo || null,
-          class: student.class || null,
-          batch: student.batch || null,
-          platformCode: conn.platform_code,
-          handle: conn.handle,
-          normalizedHandle: conn.normalized_handle,
-          ownershipVerified: Boolean(conn.ownership_verified),
-          status: conn.status,
-          lastSyncedAt: conn.last_synced_at,
-          lastAttemptedAt: conn.last_attempted_at,
-          lastErrorCode: conn.last_error_code,
-          metrics: conn.metrics
-        });
-      }
-    }
-
-    res.json({ success: true, connections: result });
-  } catch (err) {
-    next(err);
-  }
+// Deprecated: Platform verification UI has been retired from the portal
+router.get('/admin/connections', authMiddleware, async (req, res) => {
+  return res.status(410).json({ 
+    success: false, 
+    error: 'Platform connection verification feature has been retired. Coding platform rankings are computed automatically.', 
+    code: 'FEATURE_RETIRED' 
+  });
 });
 
 // ─── POST /api/platforms/admin/verify ─────────────────────────────────────────
-router.post('/admin/verify', authMiddleware, async (req, res, next) => {
-  try {
-    const isAuthorized = req.user && (req.user.is_admin || req.user.role === 'admin' || req.user.role === 'faculty');
-    if (!isAuthorized) {
-      return res.status(403).json({ error: 'Only faculty and admins may verify platform connections.' });
-    }
-
-    const { userId, platformCode, verified } = req.body;
-    if (!userId || !platformCode) {
-      return res.status(400).json({ error: 'userId and platformCode are required.' });
-    }
-
-    const scope = await getAdminScope(req.user.id, req.user.role);
-    if (!scope.hasFullAccess) {
-      if (!scope.advisingClass || !scope.advisingBatch) {
-        return res.status(403).json({ error: 'You are not assigned to advise any class or batch.' });
-      }
-
-      const { data: targetStudent, error: studentErr } = await supabase
-        .from('students')
-        .select('user_id, class, batch')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (studentErr || !targetStudent) {
-        return res.status(404).json({ error: 'Target student profile not found.' });
-      }
-
-      if (targetStudent.class !== scope.advisingClass || targetStudent.batch !== scope.advisingBatch) {
-        return res.status(403).json({ error: 'You can only verify platform connections for students in your assigned class and batch.' });
-      }
-    }
-
-    const result = await platformStore.updateConnectionStatus(userId, platformCode, {
-      ownership_verified: Boolean(verified)
-    });
-
-    if (result.error) {
-      return res.status(500).json({ error: 'Failed to update platform verification status.' });
-    }
-
-    // Invalidate competitive leaderboard and platform state caches
-    const cache = require('../services/cache');
-    await cache.delPrefix('platforms:');
-    await cache.delPrefix('leaderboard:');
-
-    res.json({ success: true, connection: result.connection });
-  } catch (err) {
-    next(err);
-  }
+// Deprecated: Manual platform verification has been retired
+router.post('/admin/verify', authMiddleware, async (req, res) => {
+  return res.status(410).json({ 
+    success: false, 
+    error: 'Manual platform verification has been retired. Student rankings are updated automatically via platform sync.', 
+    code: 'FEATURE_RETIRED' 
+  });
 });
 
 function studentOnlyMiddleware(req, res, next) {
@@ -280,26 +182,13 @@ router.post('/sync-stale', authMiddleware, studentOnlyMiddleware, async (req, re
 });
 
 // ─── POST /api/platforms/verify ──────────────────────────────────────────────
-router.post('/verify', authMiddleware, studentOnlyMiddleware, async (req, res, next) => {
-  try {
-    const { platformCode } = req.body;
-    if (!platformCode) {
-      return res.status(400).json({ error: 'Platform code is required.' });
-    }
-
-    const result = await platformSyncService.verifyPlatform(req.user.id, platformCode);
-    if (result.status && result.status !== 200) {
-      return res.status(result.status).json({ error: result.error, success: false });
-    }
-
-    const cache = require('../services/cache');
-    await cache.delPrefix('platforms:');
-    await cache.delPrefix('leaderboard:');
-
-    res.status(200).json(result);
-  } catch (err) {
-    next(err);
-  }
+// Deprecated: Token verification retired as teacher-only authentication is enforced
+router.post('/verify', authMiddleware, async (req, res) => {
+  return res.status(410).json({ 
+    success: false, 
+    error: 'Platform handle token verification has been retired.', 
+    code: 'FEATURE_RETIRED' 
+  });
 });
 
 // ─── DELETE /api/platforms/:platformCode ──────────────────────────────────────

@@ -16,6 +16,7 @@ function lazyWithPreload(factory) {
 const Landing = lazyWithPreload(() => import('./pages/Landing'));
 const Intro = lazyWithPreload(() => import('./pages/Intro'));
 const Showcase = lazyWithPreload(() => import('./pages/Showcase'));
+const ShowcaseManage = lazyWithPreload(() => import('./pages/ShowcaseManage'));
 const Login = lazyWithPreload(() => import('./pages/Login'));
 const Profile = lazyWithPreload(() => import('./pages/Profile'));
 const Leaderboard = lazyWithPreload(() => import('./pages/Leaderboard'));
@@ -25,12 +26,10 @@ const Admin = lazyWithPreload(() => import('./pages/Admin'));
 const Approvals = lazyWithPreload(() => import('./pages/Approvals'));
 const Students = lazyWithPreload(() => import('./pages/Students'));
 const EditProfile = lazyWithPreload(() => import('./pages/EditProfile'));
-const Updates = lazyWithPreload(() => import('./pages/Updates'));
-const Platforms = lazyWithPreload(() => import('./pages/Platforms'));
 const News = lazyWithPreload(() => import('./pages/News'));
 const ThemeSettings = lazyWithPreload(() => import('./pages/ThemeSettings'));
 
-const priorityPreloads = [Leaderboard, CompetitiveLeaderboard, Students, Updates, Platforms, News, Showcase];
+const priorityPreloads = [Leaderboard, CompetitiveLeaderboard, Students, News, Showcase];
 const backgroundPreloads = [Landing, Intro, Login, Profile, Teams, Admin, Approvals, EditProfile, ThemeSettings];
 
 function preloadRoutes(routes) {
@@ -49,7 +48,8 @@ if (typeof window !== 'undefined') {
 function ProtectedRoute({ children, adminOnly = false }) {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
-  if (adminOnly && !user.is_admin) return <Navigate to="/" replace />;
+  const isStaff = Boolean(user.is_admin || user.role === 'admin' || user.role === 'faculty');
+  if (adminOnly && !isStaff) return <Navigate to="/" replace />;
   return children;
 }
 
@@ -57,13 +57,6 @@ function FacultyOnlyRoute({ children }) {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
   if (user.role !== 'faculty') return <Navigate to="/" replace />;
-  return children;
-}
-
-function StudentOnlyRoute({ children }) {
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
-  if (user.is_admin || (user.role && user.role !== 'student')) return <Navigate to="/" replace />;
   return children;
 }
 
@@ -82,13 +75,15 @@ function AppContent() {
         <Routes>
           <Route path="/" element={user ? <Landing /> : <Intro />} />
           <Route path="/showcase" element={<Showcase />} />
+          <Route path="/showcase/manage" element={<ProtectedRoute adminOnly><ShowcaseManage /></ProtectedRoute>} />
           <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
+          <Route path="/register" element={<Navigate to="/login" replace />} />
           <Route path="/dashboard" element={<ProtectedRoute><Landing /></ProtectedRoute>} />
-          <Route path="/updates" element={<StudentOnlyRoute><Updates /></StudentOnlyRoute>} />
+          <Route path="/updates" element={<Navigate to="/news" replace />} />
           <Route path="/news" element={<ProtectedRoute><News /></ProtectedRoute>} />
           <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
           <Route path="/competitive-leaderboard" element={<Navigate to="/leaderboard?tab=competitive" replace />} />
-          <Route path="/platforms" element={<ProtectedRoute><Platforms /></ProtectedRoute>} />
+          <Route path="/platforms" element={<Navigate to="/leaderboard" replace />} />
           <Route path="/teams" element={<ProtectedRoute><Teams /></ProtectedRoute>} />
           <Route path="/students" element={<ProtectedRoute adminOnly><Students /></ProtectedRoute>} />
           <Route path="/profile/:id" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

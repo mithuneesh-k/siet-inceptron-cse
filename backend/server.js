@@ -44,7 +44,7 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/achievements', require('./routes/achievements'));
 app.use('/api/leaderboard', require('./routes/leaderboard'));
 app.use('/api/teams', require('./routes/teams'));
-app.use('/api/updates', require('./routes/updates'));
+app.use('/api/showcase', require('./routes/showcase'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/uploads', require('./routes/uploads').router);
 app.use('/api/platforms', require('./routes/platforms'));

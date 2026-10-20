@@ -8,20 +8,16 @@ export function AuthProvider({ children }) {
     try { return JSON.parse(localStorage.getItem('SIET_user')); } catch { return null; }
   });
 
-  const login = useCallback(async (email, password) => {
-    const { data } = await client.post('/auth/login', { email, password });
+  const login = useCallback(async (identifier, password) => {
+    const { data } = await client.post('/auth/login', { identifier, email: identifier, password });
     localStorage.setItem('SIET_token', data.token);
     localStorage.setItem('SIET_user', JSON.stringify(data.user));
     setUser(data.user);
     return data.user;
   }, []);
 
-  const register = useCallback(async (formData) => {
-    const { data } = await client.post('/auth/register', formData);
-    localStorage.setItem('SIET_token', data.token);
-    localStorage.setItem('SIET_user', JSON.stringify(data.user));
-    setUser(data.user);
-    return data.user;
+  const register = useCallback(async () => {
+    throw new Error('Public registration is disabled. Only authorized faculty accounts may log in.');
   }, []);
 
   const logout = useCallback(() => {

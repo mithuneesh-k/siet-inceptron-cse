@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import client from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
@@ -12,10 +12,11 @@ import FacultyActionModal from '../components/FacultyActionModal';
 import ConfirmModal from '../components/ConfirmModal';
 import SplitActions from '../components/ui/split-actions';
 import Approvals from './Approvals';
+import { compressImage, formatFileSize } from '../utils/imageCompressor';
 import { 
   Shield, BarChart2, Users, Settings, GraduationCap, Hourglass, 
   Award, TrendingUp, List, RefreshCw, Trash2, Download, Plus, 
-  Edit3, Key, Check, X, ExternalLink, Inbox, Search, CheckCircle, Code, Send, Image as ImageIcon, Upload
+  Edit3, Key, Copy, Check, X, ExternalLink, Inbox, Search, CheckCircle, Send, Image as ImageIcon, Upload, AlertCircle
 } from 'lucide-react';
 
 const CLASSES = ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D', 'CSE-E'];
@@ -54,13 +55,9 @@ export default function Admin() {
   const [editFaculty, setEditFaculty] = useState(null);
   const [showAddFacModal, setShowAddFacModal] = useState(false);
   const [deleteFacultyTarget, setDeleteFacultyTarget] = useState(null);
+  const [tempPasswordModal, setTempPasswordModal] = useState(null);
 
-  // Platform Verification state
-  const [platformConnections, setPlatformConnections] = useState([]);
-  const [platLoading, setPlatLoading] = useState(false);
-  const [platSearch, setPlatSearch] = useState('');
-  const [platStatusFilter, setPlatStatusFilter] = useState('all');
-  const [platPlatformFilter, setPlatPlatformFilter] = useState('all');
+
 
   // Post & Notify state
   const [notifyForm, setNotifyForm] = useState({ title: '', type: 'General', message: '', is_important: false, target: 'all', link: '', expires_at: '' });
@@ -70,6 +67,8 @@ export default function Admin() {
   const [annImageFile, setAnnImageFile] = useState(null);
   const [annImagePreview, setAnnImagePreview] = useState(null);
   const [uploadingAnnImage, setUploadingAnnImage] = useState(false);
+  const [annUploadState, setAnnUploadState] = useState({ status: 'idle', text: '', data: null, error: null });
+  const annUploadPromiseRef = useRef(null);
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
@@ -89,8 +88,7 @@ export default function Admin() {
     { id: 'overview', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><BarChart2 size={16} /> Overview</span> },
     { id: 'students', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Users size={16} /> Students</span> },
     { id: 'manage', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Settings size={16} /> Manage</span> },
-    ...(isFullAdmin ? [{ id: 'faculty', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><GraduationCap size={16} /> Faculty</span> }] : []),
-    { id: 'platforms', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Code size={16} /> Platform Verification</span> },
+    ...(isAdmin ? [{ id: 'faculty', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><GraduationCap size={16} /> Faculty</span> }] : []),
     ...(isCanPostNotify ? [{ id: 'notify', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Send size={16} /> Post & Notify</span> }] : []),
     ...(isFacultyRole ? [{ id: 'approvals', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><CheckCircle size={16} /> Approvals</span> }] : []),
   ];
@@ -151,7 +149,8 @@ export default function Admin() {
     setFacLoading(true);
     try {
       const res = await client.get('/admin/faculty');
-      setFaculties(res.data);
+      const list = Array.isArray(res.data) ? res.data : (res.data?.faculties || []);
+      setFaculties(list);
     } catch {
       showToast('Failed to load faculty list.', 'error');
     } finally {
@@ -159,36 +158,20 @@ export default function Admin() {
     }
   }, []);
 
-  const loadPlatformConnections = useCallback(async () => {
-    setPlatLoading(true);
-    try {
-      const res = await client.get('/platforms/admin/connections');
-      setPlatformConnections(res.data?.connections || []);
-    } catch {
-      showToast('Failed to load platform connections.', 'error');
-    } finally {
-      setPlatLoading(false);
-    }
-  }, []);
 
-  const handleAdminVerifyPlatform = async (userId, platformCode, verifyStatus) => {
-    try {
-      const res = await client.post('/platforms/admin/verify', {
-        userId,
-        platformCode,
-        verified: verifyStatus
-      });
-      if (res.data?.success) {
-        setPlatformConnections(prev => prev.map(c =>
-          (c.userId === userId && c.platformCode === platformCode)
-            ? { ...c, ownershipVerified: verifyStatus }
-            : c
-        ));
-        showToast(verifyStatus ? 'Platform connection verified! ✅' : 'Platform connection unverified.');
-      }
-    } catch (err) {
-      showToast(err.response?.data?.error || 'Failed to update verification status.', 'error');
+
+  const getActionErrorMessage = (err, defaultMsg = 'Operation failed.') => {
+    if (err?.response?.data?.error) {
+      return err.response.data.error;
     }
+    const status = err?.response?.status;
+    if (status === 401) return 'Session expired. Please log in again.';
+    if (status === 403) return 'You do not have permission to delete this item.';
+    if (status === 404) return 'This item was not found or has already been removed.';
+    if (status === 409) return 'This item could not be deleted because it is still referenced by another record.';
+    if (status >= 500) return 'The database rejected the deletion. Please contact the administrator if the problem continues.';
+    if (!err?.response) return 'Could not connect to the server. Please try again.';
+    return defaultMsg;
   };
 
   const handleDeleteFacultyConfirm = async () => {
@@ -215,9 +198,28 @@ export default function Admin() {
         await client.delete(`/admin/faculty/${targetId}`);
       },
       onFailure: (err) => {
-        showToast(err?.response?.data?.error || 'Unable to delete faculty. Please try again.', 'error');
+        showToast(getActionErrorMessage(err, 'Unable to delete faculty. Please try again.'), 'error');
       }
     });
+  };
+
+  const handleResetFacultyPassword = async (faculty) => {
+    const targetId = faculty.user_id || faculty.id;
+    try {
+      const res = await client.post(`/admin/faculty/${targetId}/reset-password`);
+      if (res.data?.temporary_password) {
+        setTempPasswordModal({
+          name: faculty.name,
+          username: faculty.username,
+          password: res.data.temporary_password
+        });
+        showToast(`Temporary password generated for ${faculty.name}`, 'success');
+      } else {
+        showToast('Password reset successfully.', 'success');
+      }
+    } catch (err) {
+      showToast(err.response?.data?.error || 'Failed to reset faculty password.', 'error');
+    }
   };
 
   const loadAnnouncements = useCallback(async () => {
@@ -234,9 +236,8 @@ export default function Admin() {
   useEffect(() => {
     if (tab === 'manage') loadManagedStudents();
     if (tab === 'faculty') loadFaculties();
-    if (tab === 'platforms') loadPlatformConnections();
     if (tab === 'notify') loadAnnouncements();
-  }, [tab, loadManagedStudents, loadFaculties, loadPlatformConnections, loadAnnouncements]);
+  }, [tab, loadManagedStudents, loadFaculties, loadAnnouncements]);
 
   const handleDeleteAnnouncementConfirm = async () => {
     if (!deleteAnnTarget) return;
@@ -262,12 +263,12 @@ export default function Admin() {
         await client.delete(`/announcements/${targetId}`);
       },
       onFailure: (err) => {
-        showToast(err?.response?.data?.error || 'Unable to delete announcement. Please try again.', 'error');
+        showToast(getActionErrorMessage(err, 'Unable to delete announcement. Please try again.'), 'error');
       }
     });
   };
 
-  const handleAnnImageChange = (e) => {
+  const handleAnnImageChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
@@ -275,20 +276,72 @@ export default function Admin() {
       showToast('Invalid file format. Please upload JPEG, PNG, or WEBP image.', 'error');
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      showToast('Image must be 5 MB or smaller.', 'error');
+    if (file.size > 15 * 1024 * 1024) {
+      showToast('Image must be 15 MB or smaller.', 'error');
       return;
     }
+
+    if (annImagePreview) {
+      URL.revokeObjectURL(annImagePreview);
+    }
+    const previewUrl = URL.createObjectURL(file);
+    setAnnImagePreview(previewUrl);
     setAnnImageFile(file);
-    setAnnImagePreview(URL.createObjectURL(file));
+    setAnnUploadState({ status: 'compressing', text: 'Optimizing image...', data: null, error: null });
+
+    // Instantly compress and pre-upload in background while user types notification details
+    const uploadPromise = (async () => {
+      try {
+        const compressed = await compressImage(file, { maxWidth: 1400, maxHeight: 1400, quality: 0.82 });
+        setAnnUploadState(prev => ({
+          ...prev,
+          status: 'uploading',
+          text: `Uploading in background (${formatFileSize(compressed.size)})...`
+        }));
+
+        const formData = new FormData();
+        formData.append('file', compressed);
+        const res = await client.post('/uploads/announcement', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+
+        if (res.data?.success) {
+          const uploadResult = {
+            url: res.data.url,
+            storage_ref: res.data.storage_ref,
+            compressedSize: formatFileSize(compressed.size),
+            originalSize: formatFileSize(file.size)
+          };
+          setAnnUploadState({
+            status: 'ready',
+            text: `Ready to post instantly (${formatFileSize(compressed.size)})`,
+            data: uploadResult,
+            error: null
+          });
+          return uploadResult;
+        } else {
+          throw new Error(res.data?.error || 'Upload failed');
+        }
+      } catch (err) {
+        const errMsg = err.response?.data?.error || err.message || 'Image upload failed';
+        setAnnUploadState({ status: 'error', text: errMsg, data: null, error: errMsg });
+        throw err;
+      }
+    })();
+
+    annUploadPromiseRef.current = uploadPromise;
   };
 
   const handleRemoveAnnImage = () => {
+    annUploadPromiseRef.current = null;
     setAnnImageFile(null);
     if (annImagePreview) {
       URL.revokeObjectURL(annImagePreview);
     }
     setAnnImagePreview(null);
+    setAnnUploadState({ status: 'idle', text: '', data: null, error: null });
+    const input = document.getElementById('ann-photo-input');
+    if (input) input.value = '';
   };
 
   const handleSendNotification = async (e) => {
@@ -303,17 +356,18 @@ export default function Admin() {
 
     try {
       if (annImageFile) {
-        setUploadingAnnImage(true);
-        const formData = new FormData();
-        formData.append('file', annImageFile);
-        const uploadRes = await client.post('/uploads/announcement', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-        if (uploadRes.data?.success) {
-          imageUrl = uploadRes.data.url;
-          imageStoragePath = uploadRes.data.storage_ref;
-        } else {
-          throw new Error('Image upload failed.');
+        if (annUploadState.status === 'ready' && annUploadState.data) {
+          // Pre-uploaded in background — instant submit!
+          imageUrl = annUploadState.data.url;
+          imageStoragePath = annUploadState.data.storage_ref;
+        } else if (annUploadState.status === 'error') {
+          throw new Error(annUploadState.error || 'Image upload failed. Please re-select image.');
+        } else if (annUploadPromiseRef.current) {
+          // Upload is still finalizing in background; wait for it
+          setUploadingAnnImage(true);
+          const uploadResult = await annUploadPromiseRef.current;
+          imageUrl = uploadResult.url;
+          imageStoragePath = uploadResult.storage_ref;
         }
       }
 
@@ -784,14 +838,39 @@ export default function Admin() {
               </div>
             )}
             {/* ── MANAGE FACULTY ── */}
-            {tab === 'faculty' && isFullAdmin && (
+            {tab === 'faculty' && isAdmin && (
               <div className="animate-fadeIn">
-                <div className="section-header" style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div className="section-header" style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
                   <div>
                     <h3 style={{ fontSize: 18, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-text)' }}><GraduationCap size={20} /> CSE Faculty & Advisors</h3>
-                    <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Assigned class advisors have admin privileges for their specific class.</p>
+                    <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Authorized faculty accounts for student mentoring and departmental administration.</p>
                   </div>
-                  <button className="btn btn-primary" onClick={() => setShowAddFacModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Plus size={16} /> Add Faculty</button>
+                  {isFullAdmin && (
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => setShowAddFacModal(true)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                    >
+                      <Plus size={16} /> Add Faculty
+                    </button>
+                  )}
+                </div>
+
+                {/* ── Faculty Accounts Summary Card ── */}
+                <div className="card" style={{ padding: '16px 24px', marginBottom: 20, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                    <div>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text)' }}>Department Faculty Directory</span>
+                      <span style={{ fontSize: 13, color: 'var(--color-text-muted)', marginLeft: 8 }}>
+                        (Authorized CSE staff & class advisors)
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span className="badge badge-green" style={{ fontWeight: 700, fontSize: 13, padding: '4px 12px' }}>
+                        {faculties.length} Active Accounts
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
                 {facLoading ? (
@@ -811,27 +890,44 @@ export default function Admin() {
                   </div>
                 ) : (
                   <div className="card" style={{ overflow: 'hidden' }}>
-                    <div className="manage-table-header" style={{ gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr 140px' }}>
-                      <span>Faculty Name</span>
+                    <div className="manage-table-header" style={{ gridTemplateColumns: '1.5fr 1.2fr 1fr 1fr 1fr 140px' }}>
+                      <span>Faculty Member</span>
+                      <span>Username & ID</span>
                       <span>Designation</span>
                       <span>Department</span>
                       <span>Advising Section</span>
-                      <span>Advising Batch</span>
                       <span>Manage</span>
                     </div>
                     {faculties.map((f, i) => (
-                      <div key={f.id} className="manage-table-row" style={{ gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr 140px', animation: `fadeInUp 0.3s ease ${i * 0.02}s both` }}>
-                        <div style={{ fontWeight: 700, color: 'var(--color-text)' }}>{f.name}</div>
+                      <div key={f.id} className="manage-table-row" style={{ gridTemplateColumns: '1.5fr 1.2fr 1fr 1fr 1fr 140px', animation: `fadeInUp 0.3s ease ${i * 0.02}s both` }}>
+                        <div>
+                          <div style={{ fontWeight: 700, color: 'var(--color-text)' }}>{f.name}</div>
+                          <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{f.email}</div>
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 600, color: '#38bdf8', fontSize: 13 }}>@{f.username || '—'}</div>
+                          <div style={{ fontSize: 11, color: 'var(--color-text-muted)', fontFamily: 'monospace' }}>{f.employee_id || '—'}</div>
+                        </div>
                         <div style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{f.designation || '—'}</div>
                         <div style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{f.department || 'CSE'}</div>
-                        <div>{f.advising_class ? <span className="badge badge-green">{f.advising_class}</span> : <span style={{ color: 'var(--color-text-muted)' }}>—</span>}</div>
-                        <div>{f.advising_batch ? <span className="badge badge-violet">{f.advising_batch}</span> : <span style={{ color: 'var(--color-text-muted)' }}>—</span>}</div>
+                        <div>
+                          {f.advising_class ? (
+                            <span className="badge badge-green">{f.advising_class} {f.advising_batch ? `(${f.advising_batch})` : ''}</span>
+                          ) : (
+                            <span style={{ color: 'var(--color-text-muted)' }}>—</span>
+                          )}
+                        </div>
                         <div style={{ display: 'flex', gap: 6, alignItems: 'center', position: 'relative', zIndex: 5 }}>
                           <SplitActions
                             primaryLabel="Adjust"
                             primaryIcon={Edit3}
                             onPrimaryClick={() => setEditFaculty(f)}
                             dropdownActions={[
+                              ...(isFullAdmin ? [{
+                                label: 'Reset Password',
+                                icon: Key,
+                                onClick: () => handleResetFacultyPassword(f)
+                              }] : []),
                               {
                                 label: 'Delete Faculty',
                                 icon: Trash2,
@@ -859,170 +955,7 @@ export default function Admin() {
       )}
 
 
-            {/* ── PLATFORM VERIFICATION ── */}
-            {tab === 'platforms' && (
-              <div className="animate-fadeIn">
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
-                  <div className="card" style={{ padding: '16px 20px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12 }}>
-                    <div style={{ fontSize: 12, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>Total Connections</div>
-                    <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--color-text)', marginTop: 4 }}>{platformConnections.length}</div>
-                  </div>
-                  <div className="card" style={{ padding: '16px 20px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12 }}>
-                    <div style={{ fontSize: 12, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>Verified Profiles</div>
-                    <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--color-green)', marginTop: 4 }}>{platformConnections.filter(c => c.ownershipVerified).length}</div>
-                  </div>
-                  <div className="card" style={{ padding: '16px 20px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12 }}>
-                    <div style={{ fontSize: 12, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>Active Students</div>
-                    <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--color-text)', marginTop: 4 }}>{[...new Set(platformConnections.map(c => c.userId))].length}</div>
-                  </div>
-                  <div className="card" style={{ padding: '16px 20px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12 }}>
-                    <div style={{ fontSize: 12, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>Sync Failures</div>
-                    <div style={{ fontSize: 26, fontWeight: 800, color: platformConnections.filter(c => c.status === 'sync_error' || c.status === 'error').length > 0 ? '#ef4444' : 'var(--color-green)', marginTop: 4 }}>
-                      {platformConnections.filter(c => c.status === 'sync_error' || c.status === 'error').length}
-                    </div>
-                  </div>
-                </div>
 
-                <div className="card" style={{ padding: '24px', borderRadius: 'var(--radius-lg)', background: 'var(--color-card)', border: '1px solid var(--color-border)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
-                    <div>
-                      <h2 style={{ fontSize: 18, fontWeight: 800, margin: 0, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <Code size={20} className="text-gradient" /> Platform Connection Verification
-                      </h2>
-                      <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '4px 0 0' }}>
-                        Review student programming platform handles, sync health, and competitive score metrics.
-                      </p>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      <input
-                        type="text"
-                        placeholder="Search student, handle..."
-                        value={platSearch}
-                        onChange={(e) => setPlatSearch(e.target.value)}
-                        className="form-input"
-                        style={{ width: 180, padding: '8px 12px', fontSize: 13 }}
-                      />
-                      <select
-                        value={platStatusFilter}
-                        onChange={(e) => setPlatStatusFilter(e.target.value)}
-                        className="form-select"
-                        style={{ width: 150, padding: '8px 12px', fontSize: 13 }}
-                      >
-                        <option value="all">All Statuses</option>
-                        <option value="pending">Pending Verification</option>
-                        <option value="verified">Verified</option>
-                      </select>
-                      <select
-                        value={platPlatformFilter}
-                        onChange={(e) => setPlatPlatformFilter(e.target.value)}
-                        className="form-select"
-                        style={{ width: 150, padding: '8px 12px', fontSize: 13 }}
-                      >
-                        <option value="all">All Platforms</option>
-                        <option value="codeforces">Codeforces</option>
-                        <option value="leetcode">LeetCode</option>
-                        <option value="hackerrank">HackerRank</option>
-                        <option value="geeksforgeeks">GeeksforGeeks</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {platLoading ? (
-                    <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>
-                      <RefreshCw size={24} className="spin" style={{ marginBottom: 8 }} />
-                      <div>Loading platform connections...</div>
-                    </div>
-                  ) : (
-                    <div style={{ overflowX: 'auto' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                        <thead>
-                          <tr style={{ borderBottom: '1px solid var(--color-border)', textAlign: 'left', color: 'var(--color-text-muted)' }}>
-                            <th style={{ padding: '10px 12px' }}>Student</th>
-                            <th style={{ padding: '10px 12px' }}>Class / Batch</th>
-                            <th style={{ padding: '10px 12px' }}>Platform</th>
-                            <th style={{ padding: '10px 12px' }}>Handle</th>
-                            <th style={{ padding: '10px 12px' }}>Status</th>
-                            <th style={{ padding: '10px 12px' }}>Last Sync</th>
-                            <th style={{ padding: '10px 12px', textAlign: 'right' }}>Action</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {platformConnections
-                            .filter(c => {
-                              if (platStatusFilter === 'pending' && c.ownershipVerified) return false;
-                              if (platStatusFilter === 'verified' && !c.ownershipVerified) return false;
-                              if (platPlatformFilter !== 'all' && c.platformCode !== platPlatformFilter) return false;
-                              if (platSearch.trim()) {
-                                const q = platSearch.toLowerCase().trim();
-                                const nameMatch = (c.studentName || '').toLowerCase().includes(q);
-                                const rollMatch = (c.rollNo || '').toLowerCase().includes(q);
-                                const handleMatch = (c.handle || '').toLowerCase().includes(q);
-                                if (!nameMatch && !rollMatch && !handleMatch) return false;
-                              }
-                              return true;
-                            })
-                            .map((conn) => (
-                              <tr key={`${conn.userId}-${conn.platformCode}`} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                                <td style={{ padding: '12px' }}>
-                                  <div style={{ fontWeight: 700, color: 'var(--color-text)' }}>{conn.studentName}</div>
-                                  <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{conn.rollNo || conn.userId}</div>
-                                </td>
-                                <td style={{ padding: '12px', color: 'var(--color-text-muted)' }}>
-                                  {conn.class || '—'} · {conn.batch || '—'}
-                                </td>
-                                <td style={{ padding: '12px', fontWeight: 700, textTransform: 'capitalize', color: 'var(--color-green)' }}>
-                                  {conn.platformCode}
-                                </td>
-                                <td style={{ padding: '12px', fontWeight: 600, color: 'var(--color-blue, #60a5fa)' }}>
-                                  @{conn.handle}
-                                </td>
-                                <td style={{ padding: '12px' }}>
-                                  {conn.ownershipVerified ? (
-                                    <span className="badge" style={{ fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4, background: 'var(--green-100)', color: 'var(--color-green)', border: '1px solid var(--border-strong)' }}>
-                                      <CheckCircle size={12} /> Verified
-                                    </span>
-                                  ) : (
-                                    <span className="badge" style={{ fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
-                                      Connected
-                                    </span>
-                                  )}
-                                </td>
-                                <td style={{ padding: '12px', fontSize: 11, color: 'var(--color-text-muted)' }}>
-                                  {conn.lastSyncedAt ? new Date(conn.lastSyncedAt).toLocaleString() : 'Never'}
-                                </td>
-                                <td style={{ padding: '12px', textAlign: 'right' }}>
-                                  <SplitActions
-                                    primaryLabel={conn.ownershipVerified ? 'Verified' : 'Verify'}
-                                    primaryIcon={CheckCircle}
-                                    onPrimaryClick={() => handleAdminVerifyPlatform(conn.userId, conn.platformCode, !conn.ownershipVerified)}
-                                    dropdownActions={[
-                                      {
-                                        label: conn.ownershipVerified ? 'Unverify Connection' : 'Verify Handle',
-                                        icon: conn.ownershipVerified ? X : CheckCircle,
-                                        onClick: () => handleAdminVerifyPlatform(conn.userId, conn.platformCode, !conn.ownershipVerified),
-                                        destructive: conn.ownershipVerified
-                                      }
-                                    ]}
-                                    ariaLabel="More platform actions"
-                                  />
-                                </td>
-                              </tr>
-                            ))}
-                          {platformConnections.length === 0 && (
-                            <tr>
-                              <td colSpan={7} style={{ padding: 24, textAlign: 'center', color: '#94a3b8' }}>
-                                No platform connections found.
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
 
             {/* ── POST & NOTIFY ── */}
             {tab === 'notify' && isCanPostNotify && (
@@ -1153,7 +1086,7 @@ export default function Admin() {
                         />
                         <Upload size={24} style={{ color: 'var(--color-green)', marginBottom: 8 }} />
                         <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)' }}>Click to upload poster or image</div>
-                        <div style={{ fontSize: 11, color: 'var(--color-text-faint)', marginTop: 4 }}>JPEG, PNG, or WEBP (Max size: 5 MB)</div>
+                        <div style={{ fontSize: 11, color: 'var(--color-text-faint)', marginTop: 4 }}>JPEG, PNG, or WEBP (Auto-optimized for instant posting)</div>
                       </div>
                     ) : (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'var(--bg-input)', border: '1px solid var(--border)', padding: 12, borderRadius: 12 }}>
@@ -1166,8 +1099,32 @@ export default function Admin() {
                           <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {annImageFile?.name || 'Attached Image'}
                           </div>
-                          <div style={{ fontSize: 11, color: 'var(--color-text-faint)', marginTop: 2 }}>
-                            {annImageFile ? `${(annImageFile.size / (1024 * 1024)).toFixed(2)} MB` : 'Ready to post'}
+                          <div style={{ fontSize: 11, marginTop: 4 }}>
+                            {annUploadState.status === 'compressing' && (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--accent, #3b82f6)' }}>
+                                <RefreshCw size={11} className="spin" /> Optimizing image...
+                              </span>
+                            )}
+                            {annUploadState.status === 'uploading' && (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#f59e0b' }}>
+                                <RefreshCw size={11} className="spin" /> {annUploadState.text}
+                              </span>
+                            )}
+                            {annUploadState.status === 'ready' && (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#10b981', fontWeight: 600 }}>
+                                <CheckCircle size={12} /> Ready to post instantly ({annUploadState.data?.compressedSize})
+                              </span>
+                            )}
+                            {annUploadState.status === 'error' && (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#ef4444' }}>
+                                <AlertCircle size={11} /> {annUploadState.error}
+                              </span>
+                            )}
+                            {annUploadState.status === 'idle' && (
+                              <span style={{ color: 'var(--color-text-faint)' }}>
+                                {annImageFile ? formatFileSize(annImageFile.size) : 'Ready to post'}
+                              </span>
+                            )}
                           </div>
                         </div>
                         <button
@@ -1202,7 +1159,7 @@ export default function Admin() {
                       className="btn btn-primary"
                       style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', gap: 8, pointerEvents: 'auto', cursor: 'pointer' }}
                     >
-                      <Send size={16} /> {uploadingAnnImage ? 'Uploading Image...' : notifyLoading ? 'Broadcasting...' : 'Post & Broadcast Notification'}
+                      <Send size={16} /> {uploadingAnnImage ? 'Finalizing Image...' : notifyLoading ? 'Broadcasting...' : 'Post & Broadcast Notification'}
                     </button>
                   </div>
                 </form>
@@ -1351,6 +1308,37 @@ export default function Admin() {
           onConfirm={handleDeleteAnnouncementConfirm}
           onCancel={() => setDeleteAnnTarget(null)}
         />
+      )}
+
+      {/* ── Temporary Password Display Modal ── */}
+      {tempPasswordModal && (
+        <div className="modal-backdrop" onClick={() => setTempPasswordModal(null)}>
+          <div className="modal card" style={{ maxWidth: 440, padding: 24, textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(99, 102, 241, 0.15)', color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <Key size={24} />
+            </div>
+            <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8, color: 'var(--color-text)' }}>Faculty Password Reset</h3>
+            <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 16 }}>
+              A temporary password has been generated for <strong>{tempPasswordModal.name}</strong> (@{tempPasswordModal.username}). They will be required to change it upon their next login.
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--bg-subtle, #1e293b)', borderRadius: 8, border: '1px solid var(--border)', marginBottom: 20 }}>
+              <code style={{ fontSize: 16, fontWeight: 700, letterSpacing: '0.05em', color: '#10b981' }}>{tempPasswordModal.password}</code>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => {
+                  navigator.clipboard.writeText(tempPasswordModal.password);
+                  showToast('Password copied to clipboard! 📋');
+                }}
+              >
+                Copy
+              </button>
+            </div>
+            <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => setTempPasswordModal(null)}>
+              Done
+            </button>
+          </div>
+        </div>
       )}
 
       {toast && <div className={`toast toast-${toast.type}`}>{toast.msg}</div>}
