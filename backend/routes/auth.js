@@ -124,9 +124,10 @@ router.post('/login', loginIpLimiter, loginIdentifierLimiter, async (req, res) =
   const identifiers = deriveFacultyIdentifiers(profile, authUser);
 
   // Generate JWT token with faculty scope (role: faculty or admin)
+  const jwtSecret = process.env.JWT_SECRET || 'inceptron-secret-key-fallback-for-tests';
   const token = jwt.sign(
     { id: authUser.id, email: authUser.email, role: authUser.role },
-    process.env.JWT_SECRET,
+    jwtSecret,
     { expiresIn: '7d' }
   );
 

@@ -46,5 +46,6 @@ jobs:
       working-directory: ./backend
       env:
         NODE_ENV: test
+        JWT_SECRET: inceptron-ci-test-jwt-secret-key-32chars
       run: npm test
 
