@@ -12,16 +12,17 @@ function NewsCardThumbnail({ item }) {
       <div
         className="lp-tk-thumb-box"
         style={{
-          width: 44,
-          height: 44,
-          borderRadius: 10,
+          width: 72,
+          height: 72,
+          borderRadius: 14,
           overflow: 'hidden',
           flexShrink: 0,
           background: 'var(--bg-secondary)',
-          border: '1px solid var(--border)',
+          border: '1.5px solid var(--border)',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center'
+          justifyContent: 'center',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
         }}
       >
         <img
@@ -42,7 +43,7 @@ function NewsCardThumbnail({ item }) {
 
   return (
     <div className={`lp-tk-icon-box ${item?.is_important ? 'red' : ''}`}>
-      <Bell size={18} />
+      <Bell size={26} />
     </div>
   );
 }
@@ -101,10 +102,10 @@ export default function MarqueeSection() {
           width = ref.current.getBoundingClientRect().width;
         }
         if (width <= 0) {
-          width = (itemCount || 8) * 284;
+          width = (itemCount || 8) * 440;
         }
         // Duration = Distance / Speed
-        return Math.max(24, Math.round(width / targetPxPerSec));
+        return Math.max(26, Math.round(width / targetPxPerSec));
       };
 
       setDurations({
@@ -126,7 +127,7 @@ export default function MarqueeSection() {
     <section className="lp-section lp-marquee-section" aria-label="Live From Inceptron Ticker">
       <style>{`
         .lp-marquee-section {
-          padding: 36px 0 44px !important;
+          padding: 56px 0 68px !important;
           background: var(--bg-secondary);
           border-top: 2px solid var(--border);
           border-bottom: 2px solid var(--border);
@@ -134,12 +135,22 @@ export default function MarqueeSection() {
         }
         .lp-marquee-header {
           text-align: center;
-          margin-bottom: 24px;
+          margin-bottom: 32px;
+        }
+        .lp-marquee-header h2 {
+          font-size: clamp(26px, 3.2vw, 36px) !important;
+          font-weight: 800;
+          letter-spacing: -0.02em;
+        }
+        .lp-marquee-header p {
+          font-size: 15px !important;
+          margin-top: 6px;
+          color: var(--color-text-muted);
         }
         .lp-marquee-container-inner {
           display: flex;
           flex-direction: column;
-          gap: 22px;
+          gap: 28px;
           position: relative;
         }
 
@@ -147,14 +158,14 @@ export default function MarqueeSection() {
         .lp-marquee-track-container {
           position: relative;
           overflow: hidden;
-          padding: 4px 0;
+          padding: 6px 0;
         }
         .lp-marquee-track-container::before,
         .lp-marquee-track-container::after {
           content: '';
           position: absolute;
           top: 0; bottom: 0;
-          width: 70px;
+          width: 90px;
           z-index: 10;
           pointer-events: none;
         }
@@ -168,16 +179,19 @@ export default function MarqueeSection() {
         }
 
         .lp-marquee-label {
-          font-size: 11px;
+          font-size: 12.5px;
           font-weight: 800;
           text-transform: uppercase;
-          letter-spacing: 0.1em;
-          color: var(--color-green);
-          display: flex;
+          letter-spacing: 0.08em;
+          color: var(--accent-text, var(--color-green));
+          display: inline-flex;
           align-items: center;
-          gap: 6px;
-          margin-bottom: 8px;
-          padding-left: 4px;
+          gap: 8px;
+          margin-bottom: 14px;
+          padding: 4px 14px;
+          background: var(--accent-soft, rgba(16, 185, 129, 0.08));
+          border: 1px solid var(--accent-border, rgba(16, 185, 129, 0.2));
+          border-radius: 999px;
         }
 
         /* Marquee Ticker Track */
@@ -224,60 +238,62 @@ export default function MarqueeSection() {
 
         .lp-marquee-group {
           display: flex;
-          gap: 14px;
-          padding-right: 14px;
+          gap: 18px;
+          padding-right: 18px;
           flex-shrink: 0;
         }
 
-        /* Compact Ticker Pill Item */
+        /* Expanded, Prominent Ticker Pill Item */
         .lp-ticker-pill {
-          height: 68px;
-          width: 280px;
+          height: 98px;
+          width: 420px;
           flex-shrink: 0;
           background: var(--bg-card);
           border: 1.5px solid var(--border);
-          border-radius: 16px;
-          padding: 10px 14px;
+          border-radius: 20px;
+          padding: 12px 18px;
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 16px;
           text-decoration: none;
           color: var(--color-text);
-          transition: all 0.2s ease;
-          box-shadow: var(--shadow-sm);
+          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
         }
         .lp-ticker-pill:hover {
-          transform: translateY(-2px);
-          border-color: var(--color-green);
+          transform: translateY(-3px) scale(1.01);
+          border-color: var(--accent-primary, var(--color-green));
           background: var(--bg-hover);
-          box-shadow: 0 6px 18px rgba(22, 101, 52, 0.12);
+          box-shadow: 0 10px 26px rgba(0, 0, 0, 0.25);
         }
         .lp-ticker-pill.important-pill {
-          border-color: #ef4444;
+          border-color: rgba(239, 68, 68, 0.4);
           background: rgba(239, 68, 68, 0.08);
         }
         .lp-ticker-pill.important-pill:hover {
-          background: rgba(239, 68, 68, 0.14);
-          border-color: #dc2626;
+          background: rgba(239, 68, 68, 0.15);
+          border-color: #ef4444;
+          box-shadow: 0 10px 26px rgba(239, 68, 68, 0.2);
         }
 
         .lp-tk-avatar {
-          width: 38px; height: 38px;
-          border-radius: 50%;
+          width: 68px; height: 68px;
+          border-radius: 16px;
           background: var(--gradient-primary);
           color: #fff;
           font-weight: 800;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 14px;
+          font-size: 24px;
           flex-shrink: 0;
+          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
         }
         .lp-tk-icon-box {
-          width: 38px; height: 38px;
-          border-radius: 10px;
-          background: rgba(132, 204, 22, 0.12);
-          color: var(--color-green);
+          width: 68px; height: 68px;
+          border-radius: 14px;
+          background: var(--accent-soft, rgba(16, 185, 129, 0.12));
+          color: var(--accent-text, var(--color-green));
           display: flex;
           align-items: center;
           justify-content: center;
@@ -288,20 +304,69 @@ export default function MarqueeSection() {
           color: #ef4444;
         }
 
-        .lp-tk-info { flex: 1; min-width: 0; }
-        .lp-tk-title { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--color-text); }
-        .lp-tk-sub { font-size: 11px; color: var(--color-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .lp-tk-badge { font-size: 13px; font-weight: 800; color: var(--color-gold); font-family: 'Space Grotesk', sans-serif; flex-shrink: 0; }
+        .lp-tk-info {
+          flex: 1;
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          gap: 4px;
+        }
+        .lp-tk-title {
+          font-size: 15px;
+          font-weight: 700;
+          line-height: 1.35;
+          color: var(--color-text);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .lp-tk-sub {
+          font-size: 13px;
+          color: var(--color-text-muted);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .lp-tk-badge {
+          font-size: 15px;
+          font-weight: 800;
+          color: var(--color-gold);
+          font-family: 'Space Grotesk', sans-serif;
+          flex-shrink: 0;
+          background: rgba(245, 158, 11, 0.12);
+          border: 1px solid rgba(245, 158, 11, 0.25);
+          padding: 6px 12px;
+          border-radius: 10px;
+        }
+
+        .lp-tk-important-chip {
+          font-size: 10.5px;
+          font-weight: 800;
+          color: #ef4444;
+          background: rgba(239, 68, 68, 0.15);
+          border: 1px solid rgba(239, 68, 68, 0.35);
+          padding: 3px 8px;
+          border-radius: 6px;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          flex-shrink: 0;
+        }
 
         /* Light Mode Specific Overrides */
         [data-theme="light"] .lp-ticker-pill {
           background: #ffffff;
-          border: 1px solid #d7e2d3;
+          border: 1.5px solid #d7e2d3;
           color: #111827;
+          box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
         }
         [data-theme="light"] .lp-ticker-pill:hover {
-          background: var(--theme-soft);
-          border-color: var(--theme-primary);
+          background: var(--theme-soft, #f8fafc);
+          border-color: var(--accent-primary, var(--theme-primary));
+          box-shadow: 0 8px 22px rgba(15, 23, 42, 0.1);
         }
         [data-theme="light"] .lp-ticker-pill.important-pill {
           background: #fef2f2;
@@ -309,15 +374,34 @@ export default function MarqueeSection() {
         }
         [data-theme="light"] .lp-tk-title { color: #111827; }
         [data-theme="light"] .lp-tk-sub { color: #4b5563; }
-        [data-theme="light"] .lp-marquee-label { color: var(--theme-primary); }
+        [data-theme="light"] .lp-marquee-label { color: var(--accent-text, var(--theme-primary)); }
+
+        @media (max-width: 640px) {
+          .lp-ticker-pill {
+            width: 320px;
+            height: 86px;
+            padding: 10px 14px;
+            gap: 12px;
+          }
+          .lp-tk-thumb-box, .lp-tk-icon-box, .lp-tk-avatar {
+            width: 56px !important;
+            height: 56px !important;
+          }
+          .lp-tk-title {
+            font-size: 13.5px;
+          }
+          .lp-tk-sub {
+            font-size: 11.5px;
+          }
+        }
       `}</style>
 
       <div className="container">
         <div className="lp-marquee-header">
-          <h2 className="section-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 24 }}>
-            <Flame size={24} className="text-gradient" /> Live From Inceptron
+          <h2 className="section-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <Flame size={28} className="text-gradient" /> Live From Inceptron
           </h2>
-          <p className="section-subtitle" style={{ marginTop: 4, fontSize: 13 }}>
+          <p className="section-subtitle">
             Real-time achievement leaderboards and department announcements
           </p>
         </div>
@@ -327,10 +411,10 @@ export default function MarqueeSection() {
           {/* ── ROW 1: ACHIEVEMENT LEADERBOARD (LEFT → RIGHT) ── */}
           <div className="lp-marquee-track-container">
             <div className="lp-marquee-label">
-              <Trophy size={14} /> Achievement Leaderboard
+              <Trophy size={16} /> Achievement Leaderboard
             </div>
             {leadItems.length === 0 ? (
-              <div className="lp-ticker-pill" style={{ width: '100%', justifyContent: 'center', color: 'var(--color-text-muted)', fontSize: 12 }}>
+              <div className="lp-ticker-pill" style={{ width: '100%', justifyContent: 'center', color: 'var(--color-text-muted)', fontSize: 13 }}>
                 No verified achievements yet
               </div>
             ) : (
@@ -367,13 +451,13 @@ export default function MarqueeSection() {
             )}
           </div>
 
-          {/* ── ROW 3: LATEST NEWS (LEFT → RIGHT) ── */}
+          {/* ── ROW 2: LATEST NEWS (LEFT → RIGHT) ── */}
           <div className="lp-marquee-track-container">
             <div className="lp-marquee-label">
-              <Bell size={14} /> Latest News
+              <Bell size={16} /> Latest News
             </div>
             {newsItems.length === 0 ? (
-              <div className="lp-ticker-pill" style={{ width: '100%', justifyContent: 'center', color: 'var(--color-text-muted)', fontSize: 12 }}>
+              <div className="lp-ticker-pill" style={{ width: '100%', justifyContent: 'center', color: 'var(--color-text-muted)', fontSize: 13 }}>
                 No active announcements
               </div>
             ) : (
@@ -392,11 +476,13 @@ export default function MarqueeSection() {
                       <div className="lp-tk-info">
                         <div className="lp-tk-title">{item.title}</div>
                         <div className="lp-tk-sub">
-                          {item.type || 'General'} · {item.created_at ? new Date(item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Live'}
+                          <span>{item.type || 'General'}</span>
+                          <span>·</span>
+                          <span>{item.created_at ? new Date(item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Live'}</span>
                         </div>
                       </div>
                       {item.is_important && (
-                        <span style={{ fontSize: 10, fontWeight: 800, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        <span className="lp-tk-important-chip">
                           IMPORTANT
                         </span>
                       )}
@@ -416,11 +502,13 @@ export default function MarqueeSection() {
                       <div className="lp-tk-info">
                         <div className="lp-tk-title">{item.title}</div>
                         <div className="lp-tk-sub">
-                          {item.type || 'General'} · {item.created_at ? new Date(item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Live'}
+                          <span>{item.type || 'General'}</span>
+                          <span>·</span>
+                          <span>{item.created_at ? new Date(item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Live'}</span>
                         </div>
                       </div>
                       {item.is_important && (
-                        <span style={{ fontSize: 10, fontWeight: 800, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        <span className="lp-tk-important-chip">
                           IMPORTANT
                         </span>
                       )}
