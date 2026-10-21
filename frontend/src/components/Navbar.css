@@ -1,10 +1,10 @@
-/* ─── Navbar (Showcase Forest & Gold Institutional Theme) ─────── */
+/* ─── Navbar (Dynamic Theme Driven) ─────── */
 .navbar {
   position: fixed;
   top: 0; left: 0; right: 0;
   height: var(--navbar-height);
-  background: rgba(5, 42, 23, 0.95);
-  border-bottom: 1px solid rgba(250, 204, 21, 0.2);
+  background: var(--accent-nav, rgba(5, 42, 23, 0.95));
+  border-bottom: 1px solid var(--navbar-border, rgba(250, 204, 21, 0.2));
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   z-index: 1000;
@@ -12,8 +12,8 @@
 }
 
 .navbar.scrolled {
-  background: rgba(4, 32, 18, 0.98);
-  border-bottom: 1px solid rgba(250, 204, 21, 0.35);
+  background: var(--accent-nav-scrolled, rgba(4, 32, 18, 0.98));
+  border-bottom: 1px solid var(--navbar-border, rgba(250, 204, 21, 0.35));
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
 }
 
@@ -28,7 +28,7 @@
   gap: 12px;
 }
 
-/* Brand (Crest & Gold Institutional Trim) */
+/* Brand (Crest & Institutional Trim) */
 .navbar-brand {
   display: flex;
   align-items: center;
@@ -36,7 +36,7 @@
   flex-shrink: 0;
   text-decoration: none;
   background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(250, 204, 21, 0.3);
+  border: 1px solid var(--navbar-border, rgba(250, 204, 21, 0.3));
   padding: 4px 12px 4px 5px;
   border-radius: 12px;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
@@ -45,8 +45,8 @@
 }
 
 .navbar-brand:hover {
-  border-color: #facc15;
-  box-shadow: 0 0 18px rgba(250, 204, 21, 0.35);
+  border-color: var(--nav-brand-highlight, #facc15);
+  box-shadow: 0 0 18px var(--accent-glow, rgba(250, 204, 21, 0.35));
   transform: translateY(-1px);
 }
 
@@ -55,7 +55,7 @@
   height: 36px;
   background: #ffffff;
   border-radius: 8px;
-  border: 1.5px solid #facc15;
+  border: 1.5px solid var(--nav-brand-highlight, #facc15);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -85,17 +85,19 @@
 }
 
 .brand-highlight {
-  color: #facc15;
-  text-shadow: 0 0 10px rgba(250, 204, 21, 0.3);
+  color: var(--nav-brand-highlight, #facc15);
+  text-shadow: 0 0 10px var(--accent-glow, rgba(250, 204, 21, 0.3));
   font-weight: 800;
+  transition: color var(--transition);
 }
 
 .brand-dept {
   font-size: 10px;
   font-weight: 600;
   white-space: nowrap;
-  color: #a7f3d0;
+  color: var(--nav-link-color, #a7f3d0);
   letter-spacing: 0.04em;
+  opacity: 0.85;
 }
 
 /* Nav links - bounded flex center container preventing ANY overlap */
@@ -127,7 +129,7 @@
   border-radius: 10px;
   font-size: 13px;
   font-weight: 600;
-  color: #d1fae5;
+  color: var(--nav-link-color, #d1fae5);
   transition: background 200ms ease, border-color 200ms ease, box-shadow 200ms ease, color 200ms ease, transform 180ms ease;
   text-decoration: none;
   border: 1px solid transparent;
@@ -146,40 +148,40 @@
   width: 16px;
   height: 16px;
   flex-shrink: 0;
-  color: #a7f3d0;
+  color: var(--nav-link-color, #a7f3d0);
   transition: color 200ms ease, transform 200ms ease;
 }
 
 .nav-link:hover {
-  color: #facc15;
-  background: rgba(250, 204, 21, 0.12);
-  border-color: rgba(250, 204, 21, 0.3);
+  color: var(--nav-link-hover, #facc15);
+  background: var(--accent-nav-hover, rgba(250, 204, 21, 0.12));
+  border-color: var(--navbar-border, rgba(250, 204, 21, 0.3));
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .nav-link:hover .nav-icon {
-  color: #facc15;
+  color: var(--nav-link-hover, #facc15);
   transform: scale(1.08);
 }
 
 .nav-link.active {
-  color: #041e12 !important;
-  background: linear-gradient(135deg, #facc15 0%, #eab308 100%) !important;
-  border: 1px solid #facc15 !important;
-  box-shadow: 0 4px 16px rgba(250, 204, 21, 0.4) !important;
+  color: var(--nav-active-color, #041e12) !important;
+  background: var(--nav-active-bg, linear-gradient(135deg, #facc15 0%, #eab308 100%)) !important;
+  border: 1px solid var(--nav-active-border, #facc15) !important;
+  box-shadow: 0 4px 16px var(--accent-shadow, rgba(250, 204, 21, 0.4)) !important;
   font-weight: 800 !important;
   margin: 0 !important;
 }
 
 .nav-link.active .nav-icon {
-  color: #041e12 !important;
+  color: var(--nav-active-color, #041e12) !important;
 }
 
 .nav-link:focus-visible {
-  outline: 2px solid #facc15;
+  outline: 2px solid var(--nav-brand-highlight, #facc15);
   outline-offset: 2px;
-  box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.3);
+  box-shadow: 0 0 0 4px var(--accent-focus, rgba(250, 204, 21, 0.3));
 }
 
 .nav-label-short {
@@ -211,7 +213,7 @@
   gap: 8px;
   padding: 4px 12px 4px 4px;
   background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(250, 204, 21, 0.25);
+  border: 1px solid var(--navbar-border, rgba(250, 204, 21, 0.25));
   border-radius: 10px;
   text-decoration: none;
   transition: all var(--transition);
@@ -219,21 +221,22 @@
 }
 
 .user-chip:hover {
-  border-color: #facc15;
-  box-shadow: 0 0 14px rgba(250, 204, 21, 0.35);
+  border-color: var(--nav-brand-highlight, #facc15);
+  box-shadow: 0 0 14px var(--accent-glow, rgba(250, 204, 21, 0.35));
 }
 
 .user-avatar-sm {
   width: 28px;
   height: 28px;
-  background: linear-gradient(135deg, #facc15 0%, #eab308 100%);
-  color: #041e12;
+  background: var(--nav-active-bg, linear-gradient(135deg, #facc15 0%, #eab308 100%));
+  color: var(--nav-active-color, #041e12);
   border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 13px;
   font-weight: 800;
+  transition: all var(--transition);
 }
 
 .user-name {
@@ -248,8 +251,8 @@
 
 .nav-theme-btn,
 .navbar-actions .btn-ghost {
-  color: #d1fae5 !important;
-  border: 1px solid rgba(250, 204, 21, 0.25) !important;
+  color: var(--nav-link-color, #d1fae5) !important;
+  border: 1px solid var(--navbar-border, rgba(250, 204, 21, 0.25)) !important;
   background: rgba(255, 255, 255, 0.06) !important;
   border-radius: 10px;
   opacity: 1;
@@ -258,10 +261,10 @@
 
 .nav-theme-btn:hover,
 .navbar-actions .btn-ghost:hover {
-  color: #041e12 !important;
-  background: linear-gradient(135deg, #facc15 0%, #eab308 100%) !important;
-  border-color: #facc15 !important;
-  box-shadow: 0 4px 14px rgba(250, 204, 21, 0.35) !important;
+  color: var(--nav-active-color, #041e12) !important;
+  background: var(--nav-active-bg, linear-gradient(135deg, #facc15 0%, #eab308 100%)) !important;
+  border-color: var(--nav-active-border, #facc15) !important;
+  box-shadow: 0 4px 14px var(--accent-glow, rgba(250, 204, 21, 0.35)) !important;
 }
 
 .menu-toggle {
@@ -271,7 +274,7 @@
   padding: 6px;
   cursor: pointer;
   background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(250, 204, 21, 0.25);
+  border: 1px solid var(--navbar-border, rgba(250, 204, 21, 0.25));
   border-radius: 8px;
 }
 
@@ -279,7 +282,7 @@
   display: block;
   width: 20px;
   height: 2px;
-  background: #facc15;
+  background: var(--nav-brand-highlight, #facc15);
   border-radius: 2px;
   transition: all var(--transition);
 }
@@ -303,8 +306,8 @@
     position: fixed;
     top: var(--navbar-height);
     left: 0; right: 0;
-    background: rgba(5, 42, 23, 0.98);
-    border-bottom: 1.5px solid rgba(250, 204, 21, 0.3);
+    background: var(--accent-nav-scrolled, rgba(5, 42, 23, 0.98));
+    border-bottom: 1.5px solid var(--navbar-border, rgba(250, 204, 21, 0.3));
     flex-direction: column;
     padding: 16px;
     gap: 8px;

@@ -4,9 +4,8 @@ import client from '../api/client';
 import ScoreBadge from '../components/ScoreBadge';
 import CustomSelect from '../components/CustomSelect';
 import FilterModal from '../components/FilterModal';
-import CompetitiveLeaderboard from './CompetitiveLeaderboard';
 import CgpaLeaderboard from '../components/CgpaLeaderboard';
-import { Users, Award, Trophy, Briefcase, Medal, ArrowUp, ArrowDown, Minus, Code, GraduationCap } from 'lucide-react';
+import { Users, Award, Trophy, Briefcase, Medal, ArrowUp, ArrowDown, Minus, GraduationCap } from 'lucide-react';
 import { subscribeAchievementEvents } from '../utils/achievementEvents';
 
 const BATCH_OPTIONS = ['2026-2030', '2025-2029', '2024-2028', '2023-2027', '2022-2026'];
@@ -15,7 +14,7 @@ const CLASS_OPTIONS = ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D', 'CSE-E'];
 export default function Leaderboard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
-  const activeTab = tabParam === 'competitive' ? 'competitive' : tabParam === 'cgpa' ? 'cgpa' : 'achievement';
+  const activeTab = tabParam === 'cgpa' ? 'cgpa' : 'achievement';
 
   const [students, setStudents] = useState([]);
   const [stats, setStats] = useState({ totalStudents: 0, totalAchievements: 0, totalHackathonWins: 0, totalInternships: 0 });
@@ -107,13 +106,6 @@ export default function Leaderboard() {
               <Award size={16} /> Achievement Leaderboard
             </button>
             <button
-              className={`btn btn-sm ${activeTab === 'competitive' ? 'btn-primary' : 'btn-ghost'}`}
-              onClick={() => handleTabChange('competitive')}
-              style={{ borderRadius: 'var(--radius-md)', padding: '8px 18px', fontWeight: 700, fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 8 }}
-            >
-              <Code size={16} /> Competitive Coding Leaderboard
-            </button>
-            <button
               className={`btn btn-sm ${activeTab === 'cgpa' ? 'btn-primary' : 'btn-ghost'}`}
               onClick={() => handleTabChange('cgpa')}
               style={{ borderRadius: 'var(--radius-md)', padding: '8px 18px', fontWeight: 700, fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 8 }}
@@ -123,9 +115,7 @@ export default function Leaderboard() {
           </div>
         </div>
 
-        {activeTab === 'competitive' ? (
-          <CompetitiveLeaderboard embedded={true} />
-        ) : activeTab === 'cgpa' ? (
+        {activeTab === 'cgpa' ? (
           <CgpaLeaderboard />
         ) : (
           <>

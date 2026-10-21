@@ -1,18 +1,9 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 
 export const COLOR_THEMES = [
-  { id: 'green',   name: 'Showcase Forest & Gold', color: '#0b4a2c', primaryColor: '#0b4a2c', secondaryColor: '#facc15', gradient: 'linear-gradient(135deg, #0b4a2c, #15803d)', badge: 'Recommended' },
-  { id: 'orange',  name: 'Vibrant Orange',  color: '#f97316', primaryColor: '#f97316', secondaryColor: '#0f172a', gradient: 'linear-gradient(135deg, #ea580c, #f97316)', badge: 'Hot' },
-  { id: 'red',     name: 'Crimson Red',      color: '#ef4444', primaryColor: '#ef4444', secondaryColor: '#18181b', gradient: 'linear-gradient(135deg, #dc2626, #ef4444)', badge: 'Fire' },
-  { id: 'purple',   name: 'Electric Purple', color: '#a855f7', primaryColor: '#a855f7', secondaryColor: '#1e1e2e', gradient: 'linear-gradient(135deg, #9333ea, #a855f7)', badge: 'Popular' },
-  { id: 'blue',     name: 'Cyber Blue',      color: '#3b82f6', primaryColor: '#3b82f6', secondaryColor: '#06b6d4', gradient: 'linear-gradient(135deg, #2563eb, #3b82f6)', badge: 'Cool' },
-  { id: 'emerald',  name: 'Deep Emerald',    color: '#10b981', primaryColor: '#10b981', secondaryColor: '#f59e0b', gradient: 'linear-gradient(135deg, #059669, #10b981)', badge: 'Fresh' },
-  { id: 'pink',     name: 'Neon Pink',       color: '#ec4899', primaryColor: '#ec4899', secondaryColor: '#7e22ce', gradient: 'linear-gradient(135deg, #db2777, #ec4899)', badge: 'Vibrant' },
-  { id: 'gold',     name: 'Royal Gold',      color: '#f59e0b', primaryColor: '#f59e0b', secondaryColor: '#451a03', gradient: 'linear-gradient(135deg, #d97706, #f59e0b)', badge: 'Luxury' },
-  { id: 'cyan',     name: 'Aqua Cyan',       color: '#06b6d4', primaryColor: '#06b6d4', secondaryColor: '#0f172a', gradient: 'linear-gradient(135deg, #0891b2, #06b6d4)', badge: 'Future' },
-  { id: 'indigo',   name: 'Indigo',          color: '#6366f1', primaryColor: '#6366f1', secondaryColor: '#14b8a6', gradient: 'linear-gradient(135deg, #4f46e5, #6366f1)', badge: 'Pro' },
-  { id: 'teal',     name: 'Teal',            color: '#14b8a6', primaryColor: '#14b8a6', secondaryColor: '#4f46e5', gradient: 'linear-gradient(135deg, #0d9488, #14b8a6)', badge: 'Modern' },
-  { id: 'rose',     name: 'Rose',            color: '#f43f5e', primaryColor: '#f43f5e', secondaryColor: '#334155', gradient: 'linear-gradient(135deg, #e11d48, #f43f5e)', badge: 'Elegant' },
+  { id: 'green', name: 'Showcase Forest & Gold', color: '#0b4a2c', primaryColor: '#0b4a2c', secondaryColor: '#facc15', gradient: 'linear-gradient(135deg, #0b4a2c, #15803d)', badge: 'Recommended' },
+  { id: 'red',   name: 'Crimson Red',           color: '#ef4444', primaryColor: '#ef4444', secondaryColor: '#18181b', gradient: 'linear-gradient(135deg, #dc2626, #ef4444)', badge: 'Fire' },
+  { id: 'gold',  name: 'Royal Gold',           color: '#f59e0b', primaryColor: '#f59e0b', secondaryColor: '#451a03', gradient: 'linear-gradient(135deg, #d97706, #f59e0b)', badge: 'Luxury' },
 ];
 
 const ThemeContext = createContext();

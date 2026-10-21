@@ -340,7 +340,7 @@ export default function Landing() {
                   Sri Shakthi Institute of Engineering and Technology, Coimbatore
                 </div>
                 <h1 className="lp-h1">
-                  Inceptron<br />
+                  <span className="lp-h1-main">Inceptron</span>
                   <span className="lp-h1-accent">Achievement Hub</span>
                 </h1>
                 <p className="lp-sub">
@@ -375,7 +375,7 @@ export default function Landing() {
                 Sri Shakthi Institute of Engineering and Technology, Coimbatore
               </div>
               <h1 className="lp-h1">
-                Inceptron<br />
+                <span className="lp-h1-main">Inceptron</span>
                 <span className="lp-h1-accent">Achievement Hub</span>
               </h1>
               <p className="lp-sub">
@@ -580,29 +580,44 @@ export default function Landing() {
         .lp-pill {
           display: inline-flex; align-items: center; gap: 8px;
           padding: 6px 14px;
-          background: var(--green-50);
-          border: 1.5px solid var(--border);
+          background: var(--accent-soft, var(--green-50));
+          border: 1.5px solid var(--accent-border, var(--border));
           border-radius: var(--radius-full);
           font-size: 13px; font-weight: 600;
-          color: var(--color-green);
+          color: var(--accent-text, var(--color-green));
           margin-bottom: 22px;
+          transition: all 400ms ease;
         }
         .lp-pill-dot {
           width: 6px; height: 6px; border-radius: 50%;
-          background: var(--color-green);
+          background: var(--accent-primary, var(--color-green));
           animation: pulse 2s infinite;
           flex-shrink: 0;
+          transition: background 400ms ease;
         }
         .lp-h1 {
-          font-size: clamp(32px, 5.5vw, 62px);
-          font-weight: 800;
-          font-family: var(--font-serif, 'Playfair Display', Georgia, serif);
-          letter-spacing: -0.015em;
-          line-height: 1.1;
-          margin-bottom: 18px;
+          font-size: clamp(40px, 6vw, 72px);
+          font-weight: 700;
+          font-family: 'Libre Caslon Condensed', serif !important;
+          font-optical-sizing: auto;
+          font-style: normal;
+          letter-spacing: 0.01em;
+          line-height: 1.22;
+          margin-bottom: 24px;
           color: var(--color-text);
         }
-        .lp-h1-accent { color: var(--color-green); display: block; }
+        .lp-h1-main {
+          display: block;
+          color: var(--color-text);
+          line-height: 1.15;
+        }
+        .lp-h1-accent {
+          color: var(--accent-primary, var(--color-green));
+          display: block;
+          line-height: 1.15;
+          margin-top: 8px;
+          transition: color 400ms ease;
+        }
         .lp-sub {
           font-size: 17px; color: var(--color-text-muted);
           max-width: 520px; line-height: 1.7; margin-bottom: 36px;

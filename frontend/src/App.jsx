@@ -20,7 +20,6 @@ const ShowcaseManage = lazyWithPreload(() => import('./pages/ShowcaseManage'));
 const Login = lazyWithPreload(() => import('./pages/Login'));
 const Profile = lazyWithPreload(() => import('./pages/Profile'));
 const Leaderboard = lazyWithPreload(() => import('./pages/Leaderboard'));
-const CompetitiveLeaderboard = lazyWithPreload(() => import('./pages/CompetitiveLeaderboard'));
 const Teams = lazyWithPreload(() => import('./pages/Teams'));
 const Admin = lazyWithPreload(() => import('./pages/Admin'));
 const Approvals = lazyWithPreload(() => import('./pages/Approvals'));
@@ -29,7 +28,7 @@ const EditProfile = lazyWithPreload(() => import('./pages/EditProfile'));
 const News = lazyWithPreload(() => import('./pages/News'));
 const ThemeSettings = lazyWithPreload(() => import('./pages/ThemeSettings'));
 
-const priorityPreloads = [Leaderboard, CompetitiveLeaderboard, Students, News, Showcase];
+const priorityPreloads = [Leaderboard, Students, News, Showcase];
 const backgroundPreloads = [Landing, Intro, Login, Profile, Teams, Admin, Approvals, EditProfile, ThemeSettings];
 
 function preloadRoutes(routes) {
@@ -82,8 +81,6 @@ function AppContent() {
           <Route path="/updates" element={<Navigate to="/news" replace />} />
           <Route path="/news" element={<ProtectedRoute><News /></ProtectedRoute>} />
           <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
-          <Route path="/competitive-leaderboard" element={<Navigate to="/leaderboard?tab=competitive" replace />} />
-          <Route path="/platforms" element={<Navigate to="/leaderboard" replace />} />
           <Route path="/teams" element={<ProtectedRoute><Teams /></ProtectedRoute>} />
           <Route path="/students" element={<ProtectedRoute adminOnly><Students /></ProtectedRoute>} />
           <Route path="/profile/:id" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

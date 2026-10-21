@@ -447,7 +447,7 @@ export default function Intro() {
           background: var(--bg-primary, #05070b);
           color: #ffffff;
           overflow: hidden;
-          font-family: var(--font-body, 'Plus Jakarta Sans', system-ui, sans-serif);
+          font-family: 'Inter', system-ui, sans-serif;
         }
 
         .intro-dot-canvas {

@@ -168,7 +168,7 @@ export default function Register() {
         .auth-bg { position: fixed; inset: 0; background: var(--bg-primary); z-index: -1; }
         .auth-card { width: 100%; padding: 40px 36px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.25); }
         .auth-logo { text-align: center; margin-bottom: 28px; }
-        .auth-title { font-size: 26px; font-weight: 800; font-family: var(--font-serif); letter-spacing: -0.015em; margin-bottom: 6px; color: var(--color-text); }
+        .auth-title { font-size: 26px; font-weight: 800; font-family: 'Space Grotesk', sans-serif; margin-bottom: 6px; color: var(--color-text); }
         .auth-subtitle { font-size: 14px; color: var(--color-text-muted); }
         .auth-link { text-align: center; font-size: 14px; color: var(--color-text-muted); margin-top: 20px; }
         .auth-link a { color: var(--color-green); font-weight: 600; }

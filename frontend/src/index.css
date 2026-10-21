@@ -7,32 +7,40 @@
 
 /* ─── CSS Variables ─────────────────────────── */
 :root {
-  /* Master Typography System */
-  --font-serif:              'Playfair Display', Georgia, serif;
-  --font-display:            'Playfair Display', Georgia, serif;
-  --font-body:               'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
-  --font-sans:               'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+  /* Master Typography System - Old Portal Fonts Restored */
+  --font-serif:              'Libre Caslon Condensed', Georgia, serif;
+  --font-display:            'Space Grotesk', sans-serif;
+  --font-body:               'Inter', system-ui, -apple-system, sans-serif;
+  --font-sans:               'Inter', system-ui, -apple-system, sans-serif;
 
-  /* Master Semantic Accent System Variables (Default: Lime Green) */
-  --accent-primary:          #84cc16;
-  --accent-hover:            #76c800;
-  --accent-active:           #65a30d;
-  --accent-dark:             #4d7c0f;
-  --accent-light:            #a3e635;
-  --accent-soft:             rgba(132, 204, 22, 0.08);
-  --accent-soft-2:           rgba(132, 204, 22, 0.16);
-  --accent-border:           rgba(132, 204, 22, 0.25);
-  --accent-border-strong:    rgba(132, 204, 22, 0.45);
-  --accent-text:             #84cc16;
-  --accent-text-strong:      #a3e635;
-  --accent-glow:             rgba(132, 204, 22, 0.35);
-  --accent-shadow:           rgba(132, 204, 22, 0.22);
-  --accent-gradient-start:   #76c800;
-  --accent-gradient-end:     #84cc16;
-  --accent-contrast:         #070a0f;
-  --accent-focus:            rgba(132, 204, 22, 0.4);
-  --accent-nav:              rgba(9, 13, 20, 0.94);
-  --accent-nav-hover:        rgba(132, 204, 22, 0.15);
+  /* Master Semantic Accent System Variables (Default: Showcase Forest & Gold) */
+  --accent-primary:          #10b981;
+  --accent-hover:            #059669;
+  --accent-active:           #047857;
+  --accent-dark:             #064e3b;
+  --accent-light:            #34d399;
+  --accent-soft:             rgba(16, 185, 129, 0.08);
+  --accent-soft-2:           rgba(16, 185, 129, 0.16);
+  --accent-border:           rgba(250, 204, 21, 0.25);
+  --accent-border-strong:    rgba(250, 204, 21, 0.45);
+  --accent-text:             #10b981;
+  --accent-text-strong:      #34d399;
+  --accent-glow:             rgba(16, 185, 129, 0.35);
+  --accent-shadow:           rgba(16, 185, 129, 0.22);
+  --accent-gradient-start:   #0b4a2c;
+  --accent-gradient-end:     #15803d;
+  --accent-contrast:         #ffffff;
+  --accent-focus:            rgba(250, 204, 21, 0.4);
+  --accent-nav:              rgba(5, 42, 23, 0.95);
+  --accent-nav-scrolled:     rgba(4, 32, 18, 0.98);
+  --accent-nav-hover:        rgba(250, 204, 21, 0.15);
+  --navbar-border:           rgba(250, 204, 21, 0.25);
+  --nav-brand-highlight:     #facc15;
+  --nav-link-color:          #d1fae5;
+  --nav-link-hover:          #facc15;
+  --nav-active-bg:           linear-gradient(135deg, #facc15 0%, #eab308 100%);
+  --nav-active-color:        #041e12;
+  --nav-active-border:       #facc15;
 }
 
 :root, [data-theme="dark"] {
@@ -166,7 +174,7 @@
   --stats-bg: #fbfcfa;
 }
 
-/* ─── 12 Complete Accent Theme Palettes ─────────────────────────── */
+/* ─── 3 Curated Accent Theme Palettes ─────────────────────────── */
 
 /* 1. Showcase Institutional Forest & Gold (Default & Recommended) */
 [data-accent="green"] {
@@ -174,145 +182,85 @@
   --accent-soft: rgba(16, 185, 129, 0.08); --accent-soft-2: rgba(16, 185, 129, 0.16); --accent-border: rgba(250, 204, 21, 0.25); --accent-border-strong: rgba(250, 204, 21, 0.45);
   --accent-text: #10b981; --accent-text-strong: #34d399; --accent-glow: rgba(16, 185, 129, 0.35); --accent-shadow: rgba(16, 185, 129, 0.22);
   --accent-gradient-start: #0b4a2c; --accent-gradient-end: #15803d; --accent-contrast: #ffffff; --accent-focus: rgba(250, 204, 21, 0.4);
-  --accent-nav: rgba(5, 42, 23, 0.95); --accent-nav-hover: rgba(250, 204, 21, 0.15);
+  --accent-nav: rgba(5, 42, 23, 0.95); --accent-nav-scrolled: rgba(4, 32, 18, 0.98); --accent-nav-hover: rgba(250, 204, 21, 0.15);
+  --navbar-border: rgba(250, 204, 21, 0.25);
+  --nav-brand-highlight: #facc15;
+  --nav-link-color: #d1fae5;
+  --nav-link-hover: #facc15;
+  --nav-active-bg: linear-gradient(135deg, #facc15 0%, #eab308 100%);
+  --nav-active-color: #041e12;
+  --nav-active-border: #facc15;
 }
 [data-theme="light"][data-accent="green"] {
   --accent-primary: #0b4a2c; --accent-hover: #047857; --accent-active: #065f46;
   --accent-text: #065f46; --accent-text-strong: #0b4a2c;
-  --accent-nav: rgba(5, 42, 23, 0.95);
+  --accent-nav: rgba(5, 42, 23, 0.95); --accent-nav-scrolled: rgba(4, 32, 18, 0.98);
+  --navbar-border: rgba(250, 204, 21, 0.25);
+  --nav-brand-highlight: #facc15;
+  --nav-link-color: #d1fae5;
+  --nav-link-hover: #facc15;
+  --nav-active-bg: linear-gradient(135deg, #facc15 0%, #eab308 100%);
+  --nav-active-color: #041e12;
+  --nav-active-border: #facc15;
   --accent-contrast: #ffffff;
 }
 
-/* 2. Vibrant Orange */
-[data-accent="orange"] {
-  --accent-primary: #f97316; --accent-hover: #ea580c; --accent-active: #c2410c; --accent-dark: #9a3412; --accent-light: #fb923c;
-  --accent-soft: rgba(249, 115, 22, 0.08); --accent-soft-2: rgba(249, 115, 22, 0.16); --accent-border: rgba(249, 115, 22, 0.25); --accent-border-strong: rgba(249, 115, 22, 0.45);
-  --accent-text: #f97316; --accent-text-strong: #fb923c; --accent-glow: rgba(249, 115, 22, 0.35); --accent-shadow: rgba(249, 115, 22, 0.22);
-  --accent-gradient-start: #ea580c; --accent-gradient-end: #f97316; --accent-contrast: #ffffff; --accent-focus: rgba(249, 115, 22, 0.4);
-  --accent-nav: rgba(26, 12, 6, 0.94); --accent-nav-hover: rgba(249, 115, 22, 0.15);
-}
-[data-theme="light"][data-accent="orange"] {
-  --accent-text: #c2410c; --accent-text-strong: #9a3412; --accent-nav: #ea580c; --accent-contrast: #ffffff;
-}
-
-/* 3. Crimson Red */
+/* 2. Crimson Red */
 [data-accent="red"] {
   --accent-primary: #ef4444; --accent-hover: #dc2626; --accent-active: #b91c1c; --accent-dark: #991b1b; --accent-light: #f87171;
   --accent-soft: rgba(239, 68, 68, 0.08); --accent-soft-2: rgba(239, 68, 68, 0.16); --accent-border: rgba(239, 68, 68, 0.25); --accent-border-strong: rgba(239, 68, 68, 0.45);
   --accent-text: #ef4444; --accent-text-strong: #f87171; --accent-glow: rgba(239, 68, 68, 0.35); --accent-shadow: rgba(239, 68, 68, 0.22);
   --accent-gradient-start: #dc2626; --accent-gradient-end: #ef4444; --accent-contrast: #ffffff; --accent-focus: rgba(239, 68, 68, 0.4);
-  --accent-nav: rgba(26, 8, 8, 0.94); --accent-nav-hover: rgba(239, 68, 68, 0.15);
+  --accent-nav: rgba(30, 8, 8, 0.95); --accent-nav-scrolled: rgba(22, 5, 5, 0.98); --accent-nav-hover: rgba(239, 68, 68, 0.15);
+  --navbar-border: rgba(239, 68, 68, 0.3);
+  --nav-brand-highlight: #f87171;
+  --nav-link-color: #fee2e2;
+  --nav-link-hover: #ffffff;
+  --nav-active-bg: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  --nav-active-color: #ffffff;
+  --nav-active-border: #ef4444;
 }
 [data-theme="light"][data-accent="red"] {
-  --accent-text: #b91c1c; --accent-text-strong: #991b1b; --accent-nav: #dc2626; --accent-contrast: #ffffff;
+  --accent-primary: #dc2626; --accent-hover: #b91c1c; --accent-active: #991b1b;
+  --accent-text: #b91c1c; --accent-text-strong: #991b1b;
+  --accent-nav: rgba(185, 28, 28, 0.96); --accent-nav-scrolled: rgba(153, 27, 27, 0.98);
+  --navbar-border: rgba(254, 202, 202, 0.35);
+  --nav-brand-highlight: #ffffff;
+  --nav-link-color: rgba(255, 255, 255, 0.92);
+  --nav-link-hover: #ffffff;
+  --nav-active-bg: #ffffff;
+  --nav-active-color: #b91c1c;
+  --nav-active-border: #ffffff;
+  --accent-contrast: #ffffff;
 }
 
-/* 4. Electric Purple */
-[data-accent="purple"] {
-  --accent-primary: #a855f7; --accent-hover: #9333ea; --accent-active: #7e22ce; --accent-dark: #6b21a8; --accent-light: #c084fc;
-  --accent-soft: rgba(168, 85, 247, 0.08); --accent-soft-2: rgba(168, 85, 247, 0.16); --accent-border: rgba(168, 85, 247, 0.25); --accent-border-strong: rgba(168, 85, 247, 0.45);
-  --accent-text: #a855f7; --accent-text-strong: #c084fc; --accent-glow: rgba(168, 85, 247, 0.35); --accent-shadow: rgba(168, 85, 247, 0.22);
-  --accent-gradient-start: #9333ea; --accent-gradient-end: #a855f7; --accent-contrast: #ffffff; --accent-focus: rgba(168, 85, 247, 0.4);
-  --accent-nav: rgba(18, 10, 28, 0.94); --accent-nav-hover: rgba(168, 85, 247, 0.15);
-}
-[data-theme="light"][data-accent="purple"] {
-  --accent-text: #7e22ce; --accent-text-strong: #6b21a8; --accent-nav: #7e22ce; --accent-contrast: #ffffff;
-}
-
-/* 5. Cyber Blue */
-[data-accent="blue"] {
-  --accent-primary: #3b82f6; --accent-hover: #2563eb; --accent-active: #1d4ed8; --accent-dark: #1e40af; --accent-light: #60a5fa;
-  --accent-soft: rgba(59, 130, 246, 0.08); --accent-soft-2: rgba(59, 130, 246, 0.16); --accent-border: rgba(59, 130, 246, 0.25); --accent-border-strong: rgba(59, 130, 246, 0.45);
-  --accent-text: #3b82f6; --accent-text-strong: #60a5fa; --accent-glow: rgba(59, 130, 246, 0.35); --accent-shadow: rgba(59, 130, 246, 0.22);
-  --accent-gradient-start: #2563eb; --accent-gradient-end: #3b82f6; --accent-contrast: #ffffff; --accent-focus: rgba(59, 130, 246, 0.4);
-  --accent-nav: rgba(8, 16, 32, 0.94); --accent-nav-hover: rgba(59, 130, 246, 0.15);
-}
-[data-theme="light"][data-accent="blue"] {
-  --accent-text: #1d4ed8; --accent-text-strong: #1e40af; --accent-nav: #1d4ed8; --accent-contrast: #ffffff;
-}
-
-/* 6. Deep Emerald */
-[data-accent="emerald"] {
-  --accent-primary: #10b981; --accent-hover: #059669; --accent-active: #047857; --accent-dark: #065f46; --accent-light: #34d399;
-  --accent-soft: rgba(16, 185, 129, 0.08); --accent-soft-2: rgba(16, 185, 129, 0.16); --accent-border: rgba(16, 185, 129, 0.25); --accent-border-strong: rgba(16, 185, 129, 0.45);
-  --accent-text: #10b981; --accent-text-strong: #34d399; --accent-glow: rgba(16, 185, 129, 0.35); --accent-shadow: rgba(16, 185, 129, 0.22);
-  --accent-gradient-start: #059669; --accent-gradient-end: #10b981; --accent-contrast: #ffffff; --accent-focus: rgba(16, 185, 129, 0.4);
-  --accent-nav: rgba(6, 22, 18, 0.94); --accent-nav-hover: rgba(16, 185, 129, 0.15);
-}
-[data-theme="light"][data-accent="emerald"] {
-  --accent-text: #047857; --accent-text-strong: #065f46; --accent-nav: #047857; --accent-contrast: #ffffff;
-}
-
-/* 7. Neon Pink */
-[data-accent="pink"] {
-  --accent-primary: #ec4899; --accent-hover: #db2777; --accent-active: #be185d; --accent-dark: #9d174d; --accent-light: #f472b6;
-  --accent-soft: rgba(236, 72, 153, 0.08); --accent-soft-2: rgba(236, 72, 153, 0.16); --accent-border: rgba(236, 72, 153, 0.25); --accent-border-strong: rgba(236, 72, 153, 0.45);
-  --accent-text: #ec4899; --accent-text-strong: #f472b6; --accent-glow: rgba(236, 72, 153, 0.35); --accent-shadow: rgba(236, 72, 153, 0.22);
-  --accent-gradient-start: #db2777; --accent-gradient-end: #ec4899; --accent-contrast: #ffffff; --accent-focus: rgba(236, 72, 153, 0.4);
-  --accent-nav: rgba(26, 8, 18, 0.94); --accent-nav-hover: rgba(236, 72, 153, 0.15);
-}
-[data-theme="light"][data-accent="pink"] {
-  --accent-text: #be185d; --accent-text-strong: #9d174d; --accent-nav: #be185d; --accent-contrast: #ffffff;
-}
-
-/* 8. Royal Gold */
+/* 3. Royal Gold */
 [data-accent="gold"] {
   --accent-primary: #f59e0b; --accent-hover: #d97706; --accent-active: #b45309; --accent-dark: #92400e; --accent-light: #fbbf24;
   --accent-soft: rgba(245, 158, 11, 0.08); --accent-soft-2: rgba(245, 158, 11, 0.16); --accent-border: rgba(245, 158, 11, 0.25); --accent-border-strong: rgba(245, 158, 11, 0.45);
   --accent-text: #f59e0b; --accent-text-strong: #fbbf24; --accent-glow: rgba(245, 158, 11, 0.35); --accent-shadow: rgba(245, 158, 11, 0.22);
   --accent-gradient-start: #d97706; --accent-gradient-end: #f59e0b; --accent-contrast: #070a0f; --accent-focus: rgba(245, 158, 11, 0.4);
-  --accent-nav: rgba(26, 16, 6, 0.94); --accent-nav-hover: rgba(245, 158, 11, 0.15);
+  --accent-nav: rgba(28, 18, 5, 0.95); --accent-nav-scrolled: rgba(20, 12, 3, 0.98); --accent-nav-hover: rgba(245, 158, 11, 0.15);
+  --navbar-border: rgba(245, 158, 11, 0.3);
+  --nav-brand-highlight: #fbbf24;
+  --nav-link-color: #fef3c7;
+  --nav-link-hover: #fbbf24;
+  --nav-active-bg: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  --nav-active-color: #041e12;
+  --nav-active-border: #f59e0b;
 }
 [data-theme="light"][data-accent="gold"] {
-  --accent-text: #b45309; --accent-text-strong: #92400e; --accent-nav: #d97706; --accent-contrast: #ffffff;
-}
-
-/* 9. Aqua Cyan */
-[data-accent="cyan"] {
-  --accent-primary: #06b6d4; --accent-hover: #0891b2; --accent-active: #0e7490; --accent-dark: #155e75; --accent-light: #22d3ee;
-  --accent-soft: rgba(6, 182, 212, 0.08); --accent-soft-2: rgba(6, 182, 212, 0.16); --accent-border: rgba(6, 182, 212, 0.25); --accent-border-strong: rgba(6, 182, 212, 0.45);
-  --accent-text: #06b6d4; --accent-text-strong: #22d3ee; --accent-glow: rgba(6, 182, 212, 0.35); --accent-shadow: rgba(6, 182, 212, 0.22);
-  --accent-gradient-start: #0891b2; --accent-gradient-end: #06b6d4; --accent-contrast: #070a0f; --accent-focus: rgba(6, 182, 212, 0.4);
-  --accent-nav: rgba(5, 20, 26, 0.94); --accent-nav-hover: rgba(6, 182, 212, 0.15);
-}
-[data-theme="light"][data-accent="cyan"] {
-  --accent-text: #0e7490; --accent-text-strong: #155e75; --accent-nav: #0891b2; --accent-contrast: #ffffff;
-}
-
-/* 10. Indigo */
-[data-accent="indigo"] {
-  --accent-primary: #6366f1; --accent-hover: #4f46e5; --accent-active: #4338ca; --accent-dark: #3730a3; --accent-light: #818cf8;
-  --accent-soft: rgba(99, 102, 241, 0.08); --accent-soft-2: rgba(99, 102, 241, 0.16); --accent-border: rgba(99, 102, 241, 0.25); --accent-border-strong: rgba(99, 102, 241, 0.45);
-  --accent-text: #6366f1; --accent-text-strong: #818cf8; --accent-glow: rgba(99, 102, 241, 0.35); --accent-shadow: rgba(99, 102, 241, 0.22);
-  --accent-gradient-start: #4f46e5; --accent-gradient-end: #6366f1; --accent-contrast: #ffffff; --accent-focus: rgba(99, 102, 241, 0.4);
-  --accent-nav: rgba(12, 12, 30, 0.94); --accent-nav-hover: rgba(99, 102, 241, 0.15);
-}
-[data-theme="light"][data-accent="indigo"] {
-  --accent-text: #4338ca; --accent-text-strong: #3730a3; --accent-nav: #4f46e5; --accent-contrast: #ffffff;
-}
-
-/* 11. Teal */
-[data-accent="teal"] {
-  --accent-primary: #14b8a6; --accent-hover: #0d9488; --accent-active: #0f766e; --accent-dark: #115e59; --accent-light: #2dd4bf;
-  --accent-soft: rgba(20, 184, 166, 0.08); --accent-soft-2: rgba(20, 184, 166, 0.16); --accent-border: rgba(20, 184, 166, 0.25); --accent-border-strong: rgba(20, 184, 166, 0.45);
-  --accent-text: #14b8a6; --accent-text-strong: #2dd4bf; --accent-glow: rgba(20, 184, 166, 0.35); --accent-shadow: rgba(20, 184, 166, 0.22);
-  --accent-gradient-start: #0d9488; --accent-gradient-end: #14b8a6; --accent-contrast: #ffffff; --accent-focus: rgba(20, 184, 166, 0.4);
-  --accent-nav: rgba(6, 22, 20, 0.94); --accent-nav-hover: rgba(20, 184, 166, 0.15);
-}
-[data-theme="light"][data-accent="teal"] {
-  --accent-text: #0f766e; --accent-text-strong: #115e59; --accent-nav: #0d9488; --accent-contrast: #ffffff;
-}
-
-/* 12. Rose */
-[data-accent="rose"] {
-  --accent-primary: #f43f5e; --accent-hover: #e11d48; --accent-active: #be123c; --accent-dark: #9f1239; --accent-light: #fb7185;
-  --accent-soft: rgba(244, 63, 94, 0.08); --accent-soft-2: rgba(244, 63, 94, 0.16); --accent-border: rgba(244, 63, 94, 0.25); --accent-border-strong: rgba(244, 63, 94, 0.45);
-  --accent-text: #f43f5e; --accent-text-strong: #fb7185; --accent-glow: rgba(244, 63, 94, 0.35); --accent-shadow: rgba(244, 63, 94, 0.22);
-  --accent-gradient-start: #e11d48; --accent-gradient-end: #f43f5e; --accent-contrast: #ffffff; --accent-focus: rgba(244, 63, 94, 0.4);
-  --accent-nav: rgba(26, 8, 12, 0.94); --accent-nav-hover: rgba(244, 63, 94, 0.15);
-}
-[data-theme="light"][data-accent="rose"] {
-  --accent-text: #be123c; --accent-text-strong: #9f1239; --accent-nav: #e11d48; --accent-contrast: #ffffff;
+  --accent-primary: #d97706; --accent-hover: #b45309; --accent-active: #92400e;
+  --accent-text: #b45309; --accent-text-strong: #92400e;
+  --accent-nav: rgba(180, 83, 9, 0.96); --accent-nav-scrolled: rgba(146, 64, 14, 0.98);
+  --navbar-border: rgba(253, 230, 138, 0.35);
+  --nav-brand-highlight: #ffffff;
+  --nav-link-color: rgba(255, 255, 255, 0.92);
+  --nav-link-hover: #ffffff;
+  --nav-active-bg: #ffffff;
+  --nav-active-color: #b45309;
+  --nav-active-border: #ffffff;
+  --accent-contrast: #ffffff;
 }
 
 
@@ -352,10 +300,16 @@ h1, h2, h3, h4, h5, h6,
 .page-title,
 .hero-title,
 .auth-title,
-.card-title,
-.lp-h1 {
-  font-family: var(--font-serif);
+.card-title {
+  font-family: var(--font-display, 'Space Grotesk', sans-serif);
   letter-spacing: -0.015em;
+}
+
+.libre-caslon-condensed,
+.lp-h1 {
+  font-family: "Libre Caslon Condensed", serif !important;
+  font-optical-sizing: auto;
+  font-style: normal;
 }
 
 .card, .auth-card, .modal-content {

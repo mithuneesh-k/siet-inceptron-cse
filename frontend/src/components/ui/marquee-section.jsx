@@ -49,14 +49,12 @@ function NewsCardThumbnail({ item }) {
 
 export default function MarqueeSection() {
   const [leaderboardRows, setLeaderboardRows] = useState([]);
-  const [competitiveRows, setCompetitiveRows] = useState([]);
   const [newsRows, setNewsRows] = useState([]);
 
   const row1GroupRef = useRef(null);
-  const row2GroupRef = useRef(null);
   const row3GroupRef = useRef(null);
 
-  const [durations, setDurations] = useState({ r1: 60, r2: 60, r3: 60 });
+  const [durations, setDurations] = useState({ r1: 60, r3: 60 });
 
   useEffect(() => {
     // 1. Fetch canonical achievement leaderboard highlights (Top 10)
@@ -71,19 +69,7 @@ export default function MarqueeSection() {
       })
       .catch(() => setLeaderboardRows([]));
 
-    // 2. Fetch competitive platform highlights (Top 10 canonical order)
-    client.get('/platforms/leaderboard?batch=all&class=all')
-      .then(res => {
-        const data = Array.isArray(res.data?.leaderboard) ? res.data.leaderboard : [];
-        const top10 = data.slice(0, 10).map((item, idx) => ({
-          ...item,
-          rank: item.rank || idx + 1
-        }));
-        setCompetitiveRows(top10);
-      })
-      .catch(() => setCompetitiveRows([]));
-
-    // 3. Fetch latest admin announcements (Latest 8)
+    // 2. Fetch latest admin announcements (Latest 8)
     client.get('/announcements')
       .then(res => {
         if (res.data?.success && Array.isArray(res.data.announcements)) {
@@ -104,7 +90,6 @@ export default function MarqueeSection() {
   };
 
   const leadItems = ensureClones(leaderboardRows);
-  const compItems = ensureClones(competitiveRows);
   const newsItems = ensureClones(newsRows);
 
   // Measure group DOM width and set dynamic animation duration for uniform visual speed (~38-40 px/sec)
@@ -124,7 +109,6 @@ export default function MarqueeSection() {
 
       setDurations({
         r1: getDuration(row1GroupRef, 40, leadItems.length),
-        r2: getDuration(row2GroupRef, 40, compItems.length),
         r3: getDuration(row3GroupRef, 36, newsItems.length)
       });
     };
@@ -136,7 +120,7 @@ export default function MarqueeSection() {
       clearTimeout(timer);
       window.removeEventListener('resize', updateDurations);
     };
-  }, [leadItems.length, compItems.length, newsItems.length]);
+  }, [leadItems.length, newsItems.length]);
 
   return (
     <section className="lp-section lp-marquee-section" aria-label="Live From Inceptron Ticker">
@@ -208,7 +192,7 @@ export default function MarqueeSection() {
           animation: marqueeScrollRight linear infinite;
         }
 
-        /* Row 2: Competitive Leaderboard (RIGHT → LEFT: movement toward left) */
+        /* Row 2: Achievement Ticker (RIGHT → LEFT: movement toward left) */
         .lp-marquee-right-to-left {
           animation: marqueeScrollLeft linear infinite;
         }
@@ -334,7 +318,7 @@ export default function MarqueeSection() {
             <Flame size={24} className="text-gradient" /> Live From Inceptron
           </h2>
           <p className="section-subtitle" style={{ marginTop: 4, fontSize: 13 }}>
-            Real-time achievement leaderboards, competitive metrics, and department updates
+            Real-time achievement leaderboards and department announcements
           </p>
         </div>
 
@@ -378,71 +362,6 @@ export default function MarqueeSection() {
                       <span className="lp-tk-badge">{item.score || 0} pts</span>
                     </Link>
                   ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* ── ROW 2: COMPETITIVE LEADERBOARD (RIGHT → LEFT) ── */}
-          <div className="lp-marquee-track-container">
-            <div className="lp-marquee-label">
-              <Code size={14} /> Competitive Leaderboard
-            </div>
-            {compItems.length === 0 ? (
-              <div className="lp-ticker-pill" style={{ width: '100%', justifyContent: 'center', color: 'var(--color-text-muted)', fontSize: 12 }}>
-                No competitive platform scores yet
-              </div>
-            ) : (
-              <div
-                className="lp-marquee-track lp-marquee-right-to-left"
-                style={{ animationDuration: `${durations.r2}s` }}
-              >
-                <div className="lp-marquee-group" ref={row2GroupRef}>
-                  {compItems.map((item, i) => {
-                    const name = item.name || item.student_name || 'Student';
-                    const cls = item.class || 'CSE';
-                    const solved = item.total_solved || (item.leetcode_easy + item.leetcode_medium + item.leetcode_hard) || 0;
-                    const score = item.total_score || item.score || 0;
-
-                    return (
-                      <Link key={`comp-a-${i}`} to="/competitive-leaderboard" className="lp-ticker-pill">
-                        <div className="lp-tk-icon-box">
-                          <Code size={18} />
-                        </div>
-                        <div className="lp-tk-info">
-                          <div className="lp-tk-title">#{item.rank || (i % 10) + 1} {name}</div>
-                          <div className="lp-tk-sub">{cls} · {solved} Solved</div>
-                        </div>
-                        <span className="lp-tk-badge" style={{ color: 'var(--color-green)' }}>
-                          {score} pts
-                        </span>
-                      </Link>
-                    );
-                  })}
-                </div>
-                {/* Clone group for seamless loop */}
-                <div className="lp-marquee-group" aria-hidden="true">
-                  {compItems.map((item, i) => {
-                    const name = item.name || item.student_name || 'Student';
-                    const cls = item.class || 'CSE';
-                    const solved = item.total_solved || (item.leetcode_easy + item.leetcode_medium + item.leetcode_hard) || 0;
-                    const score = item.total_score || item.score || 0;
-
-                    return (
-                      <Link key={`comp-b-${i}`} to="/competitive-leaderboard" className="lp-ticker-pill" tabIndex={-1}>
-                        <div className="lp-tk-icon-box">
-                          <Code size={18} />
-                        </div>
-                        <div className="lp-tk-info">
-                          <div className="lp-tk-title">#{item.rank || (i % 10) + 1} {name}</div>
-                          <div className="lp-tk-sub">{cls} · {solved} Solved</div>
-                        </div>
-                        <span className="lp-tk-badge" style={{ color: 'var(--color-green)' }}>
-                          {score} pts
-                        </span>
-                      </Link>
-                    );
-                  })}
                 </div>
               </div>
             )}

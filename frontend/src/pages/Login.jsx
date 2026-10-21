@@ -353,7 +353,7 @@ export default function Login() {
           width: 100vw;
           max-width: 100%;
           background-color: #05070b;
-          font-family: var(--font-body, 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif);
+          font-family: 'Inter', system-ui, -apple-system, sans-serif;
           color: #ffffff;
           overflow: hidden;
           transition: background-color 750ms cubic-bezier(0.22, 1, 0.36, 1), color 550ms ease;
@@ -424,7 +424,7 @@ export default function Login() {
         }
 
         .auth-07-left-heading {
-          font-family: var(--font-serif, 'Playfair Display', Georgia, serif);
+          font-family: 'Space Grotesk', -apple-system, sans-serif;
           font-size: 28px;
           font-weight: 800;
           color: #ffffff;
@@ -508,7 +508,7 @@ export default function Login() {
         }
 
         .auth-07-card-title {
-          font-family: var(--font-serif, 'Playfair Display', Georgia, serif);
+          font-family: 'Space Grotesk', -apple-system, sans-serif;
           font-size: 32px;
           font-weight: 800;
           color: #ffffff;
