@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 
 export const COLOR_THEMES = [
-  { id: 'green',   name: 'Lime Green',      color: '#84cc16', primaryColor: '#84cc16', secondaryColor: '#1e293b', gradient: 'linear-gradient(135deg, #65a30d, #84cc16)', badge: 'Default' },
+  { id: 'green',   name: 'Showcase Forest & Gold', color: '#0b4a2c', primaryColor: '#0b4a2c', secondaryColor: '#facc15', gradient: 'linear-gradient(135deg, #0b4a2c, #15803d)', badge: 'Recommended' },
   { id: 'orange',  name: 'Vibrant Orange',  color: '#f97316', primaryColor: '#f97316', secondaryColor: '#0f172a', gradient: 'linear-gradient(135deg, #ea580c, #f97316)', badge: 'Hot' },
   { id: 'red',     name: 'Crimson Red',      color: '#ef4444', primaryColor: '#ef4444', secondaryColor: '#18181b', gradient: 'linear-gradient(135deg, #dc2626, #ef4444)', badge: 'Fire' },
   { id: 'purple',   name: 'Electric Purple', color: '#a855f7', primaryColor: '#a855f7', secondaryColor: '#1e1e2e', gradient: 'linear-gradient(135deg, #9333ea, #a855f7)', badge: 'Popular' },

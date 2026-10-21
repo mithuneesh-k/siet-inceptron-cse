@@ -168,16 +168,19 @@
 
 /* ─── 12 Complete Accent Theme Palettes ─────────────────────────── */
 
-/* 1. Lime Green (Default) */
+/* 1. Showcase Institutional Forest & Gold (Default & Recommended) */
 [data-accent="green"] {
-  --accent-primary: #84cc16; --accent-hover: #76c800; --accent-active: #65a30d; --accent-dark: #4d7c0f; --accent-light: #a3e635;
-  --accent-soft: rgba(132, 204, 22, 0.08); --accent-soft-2: rgba(132, 204, 22, 0.16); --accent-border: rgba(132, 204, 22, 0.25); --accent-border-strong: rgba(132, 204, 22, 0.45);
-  --accent-text: #84cc16; --accent-text-strong: #a3e635; --accent-glow: rgba(132, 204, 22, 0.35); --accent-shadow: rgba(132, 204, 22, 0.22);
-  --accent-gradient-start: #76c800; --accent-gradient-end: #84cc16; --accent-contrast: #070a0f; --accent-focus: rgba(132, 204, 22, 0.4);
-  --accent-nav: rgba(9, 13, 20, 0.94); --accent-nav-hover: rgba(132, 204, 22, 0.15);
+  --accent-primary: #10b981; --accent-hover: #059669; --accent-active: #047857; --accent-dark: #064e3b; --accent-light: #34d399;
+  --accent-soft: rgba(16, 185, 129, 0.08); --accent-soft-2: rgba(16, 185, 129, 0.16); --accent-border: rgba(250, 204, 21, 0.25); --accent-border-strong: rgba(250, 204, 21, 0.45);
+  --accent-text: #10b981; --accent-text-strong: #34d399; --accent-glow: rgba(16, 185, 129, 0.35); --accent-shadow: rgba(16, 185, 129, 0.22);
+  --accent-gradient-start: #0b4a2c; --accent-gradient-end: #15803d; --accent-contrast: #ffffff; --accent-focus: rgba(250, 204, 21, 0.4);
+  --accent-nav: rgba(5, 42, 23, 0.95); --accent-nav-hover: rgba(250, 204, 21, 0.15);
 }
 [data-theme="light"][data-accent="green"] {
-  --accent-text: #166534; --accent-text-strong: #14532d; --accent-nav: #075714; --accent-contrast: #ffffff;
+  --accent-primary: #0b4a2c; --accent-hover: #047857; --accent-active: #065f46;
+  --accent-text: #065f46; --accent-text-strong: #0b4a2c;
+  --accent-nav: rgba(5, 42, 23, 0.95);
+  --accent-contrast: #ffffff;
 }
 
 /* 2. Vibrant Orange */

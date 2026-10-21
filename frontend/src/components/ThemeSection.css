@@ -322,7 +322,7 @@
 .theme-color-badge.badge-emerald { background: rgba(16, 185, 129, 0.15); color: #10b981; border-color: rgba(16, 185, 129, 0.3); }
 .theme-color-badge.badge-pink { background: rgba(236, 72, 153, 0.15); color: #ec4899; border-color: rgba(236, 72, 153, 0.3); }
 .theme-color-badge.badge-gold { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border-color: rgba(245, 158, 11, 0.3); }
-.theme-color-badge.badge-green { background: rgba(132, 204, 22, 0.15); color: #84cc16; border-color: rgba(132, 204, 22, 0.3); }
+.theme-color-badge.badge-green { background: rgba(250, 204, 21, 0.16); color: #facc15; border-color: rgba(250, 204, 21, 0.4); font-weight: 800; }
 .theme-color-badge.badge-cyan { background: rgba(6, 182, 212, 0.15); color: #06b6d4; border-color: rgba(6, 182, 212, 0.3); }
 .theme-color-badge.badge-indigo { background: rgba(99, 102, 241, 0.15); color: #6366f1; border-color: rgba(99, 102, 241, 0.3); }
 .theme-color-badge.badge-teal { background: rgba(20, 184, 166, 0.15); color: #14b8a6; border-color: rgba(20, 184, 166, 0.3); }

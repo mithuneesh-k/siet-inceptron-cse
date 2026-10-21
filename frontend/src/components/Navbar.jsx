@@ -92,7 +92,7 @@ export default function Navbar() {
     { to: '/', label: 'Home', shortLabel: 'Home', icon: <Home size={16} /> },
     { to: '/news', label: 'News', shortLabel: 'News', icon: <Bell size={16} />, isNews: true },
     { to: '/showcase', label: 'Showcase', shortLabel: 'Showcase', icon: <Laptop size={16} /> },
-    { to: '/leaderboard', label: 'Leaderboard', shortLabel: 'Leaderboard', icon: <Trophy size={16} /> },
+    { to: '/leaderboard', label: 'Leaderboard', shortLabel: 'Ranks', icon: <Trophy size={16} /> },
     { to: '/students', label: 'Students', shortLabel: 'Students', icon: <GraduationCap size={16} /> },
   ];
 
@@ -215,7 +215,7 @@ export default function Navbar() {
               <Link to="/showcase/manage" className={`nav-link ${isActive('/showcase/manage') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
                 <span className="nav-icon"><Laptop size={16} /></span>
                 <span className="nav-label-full">Manage Showcase</span>
-                <span className="nav-label-short">Showcase CMS</span>
+                <span className="nav-label-short">CMS</span>
               </Link>
               <Link to="/admin" className={`nav-link ${isActive('/admin') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
                 <span className="nav-icon"><Shield size={16} /></span>
