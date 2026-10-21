@@ -50,7 +50,7 @@ const Footer = () => {
         .siet-footer {
           background: var(--footer-bg);
           color: var(--footer-text-muted, var(--color-text-muted));
-          font-family: 'Inter', system-ui, sans-serif;
+          font-family: var(--font-body, 'Plus Jakarta Sans', system-ui, sans-serif);
           border-top: 1px solid var(--footer-border);
         }
         .footer-main {

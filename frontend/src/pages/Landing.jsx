@@ -595,8 +595,9 @@ export default function Landing() {
         }
         .lp-h1 {
           font-size: clamp(32px, 5.5vw, 62px);
-          font-weight: 900;
-          font-family: 'Space Grotesk', sans-serif;
+          font-weight: 800;
+          font-family: var(--font-serif, 'Playfair Display', Georgia, serif);
+          letter-spacing: -0.015em;
           line-height: 1.1;
           margin-bottom: 18px;
           color: var(--color-text);

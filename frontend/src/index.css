@@ -3,10 +3,16 @@
    Sri Shakthi Institute of Engineering & Technology
    ============================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600;1,700;1,800;1,900&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600;1,700&family=Space+Grotesk:wght@400;500;600;700;800&display=swap');
 
 /* ─── CSS Variables ─────────────────────────── */
 :root {
+  /* Master Typography System */
+  --font-serif:              'Playfair Display', Georgia, serif;
+  --font-display:            'Playfair Display', Georgia, serif;
+  --font-body:               'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-sans:               'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+
   /* Master Semantic Accent System Variables (Default: Lime Green) */
   --accent-primary:          #84cc16;
   --accent-hover:            #76c800;
@@ -331,10 +337,22 @@ html, body, #root {
 }
 
 body {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-body);
   min-height: 100vh;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6,
+.section-title,
+.modal-title,
+.page-title,
+.hero-title,
+.auth-title,
+.card-title,
+.lp-h1 {
+  font-family: var(--font-serif);
+  letter-spacing: -0.015em;
 }
 
 .card, .auth-card, .modal-content {
@@ -906,7 +924,7 @@ select:disabled,
 
 /* ─── Section layout ────────────────────────── */
 .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
-.section-title  { font-size: 26px; font-weight: 800; font-family: 'Space Grotesk', sans-serif; color: var(--color-text); }
+.section-title  { font-size: 26px; font-weight: 800; font-family: var(--font-serif); color: var(--color-text); }
 .section-subtitle { color: var(--color-text-muted); font-size: 15px; margin-top: 4px; }
 
 /* ─── Loading ───────────────────────────────── */
@@ -1053,7 +1071,7 @@ select:disabled,
   border-top: 3px solid var(--color-green);
 }
 .stat-icon   { font-size: 26px; margin-bottom: 8px; }
-.stat-number { font-size: 34px; font-weight: 900; font-family: 'Space Grotesk', sans-serif; color: var(--color-green); line-height: 1; }
+.stat-number { font-size: 34px; font-weight: 800; font-family: var(--font-display, var(--font-serif)); color: var(--color-green); line-height: 1; }
 .stat-label  { font-size: 11px; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 5px; font-weight: 600; }
 
 /* ─── Tags ──────────────────────────────────── */
@@ -1086,7 +1104,7 @@ select:disabled,
   border-top: 4px solid var(--color-green);
 }
 .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
-.modal-title  { font-size: 20px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
+.modal-title  { font-size: 20px; font-weight: 700; font-family: var(--font-serif); }
 .modal-close  { color: var(--color-text-muted); font-size: 18px; padding: 5px 9px; border-radius: var(--radius-sm); }
 .modal-close:hover { background: var(--bg-primary); color: var(--color-text); }
 
