@@ -41,7 +41,6 @@ export default function Register() {
     setLoading(true);
     try {
       await register(form);
-      navigate('/profile/' + (await import('../api/client').then(m => m.default.get('/users'))).data[0]?.id);
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed.');

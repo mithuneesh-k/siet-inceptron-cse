@@ -7,7 +7,7 @@ const { supabase } = require('../db/supabase');
 const { authMiddleware, optionalAuthMiddleware } = require('../middleware/auth');
 const { deleteStorageObject } = require('./uploads');
 
-const VALID_CATEGORIES = ['Project', 'Achievement', 'Research', 'Innovation', 'Internship'];
+const VALID_CATEGORIES = ['Project', 'Achievement', 'Research', 'Innovation', 'Internship', 'Hackathon', 'Placement', 'Event', 'Course', 'General'];
 
 // ─── Local Fallback Persistent Storage ────────────────────────────────────────
 // Mirrors announcements fallback store pattern for seamless operation when table is unmigrated

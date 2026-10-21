@@ -1,5 +1,6 @@
 const { supabase } = require('../db/supabase');
 const cache = require('./cache');
+const { sanitizeSearchQuery } = require('./querySanitizer');
 
 const PHOTO_BUCKET = 'portal-student-photos';
 
@@ -68,8 +69,8 @@ async function getCGPALeaderboard(filters = {}) {
     query = query.eq('exam_session', exam_session);
   }
 
-  if (search && search.trim()) {
-    const q = search.trim();
+  const q = sanitizeSearchQuery(search);
+  if (q) {
     query = query.or(`name.ilike.%${q}%,roll_no.ilike.%${q}%`);
   }
 
@@ -134,8 +135,8 @@ async function getAcademicStudents(filters = {}) {
 
   if (batch && batch !== 'all') query = query.eq('batch', batch);
   if (classFilter && classFilter !== 'all') query = query.eq('class', classFilter);
-  if (search && search.trim()) {
-    const q = search.trim();
+  const q = sanitizeSearchQuery(search);
+  if (q) {
     query = query.or(`name.ilike.%${q}%,roll_no.ilike.%${q}%,umis_no.ilike.%${q}%`);
   }
 

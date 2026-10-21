@@ -31,21 +31,29 @@ export function ThemeProvider({ children }) {
 
   const toggleTheme = () => {
     const nextTheme = theme === 'dark' ? 'light' : 'dark';
-    if (document.startViewTransition && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      document.startViewTransition(() => {
+    try {
+      if (document.startViewTransition && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        document.startViewTransition(() => {
+          setTheme(nextTheme);
+        });
+      } else {
         setTheme(nextTheme);
-      });
-    } else {
+      }
+    } catch {
       setTheme(nextTheme);
     }
   };
 
   const setColorTheme = (newColor) => {
-    if (document.startViewTransition && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      document.startViewTransition(() => {
+    try {
+      if (document.startViewTransition && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        document.startViewTransition(() => {
+          setColorThemeState(newColor);
+        });
+      } else {
         setColorThemeState(newColor);
-      });
-    } else {
+      }
+    } catch {
       setColorThemeState(newColor);
     }
   };

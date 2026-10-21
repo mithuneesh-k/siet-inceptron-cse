@@ -4,24 +4,39 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import SwitchMode from './ui/switch-mode';
 import client from '../api/client';
-import { Home, Zap, Trophy, GraduationCap, Users, User, Shield, CheckCircle, Code, Sun, Moon, Bell, AlertCircle, ChevronRight, Palette, Laptop } from 'lucide-react';
+import { Home, Zap, Trophy, GraduationCap, Users, User, Shield, CheckCircle, Code, Sun, Moon, Bell, AlertCircle, ChevronRight, Palette, Laptop, Check } from 'lucide-react';
 import { subscribeAchievementEvents } from '../utils/achievementEvents';
 import { AnnouncementImage } from '../utils/announcementHelpers';
 import './Navbar.css';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, colorTheme, setColorTheme, colorThemes } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
 
+  // Quick Palette Popover State
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const paletteRef = useRef(null);
+
   // News Hover Popover State
   const [newsHoverOpen, setNewsHoverOpen] = useState(false);
   const [latestAnnouncements, setLatestAnnouncements] = useState([]);
   const newsHoverTimerRef = useRef(null);
+
+  useEffect(() => {
+    if (!paletteOpen) return;
+    const handleOutside = (e) => {
+      if (paletteRef.current && !paletteRef.current.contains(e.target)) {
+        setPaletteOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [paletteOpen]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -214,7 +229,7 @@ export default function Navbar() {
             <>
               <Link to="/showcase/manage" className={`nav-link ${isActive('/showcase/manage') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
                 <span className="nav-icon"><Laptop size={16} /></span>
-                <span className="nav-label-full">Manage Showcase</span>
+                <span className="nav-label-full">Broadcast & CMS</span>
                 <span className="nav-label-short">CMS</span>
               </Link>
               <Link to="/admin" className={`nav-link ${isActive('/admin') ? 'active' : ''}`} onClick={() => setMenuOpen(false)}>
@@ -229,9 +244,101 @@ export default function Navbar() {
 
         <div className="navbar-actions">
           <SwitchMode width={64} height={32} />
-          <Link to="/theme" className="btn btn-ghost btn-sm nav-theme-btn" title="Theme & Color Settings" aria-label="Theme Settings" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '6px 10px' }}>
-            <Palette size={18} />
-          </Link>
+          <div ref={paletteRef} style={{ position: 'relative' }}>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm nav-theme-btn"
+              onClick={() => setPaletteOpen(prev => !prev)}
+              title="Change Color Theme"
+              aria-label="Theme Settings"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '6px 10px',
+                borderRadius: 8,
+                color: paletteOpen ? 'var(--nav-brand-highlight, #facc15)' : 'inherit'
+              }}
+            >
+              <Palette size={18} />
+            </button>
+
+            {paletteOpen && (
+              <div
+                className="animate-fadeIn"
+                style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 8px)',
+                  right: 0,
+                  minWidth: 220,
+                  background: 'var(--bg-card, #0f1a2b)',
+                  border: '1.5px solid var(--border-strong, rgba(250, 204, 21, 0.35))',
+                  borderRadius: 14,
+                  padding: '10px',
+                  boxShadow: '0 18px 45px rgba(0,0,0,0.6)',
+                  zIndex: 10000,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 6
+                }}
+              >
+                <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-text-muted)', padding: '2px 8px 4px' }}>
+                  Accent Color Theme
+                </div>
+                {colorThemes.map(t => {
+                  const isSelected = colorTheme === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => {
+                        setColorTheme(t.id);
+                        setPaletteOpen(false);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '8px 12px',
+                        borderRadius: 8,
+                        background: isSelected ? 'var(--accent-soft-2, rgba(16, 185, 129, 0.15))' : 'transparent',
+                        border: isSelected ? '1px solid var(--accent-primary, #10b981)' : '1px solid transparent',
+                        color: 'var(--color-text)',
+                        fontSize: 12.5,
+                        fontWeight: isSelected ? 700 : 500,
+                        cursor: 'pointer',
+                        textAlign: 'left'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                        <span style={{ width: 14, height: 14, borderRadius: '50%', background: t.primaryColor || t.color, display: 'inline-block', boxShadow: '0 2px 5px rgba(0,0,0,0.3)' }} />
+                        <span>{t.name}</span>
+                      </div>
+                      {isSelected && <Check size={14} color="var(--accent-primary, #10b981)" />}
+                    </button>
+                  );
+                })}
+                <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
+                <Link
+                  to="/theme"
+                  onClick={() => setPaletteOpen(false)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: 'var(--accent-text, #10b981)',
+                    textDecoration: 'none',
+                    padding: '6px 8px',
+                    borderRadius: 6
+                  }}
+                >
+                  More Appearance Settings →
+                </Link>
+              </div>
+            )}
+          </div>
           {user && (
             <div className="user-menu">
               <Link to={`/profile/${user.id}`} className="user-chip">

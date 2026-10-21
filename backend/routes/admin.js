@@ -582,15 +582,15 @@ router.post('/faculty', hodMiddleware, async (req, res) => {
 
         // 2. Derive & validate unique username and employee ID
         const targetUsername = customUsername
-          ? String(customUsername).trim().toLowerCase()
+          ? String(customUsername).trim().toLowerCase().replace(/[^a-z0-9._-]/g, '')
           : normalizedEmail.split('@')[0].replace(/[^a-z0-9._-]/g, '');
 
         if (!targetUsername || targetUsername.length < 3) {
-          return resolve(res.status(400).json({ error: 'Username must be at least 3 characters long.' }));
+          return resolve(res.status(400).json({ error: 'Username must be at least 3 characters long and contain only valid alphanumeric characters.' }));
         }
 
         const targetEmployeeId = customEmployeeId
-          ? String(customEmployeeId).trim().toUpperCase()
+          ? String(customEmployeeId).trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '')
           : `FAC${String((currentFacultyCount || 0) + 1).padStart(3, '0')}`;
 
         // 3. Check for duplicates in email, username, and employee_id
@@ -729,6 +729,28 @@ router.post('/faculty/:id/reset-password', hodMiddleware, async (req, res) => {
   res.json({
     success: true,
     message: 'Faculty password has been reset. A temporary password has been generated.',
+    temporary_password: tempPassword
+  });
+});
+
+// POST /api/admin/students/:id/reset-password - Reset password for student (HOD / Admin / Faculty Advisor)
+router.post('/students/:id/reset-password', async (req, res) => {
+  const { id } = req.params;
+  const tempPassword = generateTemporaryPassword();
+  const password_hash = await bcrypt.hash(tempPassword, 10);
+
+  const { error: uErr } = await supabase
+    .from('users')
+    .update({ password_hash, must_change_password: true })
+    .eq('id', id);
+
+  if (uErr) {
+    return res.status(500).json({ error: 'Failed to reset student password.', details: uErr.message });
+  }
+
+  res.json({
+    success: true,
+    message: 'Student password has been reset. A temporary password has been generated.',
     temporary_password: tempPassword
   });
 });

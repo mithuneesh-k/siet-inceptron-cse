@@ -9,8 +9,7 @@ async function seedAccounts() {
 
   const accounts = [
     { email: 'admin@siet.ac.in', password_hash: hashPass123, role: 'admin', name: 'System Administrator', designation: 'ADMIN' },
-    { email: 'hodcse@siet.ac.in', password_hash: hashPass123, role: 'faculty', name: 'Dr. HOD CSE', designation: 'HOD & Professor' },
-    { email: 'admin@srishakthi.ac.in', password_hash: hashAdmin123, role: 'admin', name: 'ADMIN', designation: 'HOD' }
+    { email: 'hodcse@siet.ac.in', password_hash: hashPass123, role: 'faculty', name: 'Dr. HOD CSE', designation: 'HOD & Professor' }
   ];
 
   for (const acc of accounts) {

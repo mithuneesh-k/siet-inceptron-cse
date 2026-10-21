@@ -12,11 +12,10 @@ import FacultyActionModal from '../components/FacultyActionModal';
 import ConfirmModal from '../components/ConfirmModal';
 import SplitActions from '../components/ui/split-actions';
 import Approvals from './Approvals';
-import { compressImage, formatFileSize } from '../utils/imageCompressor';
 import { 
   Shield, BarChart2, Users, Settings, GraduationCap, Hourglass, 
   Award, TrendingUp, List, RefreshCw, Trash2, Download, Plus, 
-  Edit3, Key, Copy, Check, X, ExternalLink, Inbox, Search, CheckCircle, Send, Image as ImageIcon, Upload, AlertCircle
+  Edit3, Key, Copy, Check, X, ExternalLink, Inbox, Search, CheckCircle, AlertCircle
 } from 'lucide-react';
 
 const CLASSES = ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D', 'CSE-E'];
@@ -59,17 +58,6 @@ export default function Admin() {
 
 
 
-  // Post & Notify state
-  const [notifyForm, setNotifyForm] = useState({ title: '', type: 'General', message: '', is_important: false, target: 'all', link: '', expires_at: '' });
-  const [notifyLoading, setNotifyLoading] = useState(false);
-  const [sentNotifications, setSentNotifications] = useState([]);
-  const [deleteAnnTarget, setDeleteAnnTarget] = useState(null);
-  const [annImageFile, setAnnImageFile] = useState(null);
-  const [annImagePreview, setAnnImagePreview] = useState(null);
-  const [uploadingAnnImage, setUploadingAnnImage] = useState(false);
-  const [annUploadState, setAnnUploadState] = useState({ status: 'idle', text: '', data: null, error: null });
-  const annUploadPromiseRef = useRef(null);
-
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
@@ -78,9 +66,8 @@ export default function Admin() {
   const [recentApproved, setRecentApproved] = useState([]);
   const [overviewStats, setOverviewStats] = useState(null);
 
-  const isAdmin = Boolean(user && (user.is_admin || user.role === 'admin' || user.role === 'faculty'));
+  const isAdmin = Boolean(user && (user.role === 'admin' || user.is_admin || user.role === 'faculty'));
   const isFullAdmin = Boolean(user && (user.role === 'admin' || user.is_admin || user.is_hod || user.designation?.toUpperCase() === 'HOD'));
-  const isCanPostNotify = Boolean(user && (user.role === 'admin' || user.is_admin || user.role === 'faculty' || user.is_hod || user.designation?.toUpperCase() === 'HOD'));
   const isFacultyRole = Boolean(user && user.role === 'faculty');
   const panelTitle = isFacultyRole ? 'Faculty Panel' : 'Admin Panel';
 
@@ -89,17 +76,20 @@ export default function Admin() {
     { id: 'students', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Users size={16} /> Students</span> },
     { id: 'manage', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Settings size={16} /> Manage</span> },
     ...(isAdmin ? [{ id: 'faculty', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><GraduationCap size={16} /> Faculty</span> }] : []),
-    ...(isCanPostNotify ? [{ id: 'notify', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Send size={16} /> Post & Notify</span> }] : []),
     ...(isFacultyRole ? [{ id: 'approvals', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><CheckCircle size={16} /> Approvals</span> }] : []),
   ];
 
   useEffect(() => {
+    if (tabFromUrl === 'notify') {
+      navigate('/showcase/manage', { replace: true });
+      return;
+    }
     if (tabFromUrl && tabs.some(t => t.id === tabFromUrl)) {
       setTab(tabFromUrl);
     } else if (tabFromUrl === 'approvals' && !isFacultyRole) {
       setTab('overview');
     }
-  }, [tabFromUrl, isFacultyRole]);
+  }, [tabFromUrl, isFacultyRole, navigate]);
 
   const handleTabClick = (tabId) => {
     setTab(tabId);
@@ -203,6 +193,26 @@ export default function Admin() {
     });
   };
 
+  const handleResetPassword = async (student) => {
+    const targetId = student.user_id || student.id;
+    try {
+      const res = await client.post(`/admin/students/${targetId}/reset-password`);
+      if (res.data?.temporary_password) {
+        setTempPasswordModal({
+          name: student.name,
+          username: student.roll_no || student.email,
+          password: res.data.temporary_password,
+          role: 'Student'
+        });
+        showToast(`Temporary password generated for ${student.name}`, 'success');
+      } else {
+        showToast('Password reset successfully.', 'success');
+      }
+    } catch (err) {
+      showToast(err.response?.data?.error || 'Failed to reset student password.', 'error');
+    }
+  };
+
   const handleResetFacultyPassword = async (faculty) => {
     const targetId = faculty.user_id || faculty.id;
     try {
@@ -211,7 +221,8 @@ export default function Admin() {
         setTempPasswordModal({
           name: faculty.name,
           username: faculty.username,
-          password: res.data.temporary_password
+          password: res.data.temporary_password,
+          role: 'Faculty'
         });
         showToast(`Temporary password generated for ${faculty.name}`, 'success');
       } else {
@@ -222,176 +233,10 @@ export default function Admin() {
     }
   };
 
-  const loadAnnouncements = useCallback(async () => {
-    try {
-      const res = await client.get('/announcements');
-      if (res.data?.success) {
-        setSentNotifications(res.data.announcements || []);
-      }
-    } catch {
-      setSentNotifications([]);
-    }
-  }, []);
-
   useEffect(() => {
     if (tab === 'manage') loadManagedStudents();
     if (tab === 'faculty') loadFaculties();
-    if (tab === 'notify') loadAnnouncements();
-  }, [tab, loadManagedStudents, loadFaculties, loadAnnouncements]);
-
-  const handleDeleteAnnouncementConfirm = async () => {
-    if (!deleteAnnTarget) return;
-    const targetAnn = deleteAnnTarget;
-    const targetId = targetAnn.id;
-    setDeleteAnnTarget(null);
-
-    requestUndoableDelete({
-      id: targetId,
-      type: 'Announcement',
-      label: targetAnn.title || 'Announcement',
-      itemData: targetAnn,
-      onOptimisticRemove: () => {
-        setSentNotifications(prev => prev.filter(n => String(n.id) !== String(targetId)));
-      },
-      onRestore: () => {
-        setSentNotifications(prev => {
-          if (prev.some(n => String(n.id) === String(targetId))) return prev;
-          return [targetAnn, ...prev];
-        });
-      },
-      onCommit: async () => {
-        await client.delete(`/announcements/${targetId}`);
-      },
-      onFailure: (err) => {
-        showToast(getActionErrorMessage(err, 'Unable to delete announcement. Please try again.'), 'error');
-      }
-    });
-  };
-
-  const handleAnnImageChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!allowedTypes.includes(file.type.toLowerCase())) {
-      showToast('Invalid file format. Please upload JPEG, PNG, or WEBP image.', 'error');
-      return;
-    }
-    if (file.size > 15 * 1024 * 1024) {
-      showToast('Image must be 15 MB or smaller.', 'error');
-      return;
-    }
-
-    if (annImagePreview) {
-      URL.revokeObjectURL(annImagePreview);
-    }
-    const previewUrl = URL.createObjectURL(file);
-    setAnnImagePreview(previewUrl);
-    setAnnImageFile(file);
-    setAnnUploadState({ status: 'compressing', text: 'Optimizing image...', data: null, error: null });
-
-    // Instantly compress and pre-upload in background while user types notification details
-    const uploadPromise = (async () => {
-      try {
-        const compressed = await compressImage(file, { maxWidth: 1400, maxHeight: 1400, quality: 0.82 });
-        setAnnUploadState(prev => ({
-          ...prev,
-          status: 'uploading',
-          text: `Uploading in background (${formatFileSize(compressed.size)})...`
-        }));
-
-        const formData = new FormData();
-        formData.append('file', compressed);
-        const res = await client.post('/uploads/announcement', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-
-        if (res.data?.success) {
-          const uploadResult = {
-            url: res.data.url,
-            storage_ref: res.data.storage_ref,
-            compressedSize: formatFileSize(compressed.size),
-            originalSize: formatFileSize(file.size)
-          };
-          setAnnUploadState({
-            status: 'ready',
-            text: `Ready to post instantly (${formatFileSize(compressed.size)})`,
-            data: uploadResult,
-            error: null
-          });
-          return uploadResult;
-        } else {
-          throw new Error(res.data?.error || 'Upload failed');
-        }
-      } catch (err) {
-        const errMsg = err.response?.data?.error || err.message || 'Image upload failed';
-        setAnnUploadState({ status: 'error', text: errMsg, data: null, error: errMsg });
-        throw err;
-      }
-    })();
-
-    annUploadPromiseRef.current = uploadPromise;
-  };
-
-  const handleRemoveAnnImage = () => {
-    annUploadPromiseRef.current = null;
-    setAnnImageFile(null);
-    if (annImagePreview) {
-      URL.revokeObjectURL(annImagePreview);
-    }
-    setAnnImagePreview(null);
-    setAnnUploadState({ status: 'idle', text: '', data: null, error: null });
-    const input = document.getElementById('ann-photo-input');
-    if (input) input.value = '';
-  };
-
-  const handleSendNotification = async (e) => {
-    e.preventDefault();
-    if (!notifyForm.title.trim() || !notifyForm.message.trim()) {
-      showToast('Title and message are required.', 'error');
-      return;
-    }
-    setNotifyLoading(true);
-    let imageUrl = null;
-    let imageStoragePath = null;
-
-    try {
-      if (annImageFile) {
-        if (annUploadState.status === 'ready' && annUploadState.data) {
-          // Pre-uploaded in background — instant submit!
-          imageUrl = annUploadState.data.url;
-          imageStoragePath = annUploadState.data.storage_ref;
-        } else if (annUploadState.status === 'error') {
-          throw new Error(annUploadState.error || 'Image upload failed. Please re-select image.');
-        } else if (annUploadPromiseRef.current) {
-          // Upload is still finalizing in background; wait for it
-          setUploadingAnnImage(true);
-          const uploadResult = await annUploadPromiseRef.current;
-          imageUrl = uploadResult.url;
-          imageStoragePath = uploadResult.storage_ref;
-        }
-      }
-
-      const payload = {
-        ...notifyForm,
-        image_url: imageUrl,
-        image_storage_path: imageStoragePath
-      };
-
-      const res = await client.post('/announcements', payload);
-      if (res.data?.success) {
-        showToast('Announcement broadcasted successfully! 📢');
-        const created = res.data.announcement || { ...payload, id: Date.now(), created_at: new Date().toISOString() };
-        setSentNotifications(prev => [created, ...prev.filter(n => String(n.id) !== String(created.id))]);
-        setNotifyForm({ title: '', type: 'General', message: '', is_important: false, target: 'all', link: '', expires_at: '' });
-        handleRemoveAnnImage();
-      }
-    } catch (err) {
-      showToast(err.response?.data?.error || err.message || 'Failed to send notification.', 'error');
-    } finally {
-      setNotifyLoading(false);
-      setUploadingAnnImage(false);
-    }
-  };
+  }, [tab, loadManagedStudents, loadFaculties]);
 
   const totalScore = students.reduce((s, u) => s + u.score, 0);
   const avgScore = students.length ? Math.round(totalScore / students.length) : 0;
@@ -474,15 +319,6 @@ export default function Admin() {
     setManagedStudents(prev => prev.filter(s => !selectedIds.has(s.id)));
     setSelectedIds(new Set());
     showToast(<span><Trash2 size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }} /> {count} students deleted.</span>);
-  };
-
-  const handleResetPassword = async (s) => {
-    try {
-      await client.post(`/admin/students/${s.id}/reset-password`);
-      showToast(<span><Key size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }} /> Password reset for {s.name}.</span>);
-    } catch {
-      showToast('Failed to reset password.', 'error');
-    }
   };
 
   const toggleSelect = (id) => {
@@ -957,271 +793,6 @@ export default function Admin() {
 
 
 
-            {/* ── POST & NOTIFY ── */}
-            {tab === 'notify' && isCanPostNotify && (
-              <div className="card animate-fadeIn" style={{ padding: '28px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '16px', boxShadow: 'var(--shadow-md)' }}>
-                <div style={{ marginBottom: 24 }}>
-                  <h2 style={{ fontSize: 20, fontWeight: 800, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 10, margin: 0 }}>
-                    <Send size={22} style={{ color: 'var(--color-green)' }} /> Post & Notify Department
-                  </h2>
-                  <p style={{ fontSize: 13.5, color: 'var(--color-text-muted)', marginTop: 4 }}>
-                    Broadcast departmental announcements, hackathons, internships, or notices to students and faculty.
-                  </p>
-                </div>
-
-                <form onSubmit={handleSendNotification} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 16 }}>
-                    <div className="form-group">
-                      <label className="form-label" style={{ color: 'var(--color-text-muted)', fontWeight: 700 }}>Announcement Title *</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        placeholder="e.g. SIET CSE Hackathon 2026 Registrations Open"
-                        value={notifyForm.title}
-                        onChange={e => setNotifyForm(prev => ({ ...prev, title: e.target.value }))}
-                        style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--color-text)' }}
-                        required
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label" style={{ color: 'var(--color-text-muted)', fontWeight: 700 }}>Announcement Type *</label>
-                      <select
-                        className="form-select"
-                        value={notifyForm.type}
-                        onChange={e => setNotifyForm(prev => ({ ...prev, type: e.target.value }))}
-                        style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--color-text)' }}
-                      >
-                        <option value="General">General</option>
-                        <option value="Hackathon">Hackathon</option>
-                        <option value="Internship">Internship</option>
-                        <option value="Achievement">Achievement</option>
-                        <option value="Course">Course</option>
-                        <option value="Placement">Placement</option>
-                        <option value="Event">Event</option>
-                      </select>
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label" style={{ color: 'var(--color-text-muted)', fontWeight: 700 }}>Target Audience</label>
-                      <select
-                        className="form-select"
-                        value={notifyForm.target}
-                        onChange={e => setNotifyForm(prev => ({ ...prev, target: e.target.value }))}
-                        style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--color-text)' }}
-                      >
-                        <option value="all">All Students & Faculty</option>
-                        <option value="students">Students Only</option>
-                        <option value="faculty">Faculty Only</option>
-                        <option value="cse-a">CSE-A Only</option>
-                        <option value="cse-b">CSE-B Only</option>
-                        <option value="cse-c">CSE-C Only</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
-                    <div className="form-group">
-                      <label className="form-label" style={{ color: 'var(--color-text-muted)', fontWeight: 700 }}>Action Link / URL (Optional)</label>
-                      <input
-                        type="url"
-                        className="form-input"
-                        placeholder="https://..."
-                        value={notifyForm.link}
-                        onChange={e => setNotifyForm(prev => ({ ...prev, link: e.target.value }))}
-                        style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--color-text)' }}
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label" style={{ color: 'var(--color-text-muted)', fontWeight: 700 }}>Expiry Date (Optional)</label>
-                      <input
-                        type="date"
-                        className="form-input"
-                        value={notifyForm.expires_at}
-                        onChange={e => setNotifyForm(prev => ({ ...prev, expires_at: e.target.value }))}
-                        style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--color-text)' }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label" style={{ color: 'var(--color-text-muted)', fontWeight: 700 }}>Announcement Message *</label>
-                    <textarea
-                      className="form-input"
-                      rows={5}
-                      placeholder="Write the full announcement details, guidelines, or instructions here..."
-                      value={notifyForm.message}
-                      onChange={e => setNotifyForm(prev => ({ ...prev, message: e.target.value }))}
-                      style={{ background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--color-text)', resize: 'vertical' }}
-                      required
-                    />
-                  </div>
-
-                  {/* ── Photo / Image Attachment Area ── */}
-                  <div className="form-group">
-                    <label className="form-label" style={{ color: 'var(--color-text-muted)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <ImageIcon size={16} color="var(--color-green)" /> Attach Photo / Poster (Optional)
-                    </label>
-
-                    {!annImagePreview ? (
-                      <div
-                        style={{
-                          border: '2px dashed var(--border-strong)',
-                          borderRadius: 12,
-                          padding: '20px',
-                          textAlign: 'center',
-                          background: 'var(--bg-input)',
-                          cursor: 'pointer',
-                          transition: 'all 200ms ease'
-                        }}
-                        onClick={() => document.getElementById('ann-photo-input')?.click()}
-                      >
-                        <input
-                          id="ann-photo-input"
-                          type="file"
-                          accept="image/jpeg,image/png,image/webp"
-                          onChange={handleAnnImageChange}
-                          style={{ display: 'none' }}
-                        />
-                        <Upload size={24} style={{ color: 'var(--color-green)', marginBottom: 8 }} />
-                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)' }}>Click to upload poster or image</div>
-                        <div style={{ fontSize: 11, color: 'var(--color-text-faint)', marginTop: 4 }}>JPEG, PNG, or WEBP (Auto-optimized for instant posting)</div>
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'var(--bg-input)', border: '1px solid var(--border)', padding: 12, borderRadius: 12 }}>
-                        <img
-                          src={annImagePreview}
-                          alt="Announcement Preview"
-                          style={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border-strong)' }}
-                        />
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {annImageFile?.name || 'Attached Image'}
-                          </div>
-                          <div style={{ fontSize: 11, marginTop: 4 }}>
-                            {annUploadState.status === 'compressing' && (
-                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--accent, #3b82f6)' }}>
-                                <RefreshCw size={11} className="spin" /> Optimizing image...
-                              </span>
-                            )}
-                            {annUploadState.status === 'uploading' && (
-                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#f59e0b' }}>
-                                <RefreshCw size={11} className="spin" /> {annUploadState.text}
-                              </span>
-                            )}
-                            {annUploadState.status === 'ready' && (
-                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#10b981', fontWeight: 600 }}>
-                                <CheckCircle size={12} /> Ready to post instantly ({annUploadState.data?.compressedSize})
-                              </span>
-                            )}
-                            {annUploadState.status === 'error' && (
-                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#ef4444' }}>
-                                <AlertCircle size={11} /> {annUploadState.error}
-                              </span>
-                            )}
-                            {annUploadState.status === 'idle' && (
-                              <span style={{ color: 'var(--color-text-faint)' }}>
-                                {annImageFile ? formatFileSize(annImageFile.size) : 'Ready to post'}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          className="btn btn-ghost btn-sm"
-                          onClick={handleRemoveAnnImage}
-                          style={{ color: '#ef4444', display: 'flex', alignItems: 'center', gap: 4 }}
-                          title="Remove Photo"
-                        >
-                          <X size={16} /> Remove
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginTop: 20 }}>
-                    <label className="checkbox-group" style={{ cursor: 'pointer', margin: 0 }}>
-                      <input
-                        type="checkbox"
-                        className="checkbox-custom"
-                        checked={notifyForm.is_important}
-                        onChange={e => setNotifyForm(prev => ({ ...prev, is_important: e.target.checked }))}
-                      />
-                      <span style={{ fontWeight: 700, color: notifyForm.is_important ? '#ef4444' : 'var(--color-text)' }}>
-                        Mark as IMPORTANT (Red Highlighted Banner)
-                      </span>
-                    </label>
-
-                    <button
-                      type="submit"
-                      disabled={notifyLoading || uploadingAnnImage}
-                      className="btn btn-primary"
-                      style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', gap: 8, pointerEvents: 'auto', cursor: 'pointer' }}
-                    >
-                      <Send size={16} /> {uploadingAnnImage ? 'Finalizing Image...' : notifyLoading ? 'Broadcasting...' : 'Post & Broadcast Notification'}
-                    </button>
-                  </div>
-                </form>
-
-                {sentNotifications.length > 0 && (
-                  <div style={{ marginTop: 36, borderTop: '1px solid var(--border)', paddingTop: 24 }}>
-                    <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--color-text)', marginBottom: 16 }}>Posted Announcements ({sentNotifications.length})</h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                      {sentNotifications.map(n => (
-                        <div
-                          key={n.id}
-                          style={{
-                            background: n.is_important ? 'rgba(239, 68, 68, 0.08)' : 'var(--bg-input)',
-                            border: `1px solid ${n.is_important ? 'rgba(239, 68, 68, 0.4)' : 'var(--border)'}`,
-                            borderRadius: 12,
-                            padding: 16
-                          }}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 6 }}>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
-                                <span className="badge badge-green" style={{ fontSize: 11 }}>{n.type || 'General'}</span>
-                                {n.is_important && <span className="badge" style={{ fontSize: 11, background: '#ef4444', color: '#fff' }}>IMPORTANT</span>}
-                                {n.image_url && <span className="badge badge-violet" style={{ fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 3 }}><ImageIcon size={10} /> Photo Attached</span>}
-                                <span style={{ fontSize: 11, color: 'var(--color-text-faint)' }}>Audience: {n.target}</span>
-                              </div>
-                              <h4 style={{ fontWeight: 800, color: 'var(--color-text)', margin: 0, fontSize: 15 }}>{n.title}</h4>
-                            </div>
-
-                            <SplitActions
-                              primaryLabel="Manage"
-                              primaryIcon={Settings}
-                              onPrimaryClick={() => setDeleteAnnTarget(n)}
-                              dropdownActions={[
-                                { label: 'Delete Announcement', icon: Trash2, onClick: () => setDeleteAnnTarget(n), destructive: true }
-                              ]}
-                              ariaLabel="More announcement actions"
-                            />
-                          </div>
-
-                          {n.image_url && (
-                            <div style={{ marginTop: 10, marginBottom: 8 }}>
-                              <img
-                                src={n.image_url}
-                                alt={n.title}
-                                style={{ width: '100%', maxHeight: 220, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border)' }}
-                              />
-                            </div>
-                          )}
-
-                          <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '6px 0 0', whiteSpace: 'pre-line' }}>{n.message}</p>
-                          <div style={{ fontSize: 11, color: 'var(--color-text-faint)', marginTop: 8 }}>
-                            Posted: {new Date(n.created_at || n.timestamp || Date.now()).toLocaleString()}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
             {/* ── APPROVALS (Faculty embedded tab) ── */}
             {tab === 'approvals' && isFacultyRole && (
               <Approvals embedded />
@@ -1297,44 +868,63 @@ export default function Admin() {
         />
       )}
 
-      {/* ── Confirm Announcement Delete Modal ── */}
-      {deleteAnnTarget && (
-        <ConfirmModal
-          isOpen={Boolean(deleteAnnTarget)}
-          title="Delete Announcement?"
-          message={`Are you sure you want to delete "${deleteAnnTarget.title}"? This cannot be undone.`}
-          confirmText="Delete Announcement"
-          confirmVariant="danger"
-          onConfirm={handleDeleteAnnouncementConfirm}
-          onCancel={() => setDeleteAnnTarget(null)}
-        />
-      )}
-
       {/* ── Temporary Password Display Modal ── */}
       {tempPasswordModal && (
-        <div className="modal-backdrop" onClick={() => setTempPasswordModal(null)}>
-          <div className="modal card" style={{ maxWidth: 440, padding: 24, textAlign: 'center' }} onClick={e => e.stopPropagation()}>
-            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(99, 102, 241, 0.15)', color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-              <Key size={24} />
+        <div 
+          className="modal-overlay animate-fadeIn" 
+          style={{ 
+            position: 'fixed', 
+            inset: 0, 
+            zIndex: 999999, 
+            background: 'rgba(0, 0, 0, 0.8)', 
+            backdropFilter: 'blur(8px)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            padding: 16 
+          }}
+          onClick={() => setTempPasswordModal(null)}
+        >
+          <div 
+            className="card animate-scaleUp" 
+            style={{ 
+              maxWidth: 460, 
+              width: '100%', 
+              padding: 28, 
+              textAlign: 'center', 
+              background: 'var(--bg-card)', 
+              border: '1px solid var(--border)', 
+              borderRadius: 20, 
+              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.7)' 
+            }} 
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+              <Key size={26} />
             </div>
-            <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8, color: 'var(--color-text)' }}>Faculty Password Reset</h3>
-            <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 16 }}>
-              A temporary password has been generated for <strong>{tempPasswordModal.name}</strong> (@{tempPasswordModal.username}). They will be required to change it upon their next login.
+            <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 8, color: 'var(--color-text)' }}>
+              {tempPasswordModal.role || 'Account'} Password Reset
+            </h3>
+            <p style={{ fontSize: 13.5, color: 'var(--color-text-muted)', marginBottom: 20, lineHeight: 1.5 }}>
+              A secure temporary password has been generated for <strong>{tempPasswordModal.name}</strong> ({tempPasswordModal.username ? `@${tempPasswordModal.username}` : ''}). They will be required to choose a new password upon their next login.
             </p>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--bg-subtle, #1e293b)', borderRadius: 8, border: '1px solid var(--border)', marginBottom: 20 }}>
-              <code style={{ fontSize: 16, fontWeight: 700, letterSpacing: '0.05em', color: '#10b981' }}>{tempPasswordModal.password}</code>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', background: 'var(--bg-input)', borderRadius: 12, border: '1.5px solid var(--border)', marginBottom: 22 }}>
+              <code style={{ fontSize: 18, fontWeight: 800, letterSpacing: '0.08em', color: '#10b981', fontFamily: 'monospace' }}>
+                {tempPasswordModal.password}
+              </code>
               <button
                 type="button"
                 className="btn btn-secondary btn-sm"
+                style={{ fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 6 }}
                 onClick={() => {
                   navigator.clipboard.writeText(tempPasswordModal.password);
-                  showToast('Password copied to clipboard! 📋');
+                  showToast('Temporary password copied to clipboard! 📋');
                 }}
               >
-                Copy
+                <Copy size={14} /> Copy
               </button>
             </div>
-            <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => setTempPasswordModal(null)}>
+            <button className="btn btn-primary" style={{ width: '100%', padding: '10px 0', fontSize: 14, fontWeight: 700 }} onClick={() => setTempPasswordModal(null)}>
               Done
             </button>
           </div>

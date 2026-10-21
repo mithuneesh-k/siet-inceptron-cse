@@ -1,29 +1,42 @@
 const express = require('express');
 const router = express.Router();
-const { supabase, getUserWithScore } = require('../db/supabase');
-const { authMiddleware, optionalAuthMiddleware } = require('../middleware/auth');
+const { supabase, getUserWithScore, getAdminScope } = require('../db/supabase');
+const { authMiddleware, adminMiddleware, optionalAuthMiddleware } = require('../middleware/auth');
 const cache = require('../services/cache');
 const { withHttpCache } = require('../services/httpCache');
+const { sanitizeSearchQuery } = require('../services/querySanitizer');
 
-// ─── GET /api/users — All students with score ─────────────────────────────────
-router.get('/', withHttpCache('users:list', 300), async (req, res) => {
+// ─── GET /api/users — All students with score (Protected: Faculty & Admin only) ───
+router.get('/', authMiddleware, adminMiddleware, async (req, res) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   const page = parseInt(req.query.page || '1', 10);
   const limit = Math.min(parseInt(req.query.limit || '50', 10), 200);
   const offset = (page - 1) * limit;
-  const { batch, class: classFilter, search } = req.query;
+  let { batch, class: classFilter, search } = req.query;
+
+  // Scoping enforcement for Faculty Advisors (non-HOD)
+  const scope = await getAdminScope(req.user.id, req.user.role);
+  if (!scope.hasFullAccess) {
+    if (!scope.advisingClass || !scope.advisingBatch) {
+      return res.json({ students: [], total: 0, page, limit });
+    }
+    classFilter = scope.advisingClass;
+    batch = scope.advisingBatch;
+  }
 
   // Check if requesting all (no pagination)
-  const requestingAll = req.query.all === 'true' || (!req.query.page && !req.query.limit && !batch && !classFilter && !search);
+  const requestingAll = req.query.all === 'true';
 
   // Build profile query with filters and exact total count
   let profilesQuery = supabase
     .from('students')
     .select('user_id, name, roll_no, class, batch, year, github, linkedin, avatar_url', { count: 'exact' });
 
-  if (classFilter) profilesQuery = profilesQuery.eq('class', classFilter);
-  if (batch) profilesQuery = profilesQuery.eq('batch', batch);
-  if (search && search.trim()) {
-    const q = search.trim();
+  if (classFilter && classFilter !== 'all') profilesQuery = profilesQuery.eq('class', classFilter);
+  if (batch && batch !== 'all') profilesQuery = profilesQuery.eq('batch', batch);
+  
+  const q = sanitizeSearchQuery(search);
+  if (q) {
     profilesQuery = profilesQuery.or(`name.ilike.%${q}%,roll_no.ilike.%${q}%`);
   }
 
@@ -57,7 +70,7 @@ router.get('/', withHttpCache('users:list', 300), async (req, res) => {
     achMap[a.user_id].count++;
   }
 
-  // Fetch emails in parallel if profiles exist
+  // Fetch emails only for authorized faculty/admin callers
   let emailMap = {};
   if (profiles.length) {
     const userIds = profiles.map(s => s.user_id);
@@ -126,7 +139,10 @@ router.get('/:id', optionalAuthMiddleware, async (req, res) => {
 // ─── PUT /api/users/:id ───────────────────────────────────────────────────────
 router.put('/:id', authMiddleware, async (req, res) => {
   const uid = req.params.id;
-  if (req.user.id !== uid && req.user.role === 'student') {
+  const isOwner = req.user && req.user.id === uid;
+  const isAdmin = req.user && (req.user.role === 'admin' || req.user.is_hod);
+
+  if (!isOwner && !isAdmin) {
     return res.status(403).json({ error: "Cannot edit another user's profile" });
   }
 
