@@ -65,8 +65,9 @@ async function run() {
   // Original supabase.from method backup
   const originalFrom = supabase.from.bind(supabase);
 
-  // 1. Missing database table produces clear HTTP 503 error
-  await asyncTest('1. Missing showcase_posts table returns HTTP 503 TABLE_NOT_INITIALIZED (no silent fake success)', async () => {
+  // 1. Missing database table gracefully falls back to local storage without throwing 503
+  await asyncTest('1. Missing showcase_posts table gracefully falls back to local storage without throwing 503', async () => {
+    if (showcaseRouter._resetInMemory) showcaseRouter._resetInMemory();
     supabase.from = (table) => {
       if (table === 'showcase_posts') {
         return {
@@ -81,10 +82,10 @@ async function run() {
     };
 
     const res = await apiCall({ method: 'GET', url: '/' });
-    assert.strictEqual(res.status, 503);
-    assert.strictEqual(res.body.success, false);
-    assert.strictEqual(res.body.code, 'TABLE_NOT_INITIALIZED');
-    assert.strictEqual(res.body.error.includes('009_showcase_cms.sql'), true);
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.body.success, true);
+    assert.strictEqual(Array.isArray(res.body.posts), true);
+    assert.strictEqual(res.body.fallback, true);
   });
 
   // 2. Database outage or query error returns HTTP 500 DATABASE_ERROR
@@ -127,7 +128,7 @@ async function run() {
       method: 'POST',
       url: '/',
       body: { title: 'Project X', description: 'Sample description' },
-      user: { id: 'fac1', role: 'faculty' }
+      user: { id: 'admin1', role: 'admin' }
     });
     assert.strictEqual(res.status, 500);
     assert.strictEqual(res.body.success, false);
@@ -235,8 +236,8 @@ async function run() {
     assert.strictEqual(res.status, 401);
   });
 
-  // 6. Student POST rejected with 403
-  await asyncTest('6. POST /api/showcase rejects students with 403', async () => {
+  // 6. Student & non-admin faculty POST rejected with 403
+  await asyncTest('6. POST /api/showcase rejects students and non-admin faculty with 403', async () => {
     const res = await apiCall({
       method: 'POST',
       url: '/',
@@ -244,6 +245,14 @@ async function run() {
       user: { id: 'stu1', email: 'stu1@siet.ac.in', role: 'student' }
     });
     assert.strictEqual(res.status, 403);
+
+    const resFac = await apiCall({
+      method: 'POST',
+      url: '/',
+      body: { title: 'Faculty Post', description: 'Faculty trying to post' },
+      user: { id: 'fac1', email: 'fac1@siet.ac.in', role: 'faculty', designation: 'Assistant Professor' }
+    });
+    assert.strictEqual(resFac.status, 403);
   });
 
   // 7. Validation: Empty title or description rejected with 400
@@ -252,7 +261,7 @@ async function run() {
       method: 'POST',
       url: '/',
       body: { title: '', description: 'Some text' },
-      user: { id: 'fac1', email: 'fac1@siet.ac.in', role: 'faculty' }
+      user: { id: 'admin1', email: 'admin@siet.ac.in', role: 'admin' }
     });
     assert.strictEqual(resNoTitle.status, 400);
 
@@ -260,14 +269,14 @@ async function run() {
       method: 'POST',
       url: '/',
       body: { title: 'Valid Title', description: '' },
-      user: { id: 'fac1', email: 'fac1@siet.ac.in', role: 'faculty' }
+      user: { id: 'admin1', email: 'admin@siet.ac.in', role: 'admin' }
     });
     assert.strictEqual(resNoDesc.status, 400);
   });
 
-  // 8. Authorized faculty can create post with server-derived author identity
+  // 8. Authorized admin can create post with server-derived author identity
   let createdPostId = null;
-  await asyncTest('8. Authorized faculty creates post with verified author identity', async () => {
+  await asyncTest('8. Authorized admin creates post with verified author identity', async () => {
     const res = await apiCall({
       method: 'POST',
       url: '/',
@@ -279,35 +288,35 @@ async function run() {
         author_id: 'spoofed_id_should_be_ignored'
       },
       user: { 
-        id: 'fac1', 
-        name: 'Dr. Faculty A', 
-        designation: 'Assistant Professor', 
-        email: 'fac1@siet.ac.in', 
-        role: 'faculty' 
+        id: 'admin1', 
+        name: 'Department Admin', 
+        designation: 'Admin', 
+        email: 'admin@siet.ac.in', 
+        role: 'admin' 
       }
     });
     assert.strictEqual(res.status, 201);
     assert.strictEqual(res.body.success, true);
-    assert.strictEqual(res.body.post.author_id, 'fac1');
+    assert.strictEqual(res.body.post.author_id, 'admin1');
     assert.notStrictEqual(res.body.post.author_id, 'spoofed_id_should_be_ignored');
     assert.strictEqual(res.body.post.title, 'Autonomous Rover Project');
     createdPostId = res.body.post.id;
   });
 
-  // 9. Author faculty can edit own post
-  await asyncTest('9. Author faculty can edit their own showcase post', async () => {
+  // 9. Admin can edit showcase post
+  await asyncTest('9. Admin can edit showcase post', async () => {
     const res = await apiCall({
       method: 'PUT',
       url: `/${createdPostId}`,
       body: { title: 'Autonomous Rover Project v2' },
-      user: { id: 'fac1', role: 'faculty' }
+      user: { id: 'admin1', role: 'admin' }
     });
     assert.strictEqual(res.status, 200);
     assert.strictEqual(res.body.success, true);
     assert.strictEqual(res.body.post.title, 'Autonomous Rover Project v2');
   });
 
-  // 10. Another ordinary faculty CANNOT edit someone else's post
+  // 10. Ordinary faculty CANNOT edit showcase post
   await asyncTest('10. Other ordinary faculty cannot edit another author post (403 Forbidden)', async () => {
     const res = await apiCall({
       method: 'PUT',
@@ -367,7 +376,7 @@ async function run() {
         category: 'Internship',
         project_url: 'https://summerofcode.withgoogle.com'
       },
-      user: { id: 'fac_advisor', role: 'faculty', name: 'Prof. Advisor', designation: 'Faculty Advisor' }
+      user: { id: 'admin_user', role: 'admin', name: 'Admin User', designation: 'Admin' }
     });
     assert.strictEqual(res.status, 201);
     assert.strictEqual(res.body.success, true);
@@ -385,7 +394,7 @@ async function run() {
         description: 'Should fail validation',
         category: 'NonExistentCategory'
       },
-      user: { id: 'fac_advisor', role: 'faculty' }
+      user: { id: 'admin_user', role: 'admin' }
     });
     assert.strictEqual(res.status, 400);
   });
@@ -397,7 +406,7 @@ async function run() {
       method: 'PATCH',
       url: `/${internshipPostId}/publish`,
       body: { published: false },
-      user: { id: 'fac_advisor', role: 'faculty' }
+      user: { id: 'admin_user', role: 'admin' }
     });
     assert.strictEqual(unpubRes.status, 200);
     assert.strictEqual(unpubRes.body.post.published, false);
@@ -411,7 +420,7 @@ async function run() {
     const allRes = await apiCall({
       method: 'GET',
       url: '/?all=true',
-      user: { id: 'fac_advisor', role: 'faculty' }
+      user: { id: 'admin_user', role: 'admin' }
     });
     const inAll = allRes.body.posts.some(p => p.id === internshipPostId);
     assert.strictEqual(inAll, true);

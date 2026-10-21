@@ -4,134 +4,32 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import SwitchMode from '../components/ui/switch-mode';
 import client from '../api/client';
+import ShowcaseImageInput from '../components/ShowcaseImageInput';
 import { 
   Trophy, GraduationCap, 
   ExternalLink, Rocket, Users, BookOpen, Tag, 
   Laptop, ArrowRight, Crown, Calendar,
   Trash2, Plus, Edit3, X, Check, AlertCircle, RefreshCw, Settings,
-  Eye, Sparkles
+  Eye, Sparkles, Smartphone
 } from 'lucide-react';
-
-// Curated Default Department Showcase Highlights (Active whenever database table is initializing)
-const DEFAULT_DEPARTMENT_POSTS = [
-  {
-    id: 'siet-proj-1',
-    title: 'Autonomous Campus UAV Navigation & Edge AI Surveillance',
-    description: 'An autonomous quadcopter system equipped with Jetson Nano and custom YOLOv8 object detection models, engineered by CSE third-year student teams for automated aerial patrol and campus perimeter monitoring.',
-    category: 'Project',
-    project_url: 'https://github.com/siet-inceptron/autonomous-uav',
-    cover_image_url: 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?auto=format&fit=crop&w=1200&q=80',
-    author_name: 'Dr. K. Senthil Kumar',
-    author_designation: 'Associate Professor & AI Lab Mentor',
-    created_at: new Date('2026-03-15').toISOString(),
-    is_featured: true
-  },
-  {
-    id: 'siet-proj-2',
-    title: 'Inceptron Decentralized Academic Milestone Verification Protocol',
-    description: 'A blockchain-anchored student credential and hackathon victory verification system built with smart contracts, ensuring cryptographically verifiable transcripts and preventing document forgery.',
-    category: 'Project',
-    project_url: 'https://github.com/siet-inceptron/credential-verifier',
-    cover_image_url: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80',
-    author_name: 'Prof. R. Priya Dharshini',
-    author_designation: 'Assistant Professor, Department of CSE',
-    created_at: new Date('2026-03-28').toISOString(),
-    is_featured: true
-  },
-  {
-    id: 'siet-res-1',
-    title: 'Federated Learning Paradigms for Privacy-Preserving Medical Imaging',
-    description: 'Investigating distributed convolutional neural networks that train on localized clinical datasets without patient record exposure. Published in IEEE Access with multi-center benchmark validation.',
-    category: 'Research',
-    project_url: 'https://doi.org/10.1109/ACCESS.2025.1098231',
-    cover_image_url: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=1200&q=80',
-    author_name: 'Dr. M. Soundariya',
-    author_designation: 'Professor & Research Head',
-    created_at: new Date('2026-02-18').toISOString(),
-    is_featured: true
-  },
-  {
-    id: 'siet-res-2',
-    title: 'Lattice-Based Post-Quantum Cryptography for Resource-Constrained IoT Nodes',
-    description: 'Comprehensive evaluation of Kyber and Dilithium algorithm implementations on microcontrollers, demonstrating quantum-resistant key exchanges with low energy dissipation.',
-    category: 'Research',
-    project_url: 'https://doi.org/10.1007/978-981-99-1234-5',
-    cover_image_url: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80',
-    author_name: 'Dr. P. Rajesh',
-    author_designation: 'Department of Computer Science & Engineering',
-    created_at: new Date('2026-01-24').toISOString(),
-    is_featured: true
-  },
-  {
-    id: 'siet-ach-1',
-    title: 'Smart India Hackathon 2025 — 1st Prize Winner (₹1,00,000 Cash Award)',
-    description: 'SIET CSE Team "ByteForce" clinched national 1st place in the Smart Automation category at the SIH Grand Finale, developing an AI drone coordinator for disaster rescue operations.',
-    category: 'Achievement',
-    project_url: 'https://sih.gov.in/winners2025',
-    cover_image_url: 'https://images.unsplash.com/photo-1567427017947-545c5f8d16ad?auto=format&fit=crop&w=1200&q=80',
-    author_name: 'Dr. N. Suresh',
-    author_designation: 'Head of Department (HOD) — CSE',
-    created_at: new Date('2026-03-05').toISOString(),
-    is_featured: true
-  },
-  {
-    id: 'siet-ach-2',
-    title: 'ACM ICPC Regional Championship — Top 10 National Finalists',
-    description: 'Three CSE student competitive programmers qualified through Asia West regionals with exceptional speed and algorithmic accuracy, competing against premier IITs and NITs.',
-    category: 'Achievement',
-    project_url: 'https://icpc.global/regionals',
-    cover_image_url: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=1200&q=80',
-    author_name: 'Prof. A. Vignesh',
-    author_designation: 'Competitive Programming Club Coordinator',
-    created_at: new Date('2026-02-12').toISOString(),
-    is_featured: true
-  },
-  {
-    id: 'siet-int-1',
-    title: 'SIET InceptHacks 2026 — 36-Hour National Codeathon Registration Open',
-    description: 'Department invites collegiate student teams across India to build AI, Web3, and sustainability solutions with cash prizes worth ₹2,50,000 and direct internship interview slots.',
-    category: 'Internship',
-    project_url: 'https://incepthacks.siet.ac.in',
-    cover_image_url: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?auto=format&fit=crop&w=1200&q=80',
-    author_name: 'Dr. N. Suresh',
-    author_designation: 'Head of Department (HOD) — CSE',
-    created_at: new Date('2026-04-01').toISOString(),
-    is_featured: true
-  },
-  {
-    id: 'siet-int-2',
-    title: 'Enterprise Cloud & AI Pre-Placement Internship Cohort (Batch 2027)',
-    description: 'Applications open for 6-month paid industrial internships with tier-1 technology partners including real-world production DevOps, microservices architecture, and model deployment.',
-    category: 'Internship',
-    project_url: 'https://portal.siet.ac.in/internships',
-    cover_image_url: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1200&q=80',
-    author_name: 'Dr. K. Senthil Kumar',
-    author_designation: 'Placement & Industry Liaison Head',
-    created_at: new Date('2026-04-05').toISOString(),
-    is_featured: true
-  }
-];
 
 export default function Showcase() {
   const { theme } = useTheme();
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const isFacultyOrHOD = Boolean(
-    user && (user.role === 'faculty' || user.role === 'admin' || user.is_admin)
-  );
-
-  const isHOD = Boolean(
+  const isAdmin = Boolean(
     user && (
       user.role === 'admin' || 
+      user.is_admin === true || 
       user.is_hod === true || 
       user.designation?.toUpperCase()?.includes('HOD') || 
       user.designation?.toUpperCase() === 'HEAD OF DEPARTMENT'
     )
   );
 
-  // Showcase Posts State (Database-Backed CMS with Curated Defaults)
-  const [showcasePosts, setShowcasePosts] = useState(DEFAULT_DEPARTMENT_POSTS);
+  // Showcase Posts State (Strict Database-Backed CMS with No Mock Fallbacks)
+  const [showcasePosts, setShowcasePosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(true);
   const [activeFoundationTab, setActiveFoundationTab] = useState('projects');
 
@@ -144,12 +42,16 @@ export default function Showcase() {
     description: '',
     category: 'Project',
     project_url: '',
-    cover_image_url: ''
+    cover_image_url: '',
+    image_storage_path: null
   });
 
   // Delete Confirm Modal State
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [toast, setToast] = useState(null);
+
+  // Full-Resolution Lightbox & Spotlight Modal State
+  const [lightboxPost, setLightboxPost] = useState(null);
 
   // Platform Stats & Leaderboard from actual API
   const [stats, setStats] = useState({
@@ -171,15 +73,14 @@ export default function Showcase() {
     setPostsLoading(true);
     try {
       const res = await client.get('/showcase');
-      if (res.data?.success && Array.isArray(res.data.posts) && res.data.posts.length > 0) {
+      if (res.data?.success && Array.isArray(res.data.posts)) {
         setShowcasePosts(res.data.posts);
       } else {
-        setShowcasePosts(DEFAULT_DEPARTMENT_POSTS);
+        setShowcasePosts([]);
       }
     } catch (err) {
-      // Gracefully fall back to curated department highlights without broken error cards
-      console.info('Showcase database uninitialized or offline; displaying department showcases:', err?.message);
-      setShowcasePosts(DEFAULT_DEPARTMENT_POSTS);
+      console.info('Showcase database fetch result:', err?.message);
+      setShowcasePosts([]);
     } finally {
       setPostsLoading(false);
     }
@@ -227,7 +128,8 @@ export default function Showcase() {
       description: '',
       category: defaultCategory,
       project_url: '',
-      cover_image_url: ''
+      cover_image_url: '',
+      image_storage_path: null
     });
     setModalOpen(true);
   };
@@ -239,7 +141,8 @@ export default function Showcase() {
       description: post.description || '',
       category: post.category || 'Project',
       project_url: post.project_url || '',
-      cover_image_url: post.cover_image_url || ''
+      cover_image_url: post.cover_image_url || post.image_url || '',
+      image_storage_path: post.image_storage_path || null
     });
     setModalOpen(true);
   };
@@ -298,17 +201,17 @@ export default function Showcase() {
   };
 
   // Categorized Section Post Lists
-  const projectPosts = showcasePosts.filter(
-    p => p.category?.toLowerCase() === 'project' || p.category?.toLowerCase() === 'innovation'
+  const hackathonPosts = showcasePosts.filter(
+    p => p.category?.toLowerCase() === 'achievement' || p.category?.toLowerCase() === 'hackathon'
   );
   const researchPosts = showcasePosts.filter(
     p => p.category?.toLowerCase() === 'research'
   );
-  const hackathonPosts = showcasePosts.filter(
-    p => p.category?.toLowerCase() === 'achievement'
-  );
   const upcomingPosts = showcasePosts.filter(
     p => p.category?.toLowerCase() === 'internship' || p.category?.toLowerCase() === 'event'
+  );
+  const projectPosts = showcasePosts.filter(
+    p => !hackathonPosts.includes(p) && !researchPosts.includes(p) && !upcomingPosts.includes(p)
   );
 
   const scrollToSection = (id) => {
@@ -328,28 +231,56 @@ export default function Showcase() {
     }
   };
 
-  // Foundation Explorer Items (Inspired by Screenshot 1 "Explore our foundation")
+  // Foundation Explorer Items
   const foundationTabs = [
-    { id: 'projects', label: 'Technical Projects & Innovations', icon: <Rocket size={15} /> },
+    { id: 'projects', label: 'Technical Projects & Engineering Builds', icon: <Rocket size={15} /> },
+    { id: 'hackathons', label: 'Hackathons & Coding Competitions', icon: <Trophy size={15} /> },
     { id: 'research', label: 'Research Publications & Papers', icon: <BookOpen size={15} /> },
-    { id: 'hackathons', label: 'Hackathon Winners & Podiums', icon: <Trophy size={15} /> },
     { id: 'upcoming', label: 'Upcoming Sprints & Internships', icon: <Calendar size={15} /> },
     { id: 'leaderboard', label: 'Student Hall of Fame & Rankings', icon: <Crown size={15} /> }
   ];
 
-  // Card Rendering Helper matching the pristine white card design from Screenshots
+  // Card Rendering Helper matching the pristine white card design with natural uncropped posters
   const renderShowcaseCard = (post, linkLabel = 'View Project') => {
-    const canEdit = Boolean(user && (user.id === post.author_id || isHOD));
-    const canDelete = Boolean(isHOD);
+    const canEdit = Boolean(isAdmin);
+    const canDelete = Boolean(isAdmin);
+
+    const catLower = (post.category || '').toLowerCase();
+    const isProject = catLower === 'project' || catLower === 'innovation';
+    const isHackathon = catLower === 'achievement' || catLower === 'hackathon';
+    const isPlayStore = Boolean(post.project_url?.includes('play.google.com'));
 
     return (
       <article key={post.id} className="sc-editorial-card">
         <div className="sc-card-top-bar">
           <div className="sc-card-badge-group">
-            <span className={`sc-card-cat-pill cat-${(post.category || 'project').toLowerCase()}`}>
-              <Tag size={12} />
-              <span>{post.category || 'Project'}</span>
+            <span className={`sc-card-cat-pill cat-${catLower || 'project'}`}>
+              {isProject ? (
+                <>
+                  <span className="sc-pulse-dot" />
+                  <Rocket size={12} />
+                  <span>Technical Project</span>
+                </>
+              ) : isHackathon ? (
+                <>
+                  <Trophy size={12} />
+                  <span>Hackathon Winner</span>
+                </>
+              ) : (
+                <>
+                  <Tag size={12} />
+                  <span>{post.category || 'Project'}</span>
+                </>
+              )}
             </span>
+
+            {isPlayStore && (
+              <span className="sc-card-playstore-pill">
+                <Smartphone size={12} />
+                <span>Google Play App</span>
+              </span>
+            )}
+
             {post.created_at && (
               <span className="sc-card-date-badge">
                 <Calendar size={13} />
@@ -388,21 +319,74 @@ export default function Showcase() {
           )}
         </div>
 
-        <h3 className="sc-card-title">{post.title}</h3>
-
         {post.cover_image_url && (
-          <div className="sc-card-image-box">
+          <div 
+            className="sc-card-image-box"
+            onClick={() => setLightboxPost(post)}
+            title="Hover for full info • Click for straight spotlight"
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter') setLightboxPost(post); }}
+          >
+            {/* Ambient optical blur backdrop for natural depth */}
+            <div 
+              className="sc-image-ambient-backdrop" 
+              style={{ backgroundImage: `url(${post.cover_image_url})` }}
+              aria-hidden="true" 
+            />
+
+            {/* Crisp vertical foreground photo */}
             <img
               src={post.cover_image_url}
               alt={post.title}
               className="sc-card-image"
               loading="lazy"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
             />
+
+            {/* Quick hover indicator tag */}
+            <div className="sc-image-hover-hint-pill">
+              <Eye size={12} />
+              <span>Hover for Full Info</span>
+            </div>
+
+            {/* ─── HOVER STRAIGHT FULL INFO DRAWER ─── */}
+            <div className="sc-image-hover-info-panel">
+              <div className="sc-hover-header">
+                <span className={`sc-card-cat-pill cat-${catLower || 'project'}`} style={{ fontSize: 10, padding: '3px 10px' }}>
+                  {isHackathon ? '🏆 Hackathon' : '🚀 Project'}
+                </span>
+                <span className="sc-hover-click-tip">Click for Spotlight ↗</span>
+              </div>
+              
+              <div className="sc-hover-body">
+                <h4 className="sc-hover-title">{post.title}</h4>
+                <div className="sc-hover-desc-scroll">
+                  <p className="sc-hover-desc">{post.description}</p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
-        <div className="sc-card-body-text">
-          <p className="sc-card-desc">{post.description}</p>
+        <h3 
+          className="sc-card-title"
+          onClick={() => setLightboxPost(post)}
+          style={{ cursor: 'pointer' }}
+          title="Click to view details"
+        >
+          {post.title}
+        </h3>
+
+        <div 
+          className="sc-card-body-text"
+          onClick={() => setLightboxPost(post)}
+          style={{ cursor: 'pointer' }}
+          title="Click to view details"
+        >
+          <p className="sc-card-desc sc-card-desc-clamp">{post.description}</p>
         </div>
 
         <div className="sc-card-bottom-bar">
@@ -412,26 +396,35 @@ export default function Showcase() {
             </div>
             <div className="sc-author-text-meta">
               <span className="sc-author-name">
-                {post.author_name || 'Faculty Member'}
+                {post.author_name || 'Department of Computer Science & Engineering'}
               </span>
-              {post.author_designation && (
-                <span className="sc-author-title">
-                  {post.author_designation}
-                </span>
-              )}
+              <span className="sc-author-title">
+                {post.author_designation || 'HOD / Faculty Verified'}
+              </span>
             </div>
           </div>
 
-          {post.project_url && (
+          {/* Outbound Link Button (Rendered only for projects/apps like Google Play, NOT for Hackathon awards) */}
+          {!isHackathon && post.project_url && (
             <a
               href={post.project_url}
               target="_blank"
               rel="noreferrer"
-              className="sc-card-link-button"
-              title="Open Resource"
+              className={isPlayStore ? "sc-card-playstore-btn" : "sc-card-link-button"}
+              title={isPlayStore ? "Get on Google Play Store" : "Open Project Resource"}
             >
-              <span>{linkLabel}</span>
-              <ExternalLink size={13} />
+              {isPlayStore ? (
+                <>
+                  <span className="sc-play-triangle">▶</span>
+                  <span>Get on Google Play</span>
+                  <ExternalLink size={13} />
+                </>
+              ) : (
+                <>
+                  <span>{linkLabel || 'View Project'}</span>
+                  <ExternalLink size={13} />
+                </>
+              )}
             </a>
           )}
         </div>
@@ -446,7 +439,7 @@ export default function Showcase() {
       </div>
       <h3 className="sc-empty-title">{title}</h3>
       <p className="sc-empty-description">{desc}</p>
-      {isFacultyOrHOD && (
+      {isAdmin && (
         <button
           type="button"
           className="sc-gold-pill-btn"
@@ -504,9 +497,9 @@ export default function Showcase() {
           </div>
 
           <div className="sc-nav-menu-links">
-            <button type="button" onClick={() => scrollToSection('projects')}>Projects</button>
+            <button type="button" onClick={() => scrollToSection('projects')}>Technical Projects</button>
+            <button type="button" onClick={() => scrollToSection('hackathons')}>Hackathons</button>
             <button type="button" onClick={() => scrollToSection('research')}>Research</button>
-            <button type="button" onClick={() => scrollToSection('hackathons')}>Achievements</button>
             <button type="button" onClick={() => scrollToSection('upcoming')}>Opportunities</button>
             <button type="button" onClick={() => scrollToSection('leaderboard')}>Leaderboard</button>
           </div>
@@ -659,10 +652,6 @@ export default function Showcase() {
           <div className="sc-rhythm-stats-grid">
             {/* Featured Deep Forest Green Stat Card */}
             <div className="sc-featured-stat-box">
-              <div className="sc-stat-pill-badge">
-                <Sparkles size={12} />
-                <span>AUTONOMOUS CSE CURRICULUM</span>
-              </div>
               <h3 className="sc-stat-main-number">
                 {(stats.activeStudents || 297).toLocaleString()}+ Engaged Learners
               </h3>
@@ -676,58 +665,45 @@ export default function Showcase() {
               </div>
             </div>
 
-            {/* Stat Card 2: Highlights */}
+            {/* Stat Card 2: Technical Projects */}
             <div className="sc-stat-white-box">
               <div className="sc-stat-box-header">
-                <span className="sc-stat-num-tag">01 - SHOWCASE BUILDS</span>
-                <Rocket size={18} className="sc-stat-box-icon" />
+                <span className="sc-stat-num-tag">01 - TECHNICAL BUILDS</span>
               </div>
-              <div className="sc-stat-box-val">{showcasePosts.length}+</div>
-              <h4 className="sc-stat-box-title">Department Highlights</h4>
-              <p className="sc-stat-box-sub">Verified engineering prototypes, web architectures, AI platforms, and open-source packages.</p>
+              <div className="sc-stat-box-val">{projectPosts.length || showcasePosts.length}+</div>
+              <h4 className="sc-stat-box-title">Technical Projects</h4>
+              <p className="sc-stat-box-sub">Engineering builds, Android applications, AI utilities, and full-stack software platforms.</p>
             </div>
 
-            {/* Stat Card 3: Verified Milestones */}
+            {/* Stat Card 3: Hackathon Podiums */}
             <div className="sc-stat-white-box">
               <div className="sc-stat-box-header">
-                <span className="sc-stat-num-tag">02 - ACHIEVEMENTS</span>
-                <Trophy size={18} className="sc-stat-box-icon" />
+                <span className="sc-stat-num-tag">02 - HACKATHONS</span>
               </div>
-              <div className="sc-stat-box-val">{stats.achievementsCount}+</div>
-              <h4 className="sc-stat-box-title">Verified Achievements</h4>
-              <p className="sc-stat-box-sub">Smart India Hackathon trophies, cash prizes, and validated department milestones.</p>
-            </div>
-
-            {/* Stat Card 4: Sections */}
-            <div className="sc-stat-white-box">
-              <div className="sc-stat-box-header">
-                <span className="sc-stat-num-tag">03 - STUDENT COHORTS</span>
-                <Users size={18} className="sc-stat-box-icon" />
-              </div>
-              <div className="sc-stat-box-val">5 Sections</div>
-              <h4 className="sc-stat-box-title">CSE-A to CSE-E</h4>
-              <p className="sc-stat-box-sub">Collaborative peer learning classrooms, code sprint circles, and hackathon project teams.</p>
+              <div className="sc-stat-box-val">{hackathonPosts.length || stats.achievementsCount}+</div>
+              <h4 className="sc-stat-box-title">Hackathon Podiums</h4>
+              <p className="sc-stat-box-sub">Smart India Hackathon trophies, 1st prize cash awards, and competitive coding victories.</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ─── 1. PROJECTS & TECHNICAL INNOVATIONS SECTION ─── */}
+      {/* ─── 1. TECHNICAL PROJECTS & ENGINEERING BUILDS SECTION ─── */}
       <section id="projects" className="sc-cms-content-section">
         <div className="sc-container-inner sc-cms-width">
           <div className="sc-cms-section-header">
             <div>
-              <div className="sc-category-pill-tag">
+              <div className="sc-section-micro-badge">
                 <Rocket size={13} />
-                <span>01 / CAMPUS CHRONICLE — PROJECTS</span>
+                <span>STUDENT SOFTWARE & ENGINEERING BUILDS</span>
               </div>
               <h2 className="sc-cms-section-title">Technical Projects & Engineering Builds</h2>
               <p className="sc-cms-section-desc">
-                Explore real technical projects, intelligent systems, full-stack web applications, and engineering prototypes developed by CSE department students and faculty.
+                Explore real technical projects, mobile applications, full-stack web platforms, and engineering systems built by CSE department students and faculty.
               </p>
             </div>
 
-            {isFacultyOrHOD && (
+            {isAdmin && (
               <div className="sc-cms-actions-group">
                 <Link to="/showcase/manage" className="sc-outline-forest-btn">
                   <Settings size={14} />
@@ -748,13 +724,13 @@ export default function Showcase() {
           {postsLoading ? (
             <div className="sc-loading-state-box">
               <RefreshCw size={24} className="sc-spin-anim" />
-              <div>Loading department technical projects…</div>
+              <div>Loading technical projects…</div>
             </div>
           ) : projectPosts.length === 0 ? (
             renderEmptySection(
               <Rocket size={32} />,
-              'No engineering projects published yet',
-              'Faculty advisors and students can showcase software prototypes, AI tools, hardware builds, and GitHub repositories here.',
+              'No technical projects published yet',
+              'Faculty advisors and students can showcase Android applications, AI platforms, software prototypes, hardware builds, and GitHub repositories here.',
               'Project'
             )
           ) : (
@@ -765,22 +741,65 @@ export default function Showcase() {
         </div>
       </section>
 
-      {/* ─── 2. RESEARCH & ACADEMIC PUBLICATIONS SECTION ─── */}
-      <section id="research" className="sc-cms-content-section sc-section-tinted">
+      {/* ─── 2. HACKATHON WINNERS & COMPETITIONS SECTION ─── */}
+      <section id="hackathons" className="sc-cms-content-section sc-section-tinted">
         <div className="sc-container-inner sc-cms-width">
           <div className="sc-cms-section-header">
             <div>
-              <div className="sc-category-pill-tag tag-purple">
-                <BookOpen size={13} />
-                <span>02 / PEER-REVIEWED — RESEARCH</span>
+              <div className="sc-section-micro-badge gold-badge">
+                <Trophy size={13} />
+                <span>COMPETITIVE CODING & PODIUM FINISHES</span>
               </div>
+              <h2 className="sc-cms-section-title">Hackathon Winners & Coding Competitions</h2>
+              <p className="sc-cms-section-desc">
+                Celebrating SIET CSE innovators and coding teams who clinched top podiums, 1st prize trophies, cash awards, and national hackathon victories (Smart India Hackathon, regional hackathons, and collegiate coding sprints).
+              </p>
+            </div>
+
+            {isAdmin && (
+              <button
+                type="button"
+                className="sc-forest-primary-btn"
+                onClick={() => handleOpenAddModal('Achievement')}
+              >
+                <Plus size={15} />
+                <span>Add Hackathon Record</span>
+              </button>
+            )}
+          </div>
+
+          {postsLoading ? (
+            <div className="sc-loading-state-box">
+              <RefreshCw size={24} className="sc-spin-anim" />
+              <div>Loading hackathon winners…</div>
+            </div>
+          ) : hackathonPosts.length === 0 ? (
+            renderEmptySection(
+              <Trophy size={32} />,
+              'No hackathon winners published yet',
+              'Document competition victories, Smart India Hackathon wins, and national coding trophies here.',
+              'Achievement'
+            )
+          ) : (
+            <div className="sc-posts-grid-column">
+              {hackathonPosts.map(post => renderShowcaseCard(post, null))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ─── 3. RESEARCH & ACADEMIC PUBLICATIONS SECTION ─── */}
+      <section id="research" className="sc-cms-content-section">
+        <div className="sc-container-inner sc-cms-width">
+          <div className="sc-cms-section-header">
+            <div>
               <h2 className="sc-cms-section-title">Department Research & Publications</h2>
               <p className="sc-cms-section-desc">
                 Peer-reviewed research papers, patent disclosures, journal highlights, and computational investigations authored by department faculty and scholars.
               </p>
             </div>
 
-            {isFacultyOrHOD && (
+            {isAdmin && (
               <button
                 type="button"
                 className="sc-forest-primary-btn"
@@ -812,69 +831,18 @@ export default function Showcase() {
         </div>
       </section>
 
-      {/* ─── 3. HACKATHON WINNERS & ACHIEVEMENTS SECTION ─── */}
-      <section id="hackathons" className="sc-cms-content-section">
-        <div className="sc-container-inner sc-cms-width">
-          <div className="sc-cms-section-header">
-            <div>
-              <div className="sc-category-pill-tag tag-amber">
-                <Trophy size={13} />
-                <span>03 / COMPETITIVE EXCELLENCE — PODIUMS</span>
-              </div>
-              <h2 className="sc-cms-section-title">Hackathon Winners & Department Achievements</h2>
-              <p className="sc-cms-section-desc">
-                Celebrating SIET CSE teams and innovators who clinched top podiums, 1st prize trophies, cash prizes, and national hackathon victories.
-              </p>
-            </div>
-
-            {isFacultyOrHOD && (
-              <button
-                type="button"
-                className="sc-forest-primary-btn"
-                onClick={() => handleOpenAddModal('Achievement')}
-              >
-                <Plus size={15} />
-                <span>Add Winner Record</span>
-              </button>
-            )}
-          </div>
-
-          {postsLoading ? (
-            <div className="sc-loading-state-box">
-              <RefreshCw size={24} className="sc-spin-anim" />
-              <div>Loading hackathon winners…</div>
-            </div>
-          ) : hackathonPosts.length === 0 ? (
-            renderEmptySection(
-              <Trophy size={32} />,
-              'No hackathon winners published yet',
-              'Document competition victories, Smart India Hackathon wins, and department awards here.',
-              'Achievement'
-            )
-          ) : (
-            <div className="sc-posts-grid-column">
-              {hackathonPosts.map(post => renderShowcaseCard(post, 'View Award / Proof'))}
-            </div>
-          )}
-        </div>
-      </section>
-
       {/* ─── 4. UPCOMING EVENTS & OPPORTUNITIES SECTION ─── */}
       <section id="upcoming" className="sc-cms-content-section sc-section-tinted">
         <div className="sc-container-inner sc-cms-width">
           <div className="sc-cms-section-header">
             <div>
-              <div className="sc-category-pill-tag tag-pink">
-                <Calendar size={13} />
-                <span>04 / HORIZONS — OPPORTUNITIES</span>
-              </div>
               <h2 className="sc-cms-section-title">Upcoming Hackathons, Workshops & Internships</h2>
               <p className="sc-cms-section-desc">
                 Stay informed on upcoming coding sprints, department symposiums, industry certifications, and internship opportunities for students.
               </p>
             </div>
 
-            {isFacultyOrHOD && (
+            {isAdmin && (
               <button
                 type="button"
                 className="sc-forest-primary-btn"
@@ -990,12 +958,11 @@ export default function Showcase() {
                   value={postForm.category}
                   onChange={e => setPostForm(prev => ({ ...prev, category: e.target.value }))}
                 >
-                  <option value="Project">Project</option>
-                  <option value="Achievement">Achievement</option>
-                  <option value="Research">Research</option>
-                  <option value="Innovation">Innovation</option>
-                  <option value="Internship">Internship</option>
-                  <option value="General">General</option>
+                  <option value="Project">Technical Project / Software Build</option>
+                  <option value="Achievement">Hackathon Winner / Competition</option>
+                  <option value="Research">Research & Publication</option>
+                  <option value="Internship">Internship & Opportunity</option>
+                  <option value="Innovation">Innovation / Prototype</option>
                 </select>
               </div>
 
@@ -1022,16 +989,17 @@ export default function Showcase() {
                 />
               </div>
 
-              <div className="sc-form-group">
-                <label className="sc-form-label">Cover Image URL (Optional)</label>
-                <input
-                  type="url"
-                  className="sc-form-input"
-                  placeholder="https://images.unsplash.com/..."
-                  value={postForm.cover_image_url}
-                  onChange={e => setPostForm(prev => ({ ...prev, cover_image_url: e.target.value }))}
-                />
-              </div>
+              <ShowcaseImageInput
+                imageUrl={postForm.cover_image_url}
+                imageStoragePath={postForm.image_storage_path}
+                onChange={({ cover_image_url, image_storage_path }) => {
+                  setPostForm(prev => ({
+                    ...prev,
+                    cover_image_url,
+                    image_storage_path: image_storage_path !== undefined ? image_storage_path : prev.image_storage_path
+                  }));
+                }}
+              />
 
               <div className="sc-modal-footer-btns">
                 <button
@@ -1082,6 +1050,109 @@ export default function Showcase() {
               >
                 Yes, Delete
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── FULL-RESOLUTION STRAIGHT SPOTLIGHT MODAL ─── */}
+      {lightboxPost && (
+        <div 
+          className="sc-lightbox-overlay" 
+          onClick={() => setLightboxPost(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="sc-lightbox-dialog sc-spotlight-dialog" onClick={e => e.stopPropagation()}>
+            <div className="sc-lightbox-header">
+              <div className="sc-lightbox-title-text">
+                <Sparkles size={16} style={{ color: '#facc15' }} />
+                <span>{lightboxPost.title}</span>
+              </div>
+              <div className="sc-lightbox-header-actions">
+                {lightboxPost.cover_image_url && (
+                  <a 
+                    href={lightboxPost.cover_image_url} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="sc-lightbox-action-btn"
+                    title="Open Original Photo in New Tab"
+                  >
+                    <ExternalLink size={14} />
+                    <span>Original Photo</span>
+                  </a>
+                )}
+                <button 
+                  type="button" 
+                  className="sc-lightbox-close-btn" 
+                  onClick={() => setLightboxPost(null)}
+                  aria-label="Close Spotlight"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            <div 
+              className="sc-spotlight-content-grid"
+              style={!lightboxPost.cover_image_url ? { gridTemplateColumns: '1fr' } : {}}
+            >
+              {/* Left Column: Straight Vertical Photo */}
+              {lightboxPost.cover_image_url && (
+                <div className="sc-spotlight-image-col">
+                  <img 
+                    src={lightboxPost.cover_image_url} 
+                    alt={lightboxPost.title} 
+                    className="sc-spotlight-full-img" 
+                  />
+                </div>
+              )}
+
+              {/* Right Column: Full Info Details */}
+              <div className="sc-spotlight-info-col">
+                <div className="sc-spotlight-badges-row">
+                  <span className={`sc-card-cat-pill cat-${(lightboxPost.category || 'project').toLowerCase()}`}>
+                    {(lightboxPost.category || '').toLowerCase() === 'achievement' ? '🏆 Hackathon Winner' : '🚀 Technical Project'}
+                  </span>
+                  {lightboxPost.created_at && (
+                    <span className="sc-card-date-badge">
+                      <Calendar size={13} />
+                      <span>{new Date(lightboxPost.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                    </span>
+                  )}
+                </div>
+
+                <h2 className="sc-spotlight-title">{lightboxPost.title}</h2>
+
+                <div className="sc-spotlight-desc-box">
+                  <p className="sc-spotlight-desc-text">{lightboxPost.description}</p>
+                </div>
+
+                <div className="sc-spotlight-footer-meta">
+                  <div className="sc-spotlight-author-box">
+                    <div className="sc-author-avatar-circle">
+                      <Users size={14} />
+                    </div>
+                    <div>
+                      <div className="sc-author-name">{lightboxPost.author_name || 'Department of Computer Science & Engineering'}</div>
+                      <div className="sc-author-title">{lightboxPost.author_designation || 'HOD / Faculty Verified'}</div>
+                    </div>
+                  </div>
+
+                  {!((lightboxPost.category || '').toLowerCase() === 'achievement' || (lightboxPost.category || '').toLowerCase() === 'hackathon') && lightboxPost.project_url && (
+                    <a
+                      href={lightboxPost.project_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="sc-card-playstore-btn"
+                      style={{ padding: '8px 18px', fontSize: 13 }}
+                    >
+                      <span>{lightboxPost.project_url.includes('play.google.com') ? 'Get on Google Play' : 'Visit Resource / Link'}</span>
+                      <ExternalLink size={14} />
+                    </a>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1637,7 +1708,7 @@ export default function Showcase() {
         }
 
         .sc-cms-width {
-          max-width: 960px;
+          max-width: 1240px;
         }
 
         .sc-guiding-principles-section {
@@ -1884,8 +1955,11 @@ export default function Showcase() {
         }
 
         @media (min-width: 992px) {
+          .sc-rhythm-stats-grid {
+            grid-template-columns: 1.15fr 1fr 1fr;
+          }
           .sc-featured-stat-box {
-            grid-column: span 2;
+            grid-column: span 1;
           }
         }
 
@@ -2055,22 +2129,10 @@ export default function Showcase() {
           border-color: rgba(34, 197, 94, 0.3);
         }
 
-        .sc-category-pill-tag.tag-purple {
-          background: rgba(168, 85, 247, 0.1);
-          color: #9333ea;
-          border-color: rgba(168, 85, 247, 0.3);
-        }
-
         .sc-category-pill-tag.tag-amber {
           background: rgba(245, 158, 11, 0.1);
           color: #d97706;
           border-color: rgba(245, 158, 11, 0.3);
-        }
-
-        .sc-category-pill-tag.tag-pink {
-          background: rgba(236, 72, 153, 0.1);
-          color: #db2777;
-          border-color: rgba(236, 72, 153, 0.3);
         }
 
         .sc-cms-actions-group {
@@ -2125,29 +2187,42 @@ export default function Showcase() {
         }
 
         /* ─── 10. EDITORIAL POST CARD (Crisp, High-End Card from Screenshots) ─── */
+        /* ─── 10. EDITORIAL POST CARD (Vertical Responsive Grid & Portrait Aspect) ─── */
         .sc-posts-grid-column {
-          display: flex;
-          flex-direction: column;
-          gap: 26px;
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+          gap: 30px;
           width: 100%;
+          align-items: stretch;
+        }
+
+        @media (max-width: 680px) {
+          .sc-posts-grid-column {
+            grid-template-columns: 1fr;
+          }
         }
 
         .sc-editorial-card {
           background: var(--sc-card-bg);
           border: 1px solid var(--sc-card-border);
-          border-radius: 24px;
-          padding: 30px;
+          border-radius: 26px;
+          padding: 24px;
           box-shadow: var(--sc-card-shadow);
-          transition: transform 0.22s, border-color 0.22s, box-shadow 0.22s;
+          transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), 
+                      border-color 0.3s ease, 
+                      box-shadow 0.3s ease;
           box-sizing: border-box;
           display: flex;
           flex-direction: column;
+          justify-content: space-between;
+          position: relative;
+          overflow: hidden;
         }
 
         .sc-editorial-card:hover {
-          border-color: rgba(11, 74, 44, 0.45);
-          box-shadow: 0 16px 40px -12px rgba(6, 45, 28, 0.16);
-          transform: translateY(-2px);
+          border-color: rgba(16, 185, 129, 0.45);
+          box-shadow: 0 20px 48px -12px rgba(6, 45, 28, 0.18), 0 0 0 1px rgba(16, 185, 129, 0.25);
+          transform: translateY(-5px);
         }
 
         .sc-card-top-bar {
@@ -2155,14 +2230,14 @@ export default function Showcase() {
           align-items: center;
           justify-content: space-between;
           flex-wrap: wrap;
-          gap: 12px;
-          margin-bottom: 16px;
+          gap: 10px;
+          margin-bottom: 14px;
         }
 
         .sc-card-badge-group {
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 8px;
           flex-wrap: wrap;
         }
 
@@ -2190,7 +2265,7 @@ export default function Showcase() {
           display: inline-flex;
           align-items: center;
           gap: 5px;
-          font-size: 12px;
+          font-size: 11.5px;
           color: var(--sc-text-muted);
         }
 
@@ -2235,45 +2310,485 @@ export default function Showcase() {
 
         .sc-card-title {
           font-family: 'Space Grotesk', sans-serif;
-          font-size: 22px;
+          font-size: 18px;
           font-weight: 800;
           color: var(--sc-text-main);
-          margin: 0 0 14px 0;
+          margin: 0 0 10px 0;
           line-height: 1.35;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
 
+        /* ─── VERTICAL PORTRAIT IMAGE BOX ─── */
         .sc-card-image-box {
+          position: relative;
           width: 100%;
-          border-radius: 16px;
+          height: 420px;
+          border-radius: 20px;
           overflow: hidden;
-          margin-bottom: 18px;
+          margin-bottom: 16px;
           border: 1px solid var(--sc-card-border);
-          background: #000;
-          max-height: 380px;
+          background: radial-gradient(circle at 50% 40%, rgba(11, 74, 44, 0.22) 0%, rgba(6, 14, 10, 0.98) 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: border-color 0.35s ease, box-shadow 0.35s ease;
+        }
+
+        .sc-card-image-box:hover {
+          border-color: rgba(16, 185, 129, 0.55);
+          box-shadow: inset 0 0 35px rgba(11, 74, 44, 0.3);
+        }
+
+        .sc-image-ambient-backdrop {
+          position: absolute;
+          inset: -25px;
+          background-size: cover;
+          background-position: center;
+          filter: blur(40px) saturate(1.6);
+          opacity: 0.38;
+          transform: scale(1.1);
+          transition: opacity 0.4s ease, transform 0.4s ease;
+          pointer-events: none;
+        }
+
+        .sc-card-image-box:hover .sc-image-ambient-backdrop {
+          opacity: 0.6;
+          transform: scale(1.15);
         }
 
         .sc-card-image {
+          position: relative;
+          z-index: 2;
           width: 100%;
-          max-height: 380px;
+          height: 100%;
           object-fit: cover;
+          object-position: center top;
+          border-radius: 18px;
+          transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
           display: block;
-          transition: transform 0.3s ease;
         }
 
-        .sc-editorial-card:hover .sc-card-image {
-          transform: scale(1.015);
+        .sc-card-image-box:hover .sc-card-image {
+          transform: scale(1.05);
+        }
+
+        .sc-image-hover-hint-pill {
+          position: absolute;
+          bottom: 14px;
+          right: 14px;
+          z-index: 4;
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 5px 12px;
+          border-radius: 9999px;
+          background: rgba(11, 74, 44, 0.88);
+          backdrop-filter: blur(8px);
+          border: 1px solid rgba(250, 204, 21, 0.4);
+          color: #ffffff;
+          font-size: 11px;
+          font-weight: 700;
+          transition: opacity 0.25s ease;
+          pointer-events: none;
+        }
+
+        .sc-card-image-box:hover .sc-image-hover-hint-pill {
+          opacity: 0;
+        }
+
+        /* ─── HOVER STRAIGHT FULL INFO PANEL ─── */
+        .sc-image-hover-info-panel {
+          position: absolute;
+          inset: 0;
+          z-index: 10;
+          background: linear-gradient(180deg, rgba(3, 18, 10, 0.9) 0%, rgba(2, 12, 7, 0.98) 100%);
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+          padding: 22px 18px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          opacity: 0;
+          transform: translateY(18px);
+          transition: opacity 0.32s cubic-bezier(0.16, 1, 0.3, 1), 
+                      transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+          color: #ffffff;
+          border-radius: 18px;
+          pointer-events: none;
+        }
+
+        .sc-card-image-box:hover .sc-image-hover-info-panel {
+          opacity: 1;
+          transform: translateY(0);
+          pointer-events: auto;
+        }
+
+        .sc-hover-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 10px;
+        }
+
+        .sc-hover-click-tip {
+          font-size: 11px;
+          font-weight: 700;
+          color: #facc15;
+          letter-spacing: 0.04em;
+        }
+
+        .sc-hover-body {
+          flex: 1;
+          overflow-y: auto;
+          margin-bottom: 12px;
+          padding-right: 4px;
+        }
+
+        .sc-hover-title {
+          font-family: 'Space Grotesk', sans-serif;
+          font-size: 15px;
+          font-weight: 800;
+          color: #ffffff;
+          line-height: 1.35;
+          margin: 0 0 10px 0;
+        }
+
+        .sc-hover-desc-scroll {
+          max-height: 330px;
+          overflow-y: auto;
+          scrollbar-width: thin;
+          scrollbar-color: rgba(250, 204, 21, 0.4) transparent;
+        }
+
+        .sc-hover-desc {
+          font-size: 12.5px;
+          line-height: 1.65;
+          color: #d1fae5;
+          margin: 0;
+          white-space: pre-line;
+        }
+
+        .sc-card-playstore-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.04em;
+          padding: 4px 12px;
+          border-radius: 9999px;
+          background: rgba(16, 185, 129, 0.1);
+          color: #047857;
+          border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+
+        [data-theme="dark"] .sc-card-playstore-pill {
+          background: rgba(16, 185, 129, 0.18);
+          color: #34d399;
+          border-color: rgba(52, 211, 153, 0.35);
+        }
+
+        .sc-card-playstore-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 9px 20px;
+          border-radius: 9999px;
+          background: linear-gradient(135deg, #0b4a2c 0%, #062f1c 100%);
+          border: 1px solid rgba(250, 204, 21, 0.35);
+          color: #ffffff;
+          font-size: 13px;
+          font-weight: 800;
+          text-decoration: none;
+          box-shadow: 0 4px 16px rgba(11, 74, 44, 0.28);
+          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .sc-card-playstore-btn:hover {
+          background: linear-gradient(135deg, #0f5e38 0%, #0b4a2c 100%);
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(11, 74, 44, 0.45);
+          border-color: #facc15;
+          color: #ffffff;
+        }
+
+        .sc-play-triangle {
+          color: #facc15;
+          font-size: 11px;
+        }
+
+        .sc-pulse-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #10b981;
+          box-shadow: 0 0 8px #10b981;
+          animation: scPulse 2s infinite ease-in-out;
+        }
+
+        @keyframes scPulse {
+          0%, 100% { transform: scale(1); opacity: 0.9; }
+          50% { transform: scale(1.35); opacity: 0.4; }
+        }
+
+        .sc-section-micro-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 11px;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          padding: 4px 12px;
+          border-radius: 9999px;
+          background: rgba(11, 74, 44, 0.1);
+          color: #0b4a2c;
+          border: 1px solid rgba(11, 74, 44, 0.25);
+          margin-bottom: 10px;
+        }
+
+        [data-theme="dark"] .sc-section-micro-badge {
+          background: rgba(34, 197, 94, 0.15);
+          color: #4ade80;
+          border-color: rgba(34, 197, 94, 0.3);
+        }
+
+        .sc-section-micro-badge.gold-badge {
+          background: rgba(250, 204, 21, 0.12);
+          color: #ca8a04;
+          border-color: rgba(250, 204, 21, 0.35);
+        }
+
+        [data-theme="dark"] .sc-section-micro-badge.gold-badge {
+          background: rgba(250, 204, 21, 0.15);
+          color: #facc15;
+          border-color: rgba(250, 204, 21, 0.35);
+        }
+
+        /* ─── SPOTLIGHT FULL-RESOLUTION STRAIGHT MODAL ─── */
+        .sc-lightbox-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 9999;
+          background: rgba(3, 10, 6, 0.9);
+          backdrop-filter: blur(16px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 24px;
+          animation: scFadeIn 0.22s ease-out;
+        }
+
+        .sc-spotlight-dialog {
+          max-width: 1080px;
+          width: 95vw;
+          max-height: 92vh;
+          background: #06190f;
+          border: 1px solid rgba(16, 185, 129, 0.35);
+          border-radius: 24px;
+          overflow: hidden;
+          box-shadow: 0 35px 90px -15px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(250, 204, 21, 0.25);
+          display: flex;
+          flex-direction: column;
+          animation: scPopIn 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes scFadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        @keyframes scPopIn {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
+
+        .sc-lightbox-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 14px 22px;
+          background: rgba(11, 74, 44, 0.5);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          gap: 16px;
+        }
+
+        .sc-lightbox-title-text {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 14px;
+          font-weight: 700;
+          color: #ffffff;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .sc-lightbox-header-actions {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .sc-lightbox-action-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 14px;
+          border-radius: 9999px;
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          color: #ffffff;
+          font-size: 12px;
+          font-weight: 600;
+          text-decoration: none;
+          transition: all 0.2s;
+        }
+
+        .sc-lightbox-action-btn:hover {
+          background: #0b4a2c;
+          border-color: #facc15;
+          color: #facc15;
+        }
+
+        .sc-lightbox-close-btn {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          background: rgba(255, 255, 255, 0.06);
+          color: #ffffff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .sc-lightbox-close-btn:hover {
+          background: #dc2626;
+          border-color: #dc2626;
+          transform: rotate(90deg);
+        }
+
+        .sc-spotlight-content-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          max-height: 80vh;
+          overflow: hidden;
+        }
+
+        @media (max-width: 860px) {
+          .sc-spotlight-content-grid {
+            grid-template-columns: 1fr;
+            max-height: 85vh;
+            overflow-y: auto;
+          }
+        }
+
+        .sc-spotlight-image-col {
+          background: radial-gradient(circle at center, rgba(16, 185, 129, 0.12) 0%, #030c07 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 24px;
+          overflow: hidden;
+        }
+
+        .sc-spotlight-full-img {
+          max-width: 100%;
+          max-height: 72vh;
+          width: auto;
+          height: auto;
+          object-fit: contain;
+          border-radius: 14px;
+          box-shadow: 0 16px 45px rgba(0, 0, 0, 0.65);
+        }
+
+        .sc-spotlight-info-col {
+          padding: 30px 28px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          overflow-y: auto;
+          background: #071f13;
+          color: #ffffff;
+        }
+
+        .sc-spotlight-badges-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex-wrap: wrap;
+          margin-bottom: 14px;
+        }
+
+        .sc-spotlight-title {
+          font-family: 'Space Grotesk', sans-serif;
+          font-size: 21px;
+          font-weight: 800;
+          color: #ffffff;
+          line-height: 1.35;
+          margin: 0 0 16px 0;
+        }
+
+        .sc-spotlight-desc-box {
+          flex: 1;
+          overflow-y: auto;
+          background: rgba(0, 0, 0, 0.28);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 16px;
+          padding: 18px;
+          margin-bottom: 18px;
+          max-height: 320px;
+        }
+
+        .sc-spotlight-desc-text {
+          font-size: 13.5px;
+          line-height: 1.7;
+          color: #d1fae5;
+          margin: 0;
+          white-space: pre-line;
+        }
+
+        .sc-spotlight-footer-meta {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 14px;
+          padding-top: 16px;
+          border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sc-spotlight-author-box {
+          display: flex;
+          align-items: center;
+          gap: 10px;
         }
 
         .sc-card-body-text {
-          margin-bottom: 18px;
+          margin-bottom: 16px;
         }
 
         .sc-card-desc {
-          font-size: 14.5px;
+          font-size: 13.5px;
           color: var(--sc-text-body);
-          line-height: 1.7;
+          line-height: 1.6;
           margin: 0;
           white-space: pre-line;
+        }
+
+        .sc-card-desc-clamp {
+          display: -webkit-box;
+          -webkit-line-clamp: 3;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
 
         .sc-card-bottom-bar {

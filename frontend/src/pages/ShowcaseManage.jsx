@@ -5,8 +5,9 @@ import client from '../api/client';
 import { 
   Laptop, Plus, Edit3, Trash2, ExternalLink, RefreshCw, AlertCircle, 
   Check, X, Search, Eye, EyeOff, Tag, Calendar, User, ArrowLeft,
-  CheckCircle2, ShieldAlert
+  CheckCircle2
 } from 'lucide-react';
+import ShowcaseImageInput from '../components/ShowcaseImageInput';
 
 const CATEGORIES = ['All', 'Project', 'Achievement', 'Research', 'Innovation', 'Internship'];
 
@@ -14,19 +15,20 @@ export default function ShowcaseManage() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const isHOD = Boolean(
+  const isAdmin = Boolean(
     user && (
       user.role === 'admin' || 
+      user.is_admin === true || 
       user.is_hod === true || 
       user.designation?.toUpperCase()?.includes('HOD') || 
       user.designation?.toUpperCase() === 'HEAD OF DEPARTMENT'
     )
   );
+  const isHOD = isAdmin;
 
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState(null);
-  const [dbWarning, setDbWarning] = useState(null);
 
   // Filters
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -43,6 +45,7 @@ export default function ShowcaseManage() {
     category: 'Project',
     project_url: '',
     cover_image_url: '',
+    image_storage_path: null,
     published: true
   });
 
@@ -61,7 +64,6 @@ export default function ShowcaseManage() {
   const fetchPosts = useCallback(async () => {
     setLoading(true);
     setErrorMsg(null);
-    setDbWarning(null);
     try {
       const res = await client.get('/showcase?all=true');
       if (res.data?.success) {
@@ -70,11 +72,7 @@ export default function ShowcaseManage() {
         setErrorMsg('Failed to load showcase posts from server.');
       }
     } catch (err) {
-      if (err.response?.status === 503 || err.response?.data?.code === 'TABLE_NOT_INITIALIZED') {
-        setDbWarning(err.response?.data?.error || 'Showcase database table has not been initialized. Please run migration 009_showcase_cms.sql in your Supabase SQL Editor.');
-      } else {
-        setErrorMsg(err.response?.data?.error || 'Unable to connect to showcase service.');
-      }
+      setErrorMsg(err.response?.data?.error || 'Unable to connect to showcase service.');
     } finally {
       setLoading(false);
     }
@@ -93,6 +91,7 @@ export default function ShowcaseManage() {
       category: 'Project',
       project_url: '',
       cover_image_url: '',
+      image_storage_path: null,
       published: true
     });
     setModalOpen(true);
@@ -106,7 +105,8 @@ export default function ShowcaseManage() {
       description: post.description || '',
       category: post.category || 'Project',
       project_url: post.project_url || '',
-      cover_image_url: post.cover_image_url || '',
+      cover_image_url: post.cover_image_url || post.image_url || '',
+      image_storage_path: post.image_storage_path || null,
       published: post.published !== false
     });
     setModalOpen(true);
@@ -220,21 +220,8 @@ export default function ShowcaseManage() {
           </div>
         )}
 
-        {/* Database Migration Notice */}
-        {dbWarning && (
-          <div style={{ background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.4)', borderRadius: 12, padding: '14px 18px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12, color: '#f59e0b', fontSize: 13.5 }}>
-            <ShieldAlert size={22} style={{ flexShrink: 0 }} />
-            <div>
-              <strong>Database Setup Required:</strong> {dbWarning}
-              <div style={{ marginTop: 4, fontSize: 12.5, color: 'var(--color-text-muted)' }}>
-                Please run <code>backend/db/migrations/009_showcase_cms.sql</code> in your <strong>Supabase Dashboard → SQL Editor</strong> to initialize the <code>showcase_posts</code> table.
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Database Error Banner */}
-        {errorMsg && !dbWarning && (
+        {errorMsg && (
           <div style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: 12, padding: '14px 18px', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#ef4444', fontSize: 13.5 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <AlertCircle size={20} style={{ flexShrink: 0 }} />
@@ -258,7 +245,7 @@ export default function ShowcaseManage() {
               <span>Manage Department Showcase</span>
             </h1>
             <p className="section-subtitle" style={{ margin: '4px 0 0' }}>
-              Create, edit, publish, and manage department projects, research highlights, and achievements.
+              Create, edit, publish, and manage student technical projects, hackathon victories, and research highlights.
             </p>
           </div>
 
@@ -546,11 +533,11 @@ export default function ShowcaseManage() {
                     onChange={e => setPostForm(prev => ({ ...prev, category: e.target.value }))}
                     style={{ width: '100%', padding: '9px 12px', fontSize: 13 }}
                   >
-                    <option value="Project">Project</option>
-                    <option value="Achievement">Achievement</option>
-                    <option value="Research">Research</option>
-                    <option value="Innovation">Innovation</option>
-                    <option value="Internship">Internship</option>
+                    <option value="Project">Technical Project / Software Build</option>
+                    <option value="Achievement">Hackathon Winner / Competition</option>
+                    <option value="Research">Research & Publication</option>
+                    <option value="Internship">Internship & Opportunity</option>
+                    <option value="Innovation">Innovation / Prototype</option>
                   </select>
                 </div>
 
@@ -583,17 +570,17 @@ export default function ShowcaseManage() {
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-label" style={{ fontWeight: 700, fontSize: 12 }}>Cover Image URL (Optional)</label>
-                <input
-                  type="url"
-                  className="form-input"
-                  placeholder="https://images.unsplash.com/... or uploaded photo link"
-                  value={postForm.cover_image_url}
-                  onChange={e => setPostForm(prev => ({ ...prev, cover_image_url: e.target.value }))}
-                  style={{ width: '100%', padding: '9px 12px', fontSize: 13 }}
-                />
-              </div>
+              <ShowcaseImageInput
+                imageUrl={postForm.cover_image_url}
+                imageStoragePath={postForm.image_storage_path}
+                onChange={({ cover_image_url, image_storage_path }) => {
+                  setPostForm(prev => ({
+                    ...prev,
+                    cover_image_url,
+                    image_storage_path: image_storage_path !== undefined ? image_storage_path : prev.image_storage_path
+                  }));
+                }}
+              />
 
               <div className="form-group">
                 <label className="form-label" style={{ fontWeight: 700, fontSize: 12 }}>Project / Repository URL (Optional)</label>

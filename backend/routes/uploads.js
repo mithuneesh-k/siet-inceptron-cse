@@ -210,6 +210,93 @@ router.post('/announcement', authMiddleware, adminMiddleware, uploadUserLimiter,
   }
 });
 
+/**
+ * POST /api/uploads/showcase
+ * Upload public showcase post image (JPEG, PNG, WEBP, max 5MB).
+ * Restricted to Admin / HOD roles.
+ */
+router.post('/showcase', authMiddleware, (req, res, next) => {
+  if (!req.user) return res.status(401).json({ error: 'Authentication required' });
+  const isAdmin = Boolean(
+    req.user.role === 'admin' ||
+    req.user.is_admin === true ||
+    req.user.is_hod === true ||
+    req.user.designation?.toUpperCase()?.includes('HOD') ||
+    req.user.designation?.toUpperCase() === 'HEAD OF DEPARTMENT'
+  );
+  if (!isAdmin) {
+    return res.status(403).json({ error: 'Only administrators are authorized to upload showcase images.' });
+  }
+  next();
+}, uploadUserLimiter, (req, res, next) => {
+  upload.single('file')(req, res, (err) => {
+    if (err) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ error: 'File size exceeds maximum limit of 5 MB' });
+      }
+      return res.status(400).json({ error: err.message || 'File upload failed' });
+    }
+    next();
+  });
+}, async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const { buffer, mimetype } = req.file;
+    if (buffer.length > 5 * 1024 * 1024) {
+      return res.status(400).json({ error: 'File size exceeds maximum limit of 5 MB' });
+    }
+
+    const ext = getSafeExtension(buffer, mimetype);
+    if (!ext || mimetype === 'application/pdf') {
+      return res.status(400).json({ error: 'Invalid image format. Allowed formats: JPEG, PNG, WEBP.' });
+    }
+
+    const uuid = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(8).toString('hex');
+    const safeFilename = `showcase-${Date.now()}-${uuid}${ext}`;
+
+    let uploadResult = await supabase.storage
+      .from('department-posts')
+      .upload(safeFilename, buffer, {
+        contentType: mimetype,
+        upsert: false
+      });
+
+    if (uploadResult.error && uploadResult.error.message?.includes('Bucket not found')) {
+      await supabase.storage.createBucket('department-posts', { public: true }).catch(() => {});
+      uploadResult = await supabase.storage
+        .from('department-posts')
+        .upload(safeFilename, buffer, {
+          contentType: mimetype,
+          upsert: false
+        });
+    }
+
+    if (uploadResult.error) {
+      console.warn('Storage upload fallback to data URL:', uploadResult.error.message);
+      const dataUrl = `data:${mimetype};base64,${buffer.toString('base64')}`;
+      return res.json({
+        success: true,
+        storage_ref: null,
+        url: dataUrl
+      });
+    }
+
+    const storageRef = `storage://department-posts/${safeFilename}`;
+    const publicUrl = await resolveStorageUrl(storageRef);
+
+    res.json({
+      success: true,
+      storage_ref: storageRef,
+      url: publicUrl
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = {
   router,
   resolveStorageUrl,

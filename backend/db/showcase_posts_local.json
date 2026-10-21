@@ -1,0 +1,21 @@
+[
+  {
+    "id": "acefe7a8-e6cd-4534-ae8f-ce25bc31afda",
+    "title": "Google Summer of Code Internship",
+    "description": "Selected for open source contribution under Python Software Foundation",
+    "category": "Internship",
+    "cover_image_url": null,
+    "image_url": null,
+    "image_storage_path": null,
+    "project_url": "https://summerofcode.withgoogle.com",
+    "link_url": "https://summerofcode.withgoogle.com",
+    "author_id": "admin_user",
+    "author_name": "Admin User",
+    "author_designation": "Admin",
+    "is_featured": false,
+    "published": false,
+    "is_published": false,
+    "created_at": "2026-10-21T05:57:08.338Z",
+    "updated_at": "2026-10-21T05:57:08.339Z"
+  }
+]

@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS public.showcase_posts (
     category text NOT NULL DEFAULT 'Project' CHECK (category IN ('Project', 'Achievement', 'Research', 'Innovation', 'Internship')),
     cover_image_url text,
     image_url text,
+    image_storage_path text,
     project_url text,
     link_url text,
     author_id uuid NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
@@ -78,26 +79,50 @@ CREATE POLICY "Public read access for published showcase posts"
     FOR SELECT
     USING (published = true OR is_published = true);
 
--- 6. RLS Policy: Authenticated Faculty / HOD can insert posts with their own author_id
+-- 6. RLS Policy: Authenticated Admins and HOD can insert showcase posts
 DROP POLICY IF EXISTS "Faculty and HOD can create showcase posts" ON public.showcase_posts;
-CREATE POLICY "Faculty and HOD can create showcase posts"
+DROP POLICY IF EXISTS "Admins and HOD can create showcase posts" ON public.showcase_posts;
+CREATE POLICY "Admins and HOD can create showcase posts"
     ON public.showcase_posts
     FOR INSERT
     TO authenticated
-    WITH CHECK (auth.uid() = author_id);
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.users u
+            WHERE u.id = auth.uid()
+            AND u.role = 'admin'
+        )
+        OR EXISTS (
+            SELECT 1 FROM public.faculty f 
+            WHERE f.user_id = auth.uid() 
+            AND (f.is_hod = true OR UPPER(f.designation) LIKE '%HOD%')
+        )
+    );
 
--- 7. RLS Policy: Authors can update their own posts
+-- 7. RLS Policy: Admins and HOD can update showcase posts
 DROP POLICY IF EXISTS "Authors can update own showcase posts" ON public.showcase_posts;
-CREATE POLICY "Authors can update own showcase posts"
+DROP POLICY IF EXISTS "Admins and HOD can update showcase posts" ON public.showcase_posts;
+CREATE POLICY "Admins and HOD can update showcase posts"
     ON public.showcase_posts
     FOR UPDATE
     TO authenticated
-    USING (auth.uid() = author_id)
-    WITH CHECK (auth.uid() = author_id);
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.users u
+            WHERE u.id = auth.uid()
+            AND u.role = 'admin'
+        )
+        OR EXISTS (
+            SELECT 1 FROM public.faculty f 
+            WHERE f.user_id = auth.uid() 
+            AND (f.is_hod = true OR UPPER(f.designation) LIKE '%HOD%')
+        )
+    );
 
 -- 8. RLS Policy: HODs and Admins can delete showcase posts
 DROP POLICY IF EXISTS "HOD can delete any showcase post" ON public.showcase_posts;
-CREATE POLICY "HOD can delete any showcase post"
+DROP POLICY IF EXISTS "Admins and HOD can delete showcase posts" ON public.showcase_posts;
+CREATE POLICY "Admins and HOD can delete showcase posts"
     ON public.showcase_posts
     FOR DELETE
     TO authenticated
