@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 export const COLOR_THEMES = [
   { id: 'green', name: 'Showcase Forest & Gold', color: '#0b4a2c', primaryColor: '#0b4a2c', secondaryColor: '#facc15', gradient: 'linear-gradient(135deg, #0b4a2c, #15803d)', badge: 'Recommended' },
   { id: 'red',   name: 'Crimson Red',           color: '#ef4444', primaryColor: '#ef4444', secondaryColor: '#18181b', gradient: 'linear-gradient(135deg, #dc2626, #ef4444)', badge: 'Fire' },
-  { id: 'gold',  name: 'Royal Gold',           color: '#f59e0b', primaryColor: '#f59e0b', secondaryColor: '#451a03', gradient: 'linear-gradient(135deg, #d97706, #f59e0b)', badge: 'Luxury' },
+  { id: 'blue',  name: 'Royal Blue',            color: '#2563eb', primaryColor: '#2563eb', secondaryColor: '#1e3a8a', gradient: 'linear-gradient(135deg, #1d4ed8, #3b82f6)', badge: 'Classic' },
 ];
 
 const ThemeContext = createContext();
@@ -14,7 +14,9 @@ export function ThemeProvider({ children }) {
   });
 
   const [colorTheme, setColorThemeState] = useState(() => {
-    return localStorage.getItem('colorTheme') || 'green';
+    const saved = localStorage.getItem('colorTheme');
+    if (saved === 'gold') return 'blue';
+    return saved || 'green';
   });
 
   useEffect(() => {

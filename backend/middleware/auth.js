@@ -159,12 +159,13 @@ const adminMiddleware = (req, res, next) => {
 };
 
 const hodMiddleware = (req, res, next) => {
-  if (!['admin', 'faculty'].includes(req.user?.role)) {
-    return res.status(403).json({ error: 'HOD access required' });
+  if (!req.user) {
+    return res.status(401).json({ error: 'No token provided' });
   }
+  const role = req.user.role;
   const isHod = Boolean(
-    req.user.is_hod || 
-    req.user.role === 'admin' || 
+    role === 'admin' ||
+    req.user.is_hod === true || 
     req.user.designation?.toUpperCase()?.includes('HOD') || 
     req.user.designation?.toUpperCase() === 'HEAD OF DEPARTMENT'
   );

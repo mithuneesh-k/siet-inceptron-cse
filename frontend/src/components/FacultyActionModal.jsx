@@ -2,7 +2,14 @@ import { useState } from 'react';
 import client from '../api/client';
 import { Shield, Key, Copy, Check, AlertCircle } from 'lucide-react';
 
-const CLASSES = ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D', 'CSE-E'];
+const CLASSES = [
+  { val: 'C', label: 'Section C' },
+  { val: 'CSE-C', label: 'CSE-C' },
+  { val: 'CSE-A', label: 'CSE-A' },
+  { val: 'CSE-B', label: 'CSE-B' },
+  { val: 'CSE-D', label: 'CSE-D' },
+  { val: 'CSE-E', label: 'CSE-E' }
+];
 
 export default function FacultyActionModal({ onClose, onSaved, showToast }) {
   const [form, setForm] = useState({
@@ -200,7 +207,7 @@ export default function FacultyActionModal({ onClose, onSaved, showToast }) {
                   onChange={e => setForm({ ...form, advising_class: e.target.value })}
                 >
                   <option value="">None / Dept-wide</option>
-                  {CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
+                  {CLASSES.map(c => <option key={c.val} value={c.val}>{c.label}</option>)}
                 </select>
               </div>
 

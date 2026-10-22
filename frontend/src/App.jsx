@@ -87,7 +87,9 @@ function AppContent() {
           <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
           <Route path="/theme" element={<ProtectedRoute><ThemeSettings /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
-          <Route path="/approvals" element={user?.role === 'faculty' ? <Navigate to="/admin?tab=approvals" replace /> : <Navigate to="/" replace />} />
+          <Route path="/approvals" element={user?.role === 'faculty' ? <Navigate to="/admin?tab=overview" replace /> : <Navigate to="/" replace />} />
+          <Route path="/team-od" element={user?.role === 'faculty' || user?.is_admin ? <Navigate to="/admin?tab=team-od" replace /> : <Navigate to="/" replace />} />
+          <Route path="/team-od/manage" element={user?.role === 'admin' || user?.is_hod ? <Navigate to="/admin?tab=team-od-mgmt" replace /> : <Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to={user ? "/" : "/showcase"} replace />} />
         </Routes>
       </Suspense>

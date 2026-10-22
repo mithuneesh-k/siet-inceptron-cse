@@ -4,6 +4,7 @@ const cors = require('cors');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+// Team OD and notifications registered with resilient local store
 
 // Trust proxy topology configuration: defaults to false in unconfigured local/dev mode to prevent synthetic header spoofing.
 // In Staging/Production environments behind PaaS load balancers (e.g. Render / Cloudflare / Nginx), set TRUST_PROXY=1 in env.
@@ -50,6 +51,8 @@ app.use('/api/uploads', require('./routes/uploads').router);
 app.use('/api/platforms', require('./routes/platforms'));
 app.use('/api/announcements', require('./routes/announcements'));
 app.use('/api/academics', require('./routes/academics'));
+app.use('/api/team-od', require('./routes/teamOd').router);
+app.use('/api/notifications', require('./routes/notifications'));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'SIET CSE Portal API is running 🚀', timestamp: new Date().toISOString() });

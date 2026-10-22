@@ -8,4 +8,6 @@ backend/db/db_users.csv
 .env
 backend/db/local_competitive_store.json
 scratch/
-
+.data/
+backend/.data/
+backend/db/*_local.json

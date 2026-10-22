@@ -234,31 +234,31 @@
   --accent-contrast: #ffffff;
 }
 
-/* 3. Royal Gold */
-[data-accent="gold"] {
-  --accent-primary: #f59e0b; --accent-hover: #d97706; --accent-active: #b45309; --accent-dark: #92400e; --accent-light: #fbbf24;
-  --accent-soft: rgba(245, 158, 11, 0.08); --accent-soft-2: rgba(245, 158, 11, 0.16); --accent-border: rgba(245, 158, 11, 0.25); --accent-border-strong: rgba(245, 158, 11, 0.45);
-  --accent-text: #f59e0b; --accent-text-strong: #fbbf24; --accent-glow: rgba(245, 158, 11, 0.35); --accent-shadow: rgba(245, 158, 11, 0.22);
-  --accent-gradient-start: #d97706; --accent-gradient-end: #f59e0b; --accent-contrast: #070a0f; --accent-focus: rgba(245, 158, 11, 0.4);
-  --accent-nav: rgba(28, 18, 5, 0.95); --accent-nav-scrolled: rgba(20, 12, 3, 0.98); --accent-nav-hover: rgba(245, 158, 11, 0.15);
-  --navbar-border: rgba(245, 158, 11, 0.3);
-  --nav-brand-highlight: #fbbf24;
-  --nav-link-color: #fef3c7;
-  --nav-link-hover: #fbbf24;
-  --nav-active-bg: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  --nav-active-color: #041e12;
-  --nav-active-border: #f59e0b;
+/* 3. Royal Blue */
+[data-accent="blue"], [data-accent="gold"] {
+  --accent-primary: #2563eb; --accent-hover: #1d4ed8; --accent-active: #1e40af; --accent-dark: #172554; --accent-light: #60a5fa;
+  --accent-soft: rgba(37, 99, 235, 0.08); --accent-soft-2: rgba(37, 99, 235, 0.16); --accent-border: rgba(37, 99, 235, 0.25); --accent-border-strong: rgba(37, 99, 235, 0.45);
+  --accent-text: #3b82f6; --accent-text-strong: #60a5fa; --accent-glow: rgba(37, 99, 235, 0.35); --accent-shadow: rgba(37, 99, 235, 0.22);
+  --accent-gradient-start: #1d4ed8; --accent-gradient-end: #3b82f6; --accent-contrast: #ffffff; --accent-focus: rgba(37, 99, 235, 0.4);
+  --accent-nav: rgba(10, 25, 47, 0.95); --accent-nav-scrolled: rgba(7, 18, 35, 0.98); --accent-nav-hover: rgba(37, 99, 235, 0.15);
+  --navbar-border: rgba(96, 165, 250, 0.3);
+  --nav-brand-highlight: #60a5fa;
+  --nav-link-color: #dbeafe;
+  --nav-link-hover: #60a5fa;
+  --nav-active-bg: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  --nav-active-color: #ffffff;
+  --nav-active-border: #3b82f6;
 }
-[data-theme="light"][data-accent="gold"] {
-  --accent-primary: #d97706; --accent-hover: #b45309; --accent-active: #92400e;
-  --accent-text: #b45309; --accent-text-strong: #92400e;
-  --accent-nav: rgba(180, 83, 9, 0.96); --accent-nav-scrolled: rgba(146, 64, 14, 0.98);
-  --navbar-border: rgba(253, 230, 138, 0.35);
+[data-theme="light"][data-accent="blue"], [data-theme="light"][data-accent="gold"] {
+  --accent-primary: #1d4ed8; --accent-hover: #1e40af; --accent-active: #1e3a8a;
+  --accent-text: #1d4ed8; --accent-text-strong: #1e3a8a;
+  --accent-nav: rgba(30, 58, 138, 0.96); --accent-nav-scrolled: rgba(23, 37, 84, 0.98);
+  --navbar-border: rgba(191, 219, 254, 0.35);
   --nav-brand-highlight: #ffffff;
   --nav-link-color: rgba(255, 255, 255, 0.92);
   --nav-link-hover: #ffffff;
   --nav-active-bg: #ffffff;
-  --nav-active-color: #b45309;
+  --nav-active-color: #1d4ed8;
   --nav-active-border: #ffffff;
   --accent-contrast: #ffffff;
 }

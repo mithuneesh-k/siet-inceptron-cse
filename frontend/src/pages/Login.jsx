@@ -3,12 +3,13 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import SwitchMode from '../components/ui/switch-mode';
-import { Eye, EyeOff, Lock, User, ArrowRight, AlertCircle, ArrowLeft, Shield } from 'lucide-react';
+import { Eye, EyeOff, Lock, User, ArrowRight, AlertCircle, ArrowLeft, Shield, GraduationCap, Zap } from 'lucide-react';
 
 export default function Login() {
   const { login } = useAuth();
   const { theme } = useTheme();
   const navigate = useNavigate();
+  const [loginRole, setLoginRole] = useState('faculty'); // 'faculty' | 'hod'
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -19,10 +20,29 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      await login(form.email, form.password);
-      navigate('/');
+      const loggedUser = await login(form.email, form.password);
+      if (loggedUser?.is_admin || loggedUser?.role === 'admin' || loggedUser?.role === 'faculty') {
+        navigate('/admin?tab=team-od');
+      } else {
+        navigate('/');
+      }
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAutoLogin = async (identifier, password, targetUrl = '/admin?tab=team-od', role = 'faculty') => {
+    setError('');
+    setLoading(true);
+    setLoginRole(role);
+    setForm({ email: identifier, password });
+    try {
+      await login(identifier, password);
+      navigate(targetUrl);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Automatic login failed. Please check credentials.');
     } finally {
       setLoading(false);
     }
@@ -78,8 +98,96 @@ export default function Login() {
               </div>
 
               <div className="auth-07-card-header">
-                <h2 className="auth-07-card-title">Faculty Portal</h2>
-                <p className="auth-07-card-subtitle">Teacher-only authentication and student monitoring access.</p>
+                {/* Role Switcher Tabs */}
+                <div className="login-role-tabs">
+                  <button
+                    type="button"
+                    className={`login-role-tab ${loginRole === 'faculty' ? 'active' : ''}`}
+                    onClick={() => {
+                      setLoginRole('faculty');
+                      setError('');
+                    }}
+                  >
+                    <GraduationCap size={16} />
+                    <span>Faculty Sign In</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`login-role-tab ${loginRole === 'hod' ? 'active' : ''}`}
+                    onClick={() => {
+                      setLoginRole('hod');
+                      setError('');
+                    }}
+                  >
+                    <Shield size={16} />
+                    <span>HOD / Admin Sign In</span>
+                  </button>
+                </div>
+
+                <h2 className="auth-07-card-title">
+                  {loginRole === 'hod' ? 'HOD & Admin Portal' : 'Faculty Portal'}
+                </h2>
+                <p className="auth-07-card-subtitle">
+                  {loginRole === 'hod'
+                    ? 'Department management, staff approvals & Team OD reporting.'
+                    : 'Teacher authentication, classroom student monitoring & Team OD submission.'}
+                </p>
+              </div>
+
+              {/* ⚡ 1-Click Automatic Sign-In Section */}
+              <div className="auth-07-auto-login-section">
+                <div className="auth-07-auto-login-header">
+                  <Zap size={14} color="var(--color-green, #10b981)" />
+                  <span>⚡ 1-Click Automatic Sign In</span>
+                </div>
+                <div className="auth-07-auto-login-cards">
+                  {/* Automatic Sign In as HOD */}
+                  <button
+                    id="autologin-hod-btn"
+                    type="button"
+                    className="auth-07-auto-card hod-card"
+                    onClick={() => handleAutoLogin('admin@siet.ac.in', 'password123', '/admin?tab=team-od', 'hod')}
+                    disabled={loading}
+                    title="Click to automatically sign in as HOD Administrator"
+                  >
+                    <div className="auto-card-left">
+                      <div className="auto-card-icon-wrap hod-icon">
+                        <Shield size={18} />
+                      </div>
+                      <div className="auto-card-text">
+                        <div className="auto-card-title">Sign In as HOD / Admin</div>
+                        <div className="auto-card-sub">admin@siet.ac.in • Full HOD Management</div>
+                      </div>
+                    </div>
+                    <span className="auto-card-badge hod-badge">Instant HOD Login →</span>
+                  </button>
+
+                  {/* Automatic Sign In as Faculty */}
+                  <button
+                    id="autologin-faculty-btn"
+                    type="button"
+                    className="auth-07-auto-card faculty-card"
+                    onClick={() => handleAutoLogin('sanjaykrishna', '123456', '/admin?tab=team-od', 'faculty')}
+                    disabled={loading}
+                    title="Click to automatically sign in as Faculty (Sanjay Krishna)"
+                  >
+                    <div className="auto-card-left">
+                      <div className="auto-card-icon-wrap faculty-icon">
+                        <GraduationCap size={18} />
+                      </div>
+                      <div className="auto-card-text">
+                        <div className="auto-card-title">Sign In as Faculty (Sanjay Krishna)</div>
+                        <div className="auto-card-sub">sanjaykrishna • CSE-C Advisor</div>
+                      </div>
+                    </div>
+                    <span className="auto-card-badge faculty-badge">Instant Faculty Login →</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="auth-07-divider" style={{ margin: '18px 0 14px' }}>
+                <span>OR SIGN IN MANUALLY</span>
               </div>
 
               {error && (
@@ -100,7 +208,7 @@ export default function Login() {
                       id="login-email"
                       type="text"
                       className="auth-07-input"
-                      placeholder="e.g. hodcse, FAC002, or admin@siet.ac.in"
+                      placeholder={loginRole === 'hod' ? 'e.g. admin@siet.ac.in or hodcse' : 'e.g. sanjaykrishna, employee ID or email'}
                       value={form.email}
                       onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                       required
@@ -154,6 +262,10 @@ export default function Login() {
                   type="submit"
                   className="auth-07-submit-btn"
                   disabled={loading}
+                  style={{
+                    background: loginRole === 'hod' ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : undefined,
+                    color: loginRole === 'hod' ? '#0f172a' : undefined
+                  }}
                 >
                   {loading ? (
                     <>
@@ -162,20 +274,20 @@ export default function Login() {
                     </>
                   ) : (
                     <>
-                      <span>Sign In as Faculty</span>
+                      <span>{loginRole === 'hod' ? 'Sign In as HOD / Administrator' : 'Sign In as Faculty'}</span>
                       <ArrowRight size={18} />
                     </>
                   )}
                 </button>
               </form>
 
-              {/* Faculty Access Policy Info */}
-              <div className="auth-07-demo-section" style={{ marginTop: 24, padding: '16px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: 12, border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-green, #10b981)', fontWeight: 700, fontSize: 13, marginBottom: 6 }}>
-                  <Shield size={16} /> Faculty Authentication Only
+              {/* Faculty & HOD Access Policy Info */}
+              <div className="auth-07-demo-section" style={{ marginTop: 20, padding: '14px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: 12, border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-green, #10b981)', fontWeight: 700, fontSize: 13, marginBottom: 4 }}>
+                  <Shield size={16} /> Authorized Departmental Personnel Only
                 </div>
                 <p style={{ margin: 0, fontSize: 12, color: 'var(--color-text-muted, #94a3b8)', lineHeight: 1.5 }}>
-                  Access is restricted to authorized faculty and departmental administrators. Students do not log in; student records and academic performance are monitored securely by faculty.
+                  Access is restricted to authorized faculty and departmental administrators (HOD). Student accounts do not access this portal; student records and academic performance are managed securely.
                 </p>
               </div>
             </div>
@@ -308,6 +420,57 @@ export default function Login() {
         [data-theme="light"] .auth-07-divider::before,
         [data-theme="light"] .auth-07-divider::after { border-bottom-color: #e2e8f0 !important; }
         [data-theme="light"] .auth-07-divider span { color: #64748b !important; }
+
+        [data-theme="light"] .login-role-tabs {
+          background: #f1f5f9 !important;
+          border-color: #cbd5e1 !important;
+        }
+
+        [data-theme="light"] .login-role-tab {
+          color: #64748b !important;
+        }
+
+        [data-theme="light"] .login-role-tab:hover {
+          color: #0f172a !important;
+          background: rgba(0, 0, 0, 0.04) !important;
+        }
+
+        [data-theme="light"] .login-role-tab.active {
+          color: #0f172a !important;
+          background: #ffffff !important;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+        }
+
+        [data-theme="light"] .auth-07-auto-login-section {
+          background: #f8fafc !important;
+          border-color: #e2e8f0 !important;
+        }
+
+        [data-theme="light"] .auth-07-auto-card {
+          background: #ffffff !important;
+          border-color: #e2e8f0 !important;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+        }
+
+        [data-theme="light"] .auth-07-auto-card.hod-card:hover:not(:disabled) {
+          background: #fffbeb !important;
+          border-color: #f59e0b !important;
+          box-shadow: 0 4px 14px rgba(245, 158, 11, 0.15) !important;
+        }
+
+        [data-theme="light"] .auth-07-auto-card.faculty-card:hover:not(:disabled) {
+          background: #f0fdf4 !important;
+          border-color: #10b981 !important;
+          box-shadow: 0 4px 14px rgba(16, 185, 129, 0.15) !important;
+        }
+
+        [data-theme="light"] .auto-card-title {
+          color: #0f172a !important;
+        }
+
+        [data-theme="light"] .auto-card-sub {
+          color: #64748b !important;
+        }
 
         [data-theme="light"] .auth-07-demo-btn {
           background: #ffffff !important;
@@ -459,7 +622,7 @@ export default function Login() {
           z-index: 10;
           flex: 0.85;
           display: flex;
-          align-items: center;
+          align-items: flex-start;
           justify-content: center;
           padding: 32px;
           height: 100%;
@@ -471,7 +634,8 @@ export default function Login() {
         /* Dark Premium Card Panel */
         .auth-07-card {
           width: 100%;
-          max-width: 440px;
+          max-width: 450px;
+          margin: auto 0;
           background: #0b0f15;
           padding: 36px 32px;
           border-radius: 20px;
@@ -806,67 +970,172 @@ export default function Login() {
           transition: color 0.45s ease;
         }
 
-        .auth-07-demo-buttons {
+        /* Role Switcher Tabs */
+        .login-role-tabs {
           display: flex;
-          flex-direction: column;
-          gap: 10px;
+          background: rgba(255, 255, 255, 0.05);
+          padding: 4px;
+          border-radius: 12px;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          margin-bottom: 20px;
+          gap: 4px;
         }
 
-        .auth-07-demo-btn {
+        .login-role-tab {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 10px 14px;
+          border-radius: 9px;
+          font-size: 13px;
+          font-weight: 600;
+          color: var(--color-text-muted, #94a3b8);
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .login-role-tab:hover {
+          color: #ffffff;
+          background: rgba(255, 255, 255, 0.05);
+        }
+
+        .login-role-tab.active {
+          color: #ffffff;
+          background: rgba(255, 255, 255, 0.12);
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+        }
+
+        /* ⚡ 1-Click Automatic Sign-In Section */
+        .auth-07-auto-login-section {
+          background: rgba(255, 255, 255, 0.02);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 14px;
+          padding: 14px;
+          margin-bottom: 16px;
+        }
+
+        .auth-07-auto-login-header {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: var(--color-green, #10b981);
+          margin-bottom: 10px;
+          padding: 0 2px;
+        }
+
+        .auth-07-auto-login-cards {
+          display: flex;
+          flex-direction: column;
+          gap: 9px;
+        }
+
+        .auth-07-auto-card {
+          width: 100%;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 12px 16px;
-          background: #11141c;
-          border: 1px solid #232833;
-          border-radius: 12px;
+          padding: 11px 14px;
+          border-radius: 11px;
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.08);
           cursor: pointer;
-          transition: background-color 0.45s ease, border-color 0.45s ease, transform 0.2s ease;
+          text-align: left;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .auth-07-demo-btn:hover {
-          background: #161a26;
-          border-color: var(--theme-primary, #84cc16);
-          transform: translateY(-1px);
+        .auth-07-auto-card:hover:not(:disabled) {
+          transform: translateY(-2px);
         }
 
-        .auth-07-demo-btn:disabled {
+        .auth-07-auto-card.hod-card:hover:not(:disabled) {
+          background: rgba(245, 158, 11, 0.09);
+          border-color: rgba(245, 158, 11, 0.4);
+          box-shadow: 0 4px 18px rgba(245, 158, 11, 0.2);
+        }
+
+        .auth-07-auto-card.faculty-card:hover:not(:disabled) {
+          background: rgba(16, 185, 129, 0.09);
+          border-color: rgba(16, 185, 129, 0.4);
+          box-shadow: 0 4px 18px rgba(16, 185, 129, 0.2);
+        }
+
+        .auth-07-auto-card:disabled {
           opacity: 0.6;
           cursor: not-allowed;
           transform: none;
         }
 
-        .auth-07-demo-btn-left {
+        .auto-card-left {
+          display: flex;
+          align-items: center;
+          gap: 11px;
+        }
+
+        .auto-card-icon-wrap {
+          width: 36px;
+          height: 36px;
+          border-radius: 9px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .auto-card-icon-wrap.hod-icon {
+          background: rgba(245, 158, 11, 0.15);
+          color: #f59e0b;
+        }
+
+        .auto-card-icon-wrap.faculty-icon {
+          background: rgba(16, 185, 129, 0.15);
+          color: #10b981;
+        }
+
+        .auto-card-text {
           display: flex;
           flex-direction: column;
-          align-items: flex-start;
           gap: 2px;
-          text-align: left;
         }
 
-        .auth-07-demo-subtext {
-          font-size: 11px;
-          color: var(--color-text-muted, #94a3b8);
-          font-weight: 500;
-        }
-
-        .auth-07-demo-badge {
+        .auto-card-title {
           font-size: 13px;
           font-weight: 700;
-          color: var(--color-text, #f1f5f9);
-          transition: color 0.45s ease;
+          color: var(--color-text, #f8fafc);
         }
 
-        .auth-07-demo-val {
-          font-size: 12px;
+        .auto-card-sub {
+          font-size: 11px;
+          color: var(--color-text-muted, #94a3b8);
           font-family: monospace;
-          color: var(--theme-primary, #84cc16);
-          font-weight: 600;
-          background: var(--theme-soft, rgba(132, 204, 22, 0.12));
-          padding: 4px 10px;
+        }
+
+        .auto-card-badge {
+          font-size: 11px;
+          font-weight: 700;
+          padding: 5px 10px;
           border-radius: 6px;
-          border: 1px solid var(--theme-border, rgba(132, 204, 22, 0.25));
-          transition: background-color 0.45s ease, border-color 0.45s ease, color 0.45s ease;
+          white-space: nowrap;
+          letter-spacing: 0.02em;
+        }
+
+        .auto-card-badge.hod-badge {
+          background: rgba(245, 158, 11, 0.15);
+          color: #f59e0b;
+          border: 1px solid rgba(245, 158, 11, 0.35);
+        }
+
+        .auto-card-badge.faculty-badge {
+          background: rgba(16, 185, 129, 0.15);
+          color: #10b981;
+          border: 1px solid rgba(16, 185, 129, 0.35);
         }
 
         /* RESPONSIVE DESIGN FOR MOBILE & TABLET */

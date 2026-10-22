@@ -11,11 +11,13 @@ import FacultyAdvisorModal from '../components/FacultyAdvisorModal';
 import FacultyActionModal from '../components/FacultyActionModal';
 import ConfirmModal from '../components/ConfirmModal';
 import SplitActions from '../components/ui/split-actions';
-import Approvals from './Approvals';
+import TeamOdFaculty from '../components/TeamOdFaculty';
+import TeamOdManagement from '../components/TeamOdManagement';
 import { 
   Shield, BarChart2, Users, Settings, GraduationCap, Hourglass, 
   Award, TrendingUp, List, RefreshCw, Trash2, Download, Plus, 
-  Edit3, Key, Copy, Check, X, ExternalLink, Inbox, Search, CheckCircle, AlertCircle
+  Edit3, Key, Copy, Check, X, ExternalLink, Inbox, Search, CheckCircle, AlertCircle,
+  CalendarCheck, FileSpreadsheet
 } from 'lucide-react';
 
 const CLASSES = ['CSE-A', 'CSE-B', 'CSE-C', 'CSE-D', 'CSE-E'];
@@ -67,8 +69,16 @@ export default function Admin() {
   const [overviewStats, setOverviewStats] = useState(null);
 
   const isAdmin = Boolean(user && (user.role === 'admin' || user.is_admin || user.role === 'faculty'));
-  const isFullAdmin = Boolean(user && (user.role === 'admin' || user.is_admin || user.is_hod || user.designation?.toUpperCase() === 'HOD'));
+  const isFullAdmin = Boolean(
+    user && (
+      user.role === 'admin' || 
+      user.is_hod === true || 
+      user.designation?.toUpperCase()?.includes('HOD') || 
+      user.designation?.toUpperCase() === 'HEAD OF DEPARTMENT'
+    )
+  );
   const isFacultyRole = Boolean(user && user.role === 'faculty');
+  const canAccessTeamOd = Boolean(user && (user.role === 'faculty' || user.role === 'admin' || user.is_admin));
   const panelTitle = isFacultyRole ? 'Faculty Panel' : 'Admin Panel';
 
   const tabs = [
@@ -76,7 +86,8 @@ export default function Admin() {
     { id: 'students', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Users size={16} /> Students</span> },
     { id: 'manage', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Settings size={16} /> Manage</span> },
     ...(isAdmin ? [{ id: 'faculty', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><GraduationCap size={16} /> Faculty</span> }] : []),
-    ...(isFacultyRole ? [{ id: 'approvals', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><CheckCircle size={16} /> Approvals</span> }] : []),
+    ...(canAccessTeamOd ? [{ id: 'team-od', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><CalendarCheck size={16} /> Team OD & Event Reporting</span> }] : []),
+    ...(isFullAdmin ? [{ id: 'team-od-mgmt', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><FileSpreadsheet size={16} /> Team OD Reporting Management</span> }] : []),
   ];
 
   useEffect(() => {
@@ -84,12 +95,19 @@ export default function Admin() {
       navigate('/showcase/manage', { replace: true });
       return;
     }
+    if (tabFromUrl === 'approvals') {
+      setTab('overview');
+      navigate('/admin?tab=overview', { replace: true });
+      return;
+    }
     if (tabFromUrl && tabs.some(t => t.id === tabFromUrl)) {
       setTab(tabFromUrl);
-    } else if (tabFromUrl === 'approvals' && !isFacultyRole) {
+    } else if (tabFromUrl === 'team-od' && !canAccessTeamOd) {
+      setTab('overview');
+    } else if (tabFromUrl === 'team-od-mgmt' && !isFullAdmin) {
       setTab('overview');
     }
-  }, [tabFromUrl, isFacultyRole, navigate]);
+  }, [tabFromUrl, isFacultyRole, canAccessTeamOd, isFullAdmin, navigate]);
 
   const handleTabClick = (tabId) => {
     setTab(tabId);
@@ -726,16 +744,16 @@ export default function Admin() {
                   </div>
                 ) : (
                   <div className="card" style={{ overflow: 'hidden' }}>
-                    <div className="manage-table-header" style={{ gridTemplateColumns: '1.5fr 1.2fr 1fr 1fr 1fr 140px' }}>
+                    <div className="manage-table-header" style={{ gridTemplateColumns: isFullAdmin ? '1.5fr 1.2fr 1fr 1fr 1fr 140px' : '1.5fr 1.2fr 1fr 1fr 1.2fr' }}>
                       <span>Faculty Member</span>
                       <span>Username & ID</span>
                       <span>Designation</span>
                       <span>Department</span>
                       <span>Advising Section</span>
-                      <span>Manage</span>
+                      {isFullAdmin && <span>Manage</span>}
                     </div>
                     {faculties.map((f, i) => (
-                      <div key={f.id} className="manage-table-row" style={{ gridTemplateColumns: '1.5fr 1.2fr 1fr 1fr 1fr 140px', animation: `fadeInUp 0.3s ease ${i * 0.02}s both` }}>
+                      <div key={f.id} className="manage-table-row" style={{ gridTemplateColumns: isFullAdmin ? '1.5fr 1.2fr 1fr 1fr 1fr 140px' : '1.5fr 1.2fr 1fr 1fr 1.2fr', animation: `fadeInUp 0.3s ease ${i * 0.02}s both` }}>
                         <div>
                           <div style={{ fontWeight: 700, color: 'var(--color-text)' }}>{f.name}</div>
                           <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{f.email}</div>
@@ -753,28 +771,30 @@ export default function Admin() {
                             <span style={{ color: 'var(--color-text-muted)' }}>—</span>
                           )}
                         </div>
-                        <div style={{ display: 'flex', gap: 6, alignItems: 'center', position: 'relative', zIndex: 5 }}>
-                          <SplitActions
-                            primaryLabel="Adjust"
-                            primaryIcon={Edit3}
-                            onPrimaryClick={() => setEditFaculty(f)}
-                            dropdownActions={[
-                              ...(isFullAdmin ? [{
-                                label: 'Reset Password',
-                                icon: Key,
-                                onClick: () => handleResetFacultyPassword(f)
-                              }] : []),
-                              {
-                                label: 'Delete Faculty',
-                                icon: Trash2,
-                                onClick: () => setDeleteFacultyTarget(f),
-                                destructive: true,
-                                hidden: !isFullAdmin || f.user_id === user?.id || f.id === user?.id
-                              }
-                            ]}
-                            ariaLabel="More faculty actions"
-                          />
-                        </div>
+                        {isFullAdmin && (
+                          <div style={{ display: 'flex', gap: 6, alignItems: 'center', position: 'relative', zIndex: 5 }}>
+                            <SplitActions
+                              primaryLabel="Adjust"
+                              primaryIcon={Edit3}
+                              onPrimaryClick={() => setEditFaculty(f)}
+                              dropdownActions={[
+                                {
+                                  label: 'Reset Password',
+                                  icon: Key,
+                                  onClick: () => handleResetFacultyPassword(f)
+                                },
+                                {
+                                  label: 'Delete Faculty',
+                                  icon: Trash2,
+                                  onClick: () => setDeleteFacultyTarget(f),
+                                  destructive: true,
+                                  hidden: f.user_id === user?.id || f.id === user?.id
+                                }
+                              ]}
+                              ariaLabel="More faculty actions"
+                            />
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -793,9 +813,15 @@ export default function Admin() {
 
 
 
-            {/* ── APPROVALS (Faculty embedded tab) ── */}
-            {tab === 'approvals' && isFacultyRole && (
-              <Approvals embedded />
+
+            {/* ── TEAM OD & EVENT REPORTING (Faculty & Staff embedded tab) ── */}
+            {tab === 'team-od' && canAccessTeamOd && (
+              <TeamOdFaculty />
+            )}
+
+            {/* ── TEAM OD REPORTING MANAGEMENT (HOD / Admin embedded tab) ── */}
+            {tab === 'team-od-mgmt' && isFullAdmin && (
+              <TeamOdManagement />
             )}
           </>
         )}

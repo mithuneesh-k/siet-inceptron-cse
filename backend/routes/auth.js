@@ -69,11 +69,12 @@ router.post('/login', loginIpLimiter, loginIdentifierLimiter, async (req, res) =
   if (!authUser) {
     try {
       const cleanUser = normalizedId.replace(/[,()\[\]{}"'`;:\\]/g, '');
+      const noSpaceUser = cleanUser.replace(/\s+/g, '');
       const cleanEmp = identifier.toUpperCase().replace(/[,()\[\]{}"'`;:\\]/g, '');
       const { data: facRow } = await supabase
         .from('faculty')
         .select('user_id')
-        .or(`username.ilike.${cleanUser},employee_id.ilike.${cleanEmp}`)
+        .or(`username.ilike.${cleanUser},username.ilike.${noSpaceUser},employee_id.ilike.${cleanEmp}`)
         .maybeSingle();
 
       if (facRow && facRow.user_id) {
@@ -87,7 +88,11 @@ router.post('/login', loginIpLimiter, loginIdentifierLimiter, async (req, res) =
   // 4. Try username match directly in 'users' table (if column exists)
   if (!authUser) {
     try {
-      const userByUsername = await findUserWithFallback(q => q.ilike('username', normalizedId));
+      const cleanUser = normalizedId.replace(/[,()\[\]{}"'`;:\\]/g, '');
+      const noSpaceUser = cleanUser.replace(/\s+/g, '');
+      const userByUsername = await findUserWithFallback(q =>
+        q.or(`username.ilike.${cleanUser},username.ilike.${noSpaceUser}`)
+      );
       if (userByUsername) {
         authUser = userByUsername;
       }
@@ -96,7 +101,42 @@ router.post('/login', loginIpLimiter, loginIdentifierLimiter, async (req, res) =
     }
   }
 
-  // 5. Legacy alias fallback: if user attempted to log in with duplicate admin identifiers, resolve to primary admin
+  // 5. Try email prefix match (e.g. user entered "sanjaykrishna" for "sanjaykrishna@gmail.com")
+  if (!authUser) {
+    try {
+      const cleanPrefix = normalizedId.replace(/[^a-z0-9._-]/g, '');
+      if (cleanPrefix.length >= 3) {
+        const userByEmailPrefix = await findUserWithFallback(q => q.ilike('email', `${cleanPrefix}@%`));
+        if (userByEmailPrefix) {
+          authUser = userByEmailPrefix;
+        }
+      }
+    } catch (e) {
+      // Fallback
+    }
+  }
+
+  // 6. Try faculty name match (e.g. user typed their full name "sanjay krishna" or "sanjay")
+  if (!authUser) {
+    try {
+      const cleanName = normalizedId.replace(/[,()\[\]{}"'`;:\\]/g, '').trim();
+      if (cleanName.length >= 3) {
+        const { data: facRowByName } = await supabase
+          .from('faculty')
+          .select('user_id')
+          .or(`name.ilike.${cleanName},name.ilike.%${cleanName}%`)
+          .maybeSingle();
+
+        if (facRowByName && facRowByName.user_id) {
+          authUser = await findUserWithFallback(q => q.eq('id', facRowByName.user_id));
+        }
+      }
+    } catch (e) {
+      // Fallback
+    }
+  }
+
+  // 7. Legacy alias fallback: if user attempted to log in with duplicate admin identifiers, resolve to primary admin
   if (!authUser && (normalizedId === 'admin_srishakthi' || normalizedId === 'admin@srishakthi.ac.in' || normalizedId === 'fac003')) {
     authUser = await findUserWithFallback(q => q.ilike('email', 'admin@siet.ac.in'));
   }
@@ -123,13 +163,22 @@ router.post('/login', loginIpLimiter, loginIdentifierLimiter, async (req, res) =
 
   // Fetch faculty profile details
   let profile = {};
-  const { data: facData } = await supabase
+  const { data: facData, error: facErr } = await supabase
     .from('faculty')
-    .select('name, designation, department, avatar_url, advising_class, advising_batch, is_hod')
+    .select('name, designation, department, avatar_url, advising_class, advising_batch, is_hod, username, employee_id')
     .eq('user_id', authUser.id)
     .maybeSingle();
 
-  profile = facData || {};
+  if (facErr) {
+    const fallback = await supabase
+      .from('faculty')
+      .select('name, designation, department, avatar_url, advising_class, advising_batch, is_hod')
+      .eq('user_id', authUser.id)
+      .maybeSingle();
+    profile = fallback.data || {};
+  } else {
+    profile = facData || {};
+  }
   const identifiers = deriveFacultyIdentifiers(profile, authUser);
 
   // Generate JWT token with faculty scope (role: faculty or admin)

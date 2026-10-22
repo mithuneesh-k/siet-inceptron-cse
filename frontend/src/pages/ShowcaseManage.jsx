@@ -49,10 +49,13 @@ export default function ShowcaseManage() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState(null);
 
-  // Filters
+  // Filters & Controls
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'published' | 'draft'
+  const [sortBy, setSortBy] = useState('newest'); // 'newest' | 'oldest' | 'important'
   const [filterMyOnly, setFilterMyOnly] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
   // Toast
   const [toast, setToast] = useState(null);
@@ -284,6 +287,7 @@ export default function ShowcaseManage() {
         image_storage_path: null
       });
       handleRemoveImage();
+      setShowCreateForm(false);
       fetchPosts();
     } catch (err) {
       showToast(err.response?.data?.error || err.message || 'Failed to broadcast post.', 'error');
@@ -369,16 +373,42 @@ export default function ShowcaseManage() {
     }
   };
 
-  // Filtered Posts
+  // Filtered and Sorted Posts
   const filteredPosts = posts.filter(post => {
-    const matchesCategory = selectedCategory === 'All' || 
-      (post.category || 'project').toLowerCase() === selectedCategory.toLowerCase();
-    const matchesMy = !filterMyOnly || (user && post.author_id === user.id);
-    const matchesSearch = !searchTerm.trim() || 
-      post.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      post.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      post.author_name?.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesCategory && matchesMy && matchesSearch;
+    // 1. Category Filter
+    if (selectedCategory !== 'All' && (post.category || '').toLowerCase() !== selectedCategory.toLowerCase()) {
+      return false;
+    }
+
+    // 2. Publication Status Filter
+    if (statusFilter === 'published' && post.published === false) return false;
+    if (statusFilter === 'draft' && post.published !== false) return false;
+
+    // 3. My Posts Filter
+    if (filterMyOnly && user && post.author_id !== user.id) return false;
+
+    // 4. Multi-field Search (Title, Description, Category, Author, Designation)
+    if (searchTerm.trim()) {
+      const q = searchTerm.trim().toLowerCase();
+      const inTitle = (post.title || '').toLowerCase().includes(q);
+      const inDesc = (post.description || '').toLowerCase().includes(q);
+      const inCat = (post.category || '').toLowerCase().includes(q);
+      const inAuthor = (post.author_name || '').toLowerCase().includes(q);
+      const inAuthorDes = (post.author_designation || '').toLowerCase().includes(q);
+      if (!inTitle && !inDesc && !inCat && !inAuthor && !inAuthorDes) {
+        return false;
+      }
+    }
+    return true;
+  }).sort((a, b) => {
+    if (sortBy === 'important') {
+      const aImp = a.is_featured || a.is_important ? 1 : 0;
+      const bImp = b.is_featured || b.is_important ? 1 : 0;
+      if (aImp !== bImp) return bImp - aImp;
+    }
+    const aTime = new Date(a.created_at || 0).getTime();
+    const bTime = new Date(b.created_at || 0).getTime();
+    return sortBy === 'oldest' ? aTime - bTime : bTime - aTime;
   });
 
   return (
@@ -449,30 +479,32 @@ export default function ShowcaseManage() {
               <RefreshCw size={14} className={loading ? 'spin' : ''} />
               <span>Refresh</span>
             </button>
-            <a
-              href="#broadcast-creator-card"
+            <button
+              type="button"
+              onClick={() => setShowCreateForm(prev => !prev)}
               className="btn btn-primary btn-sm"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 18px' }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 18px', fontWeight: 700 }}
             >
-              <Send size={15} />
-              <span>New Broadcast</span>
-            </a>
+              {showCreateForm ? <X size={15} /> : <Plus size={15} />}
+              <span>{showCreateForm ? 'Close Creator' : 'New Broadcast / Post'}</span>
+            </button>
           </div>
         </div>
 
-        {/* ── BROADCAST CREATOR CARD (ADMIN POST & NOTIFY STYLING & EFFECTS) ── */}
+        {/* ── BROADCAST CREATOR CARD (COLLAPSIBLE) ── */}
+        {showCreateForm && (
         <div
           id="broadcast-creator-card"
           className="card animate-fadeIn"
           style={{
-            padding: '32px',
+            padding: '28px 32px',
             background: 'var(--bg-card)',
             border: '1px solid var(--border)',
             borderRadius: '20px',
             boxShadow: 'var(--shadow-md)',
             position: 'relative',
             overflow: 'hidden',
-            marginBottom: 36
+            marginBottom: 28
           }}
         >
           {/* Decorative Gradient Accent Strip */}
@@ -487,12 +519,12 @@ export default function ShowcaseManage() {
             }}
           />
 
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 26, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <div
                 style={{
-                  width: 48,
-                  height: 48,
+                  width: 44,
+                  height: 44,
                   borderRadius: 14,
                   background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(59, 130, 246, 0.15))',
                   border: '1px solid var(--border-strong)',
@@ -527,6 +559,14 @@ export default function ShowcaseManage() {
                 </p>
               </div>
             </div>
+            <button
+              type="button"
+              onClick={() => setShowCreateForm(false)}
+              className="btn btn-ghost btn-xs"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 12px', fontSize: 12, borderRadius: 8 }}
+            >
+              <X size={14} /> Close Creator
+            </button>
           </div>
 
           <form onSubmit={handleBroadcastSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -954,12 +994,13 @@ export default function ShowcaseManage() {
             </div>
           </form>
         </div>
+        )}
 
         {/* ── MANAGE SHOWCASE & BROADCASTS FEED ── */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14, marginBottom: 16 }}>
+        <div className="card" style={{ padding: '18px 22px', marginBottom: 20, borderRadius: 14, background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
             <div>
-              <h3 style={{ fontSize: 20, fontWeight: 800, color: 'var(--color-text)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--color-text)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
                 Live Department Posts & Showcase
                 <span
                   style={{
@@ -975,61 +1016,121 @@ export default function ShowcaseManage() {
                   {filteredPosts.length}
                 </span>
               </h3>
-              <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '4px 0 0' }}>
-                Review live posts, unpublish drafts, edit contents, and inspect high-fidelity uncropped poster flyers.
+              <p style={{ fontSize: 12.5, color: 'var(--color-text-muted)', margin: '3px 0 0' }}>
+                Manage announcements, unpublish drafts, edit post content, and review high-fidelity uncropped flyers.
               </p>
             </div>
+          </div>
 
-            {/* Filter pills & search */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <div style={{ position: 'relative', minWidth: 200 }}>
-                <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-faint)' }} />
-                <input
-                  type="text"
-                  placeholder="Filter by title or author…"
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                  className="form-input"
-                  style={{
-                    paddingLeft: 30,
-                    height: 36,
-                    fontSize: 12.5,
-                    borderRadius: 8,
-                    background: 'var(--bg-input)',
-                    borderColor: 'var(--border)'
-                  }}
-                />
-              </div>
-
-              <select
-                value={selectedCategory}
-                onChange={e => setSelectedCategory(e.target.value)}
-                className="form-select"
+          {/* Search Controls Toolbar */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, justifyContent: 'space-between' }}>
+            {/* Search Input with Clear Button */}
+            <div style={{ position: 'relative', flex: '1 1 260px', minWidth: 220 }}>
+              <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
+              <input
+                type="text"
+                placeholder="Search by title, description, category, or author..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="form-input"
                 style={{
-                  height: 36,
-                  fontSize: 12.5,
-                  borderRadius: 8,
-                  paddingInline: 10,
+                  paddingLeft: 36,
+                  paddingRight: searchTerm ? 32 : 12,
+                  height: 38,
+                  borderRadius: 9,
+                  fontSize: 13,
                   background: 'var(--bg-input)',
-                  borderColor: 'var(--border)',
-                  color: 'var(--color-text)'
+                  borderColor: 'var(--border)'
                 }}
-              >
-                <option value="All">All Categories</option>
-                {CATEGORIES.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.label}</option>
-                ))}
-              </select>
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm('')}
+                  className="btn btn-ghost btn-xs"
+                  style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', padding: 3, borderRadius: '50%' }}
+                  title="Clear search"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
 
+            {/* Category Dropdown */}
+            <select
+              value={selectedCategory}
+              onChange={e => setSelectedCategory(e.target.value)}
+              className="form-select"
+              style={{ height: 38, borderRadius: 9, fontSize: 12.5, paddingInline: 10, background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--color-text)' }}
+            >
+              <option value="All">All Categories</option>
+              {CATEGORIES.map(cat => (
+                <option key={cat.id} value={cat.id}>{cat.label}</option>
+              ))}
+            </select>
+
+            {/* Status Dropdown */}
+            <select
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+              className="form-select"
+              style={{ height: 38, borderRadius: 9, fontSize: 12.5, paddingInline: 10, background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--color-text)' }}
+            >
+              <option value="all">All Status</option>
+              <option value="published">Live on Showcase</option>
+              <option value="draft">Drafts / Unpublished</option>
+            </select>
+
+            {/* Sort Dropdown */}
+            <select
+              value={sortBy}
+              onChange={e => setSortBy(e.target.value)}
+              className="form-select"
+              style={{ height: 38, borderRadius: 9, fontSize: 12.5, paddingInline: 10, background: 'var(--bg-input)', borderColor: 'var(--border)', color: 'var(--color-text)' }}
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="important">Featured First</option>
+            </select>
+
+            {/* My Posts Toggle */}
+            <button
+              type="button"
+              className={`btn btn-sm ${filterMyOnly ? 'btn-primary' : 'btn-ghost'}`}
+              onClick={() => setFilterMyOnly(!filterMyOnly)}
+              style={{ height: 38, fontSize: 12, padding: '6px 14px', borderRadius: 9, fontWeight: filterMyOnly ? 800 : 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            >
+              <User size={13} /> My Posts
+            </button>
+          </div>
+
+          {/* Active Filters & Count Bar */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--border)', fontSize: 12, color: 'var(--color-text-muted)' }}>
+            <div>
+              Showing <strong>{filteredPosts.length}</strong> of <strong>{posts.length}</strong> posts
+              {(searchTerm || selectedCategory !== 'All' || statusFilter !== 'all' || filterMyOnly) && (
+                <span style={{ marginLeft: 8, color: 'var(--accent-primary, #10b981)', fontWeight: 600 }}>
+                  (Filters applied)
+                </span>
+              )}
+            </div>
+
+            {(searchTerm || selectedCategory !== 'All' || statusFilter !== 'all' || filterMyOnly) && (
               <button
                 type="button"
-                className={`btn btn-xs ${filterMyOnly ? 'btn-primary' : 'btn-ghost'}`}
-                onClick={() => setFilterMyOnly(!filterMyOnly)}
-                style={{ fontSize: 12, padding: '6px 12px', borderRadius: 8, fontWeight: filterMyOnly ? 800 : 600, display: 'inline-flex', alignItems: 'center', gap: 5 }}
+                onClick={() => {
+                  setSearchTerm('');
+                  setSelectedCategory('All');
+                  setStatusFilter('all');
+                  setFilterMyOnly(false);
+                  setSortBy('newest');
+                }}
+                className="btn btn-ghost btn-xs"
+                style={{ color: '#ef4444', fontSize: 11.5, padding: '2px 8px' }}
               >
-                <User size={13} /> My Posts
+                Reset All Filters
               </button>
-            </div>
+            )}
           </div>
         </div>
 
@@ -1052,7 +1153,7 @@ export default function ShowcaseManage() {
             </p>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {filteredPosts.map(post => {
               const catMeta = getCategoryMeta(post.category);
               const IconComp = catMeta.icon;
@@ -1061,39 +1162,110 @@ export default function ShowcaseManage() {
               const canDelete = Boolean(isHOD);
               const isPublished = post.published !== false;
               const postImageUrl = post.cover_image_url || post.image_url;
+              const hasLongDescription = post.description && post.description.length > 90;
 
               return (
                 <div
                   key={post.id}
                   className="card animate-fadeIn"
                   style={{
-                    padding: '24px 28px',
+                    padding: '12px 16px',
                     background: 'var(--bg-card)',
                     border: '1px solid var(--border)',
-                    borderRadius: 18,
-                    position: 'relative',
-                    borderLeft: `5px solid ${catMeta.color}`,
-                    boxShadow: 'var(--shadow-sm)'
+                    borderRadius: 12,
+                    borderLeft: `4px solid ${catMeta.color}`,
+                    boxShadow: 'var(--shadow-sm)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 14,
+                    transition: 'all 0.15s ease'
                   }}
                 >
-                  {/* Top Bar: Category, Priority, Publication Status, and Actions */}
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  {/* Compact Media Thumbnail (Clickable to Lightbox Preview) */}
+                  {postImageUrl ? (
+                    <div
+                      onClick={() => setPreviewModal(post)}
+                      style={{
+                        width: 76,
+                        height: 76,
+                        minWidth: 76,
+                        borderRadius: 8,
+                        overflow: 'hidden',
+                        background: 'rgba(0, 0, 0, 0.25)',
+                        position: 'relative',
+                        cursor: 'pointer',
+                        border: '1px solid var(--border)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                      }}
+                      title="Click to preview poster in full view"
+                    >
+                      <img
+                        src={postImageUrl}
+                        alt={post.title}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          display: 'block'
+                        }}
+                      />
+                      <div
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          background: 'rgba(0, 0, 0, 0.35)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#ffffff',
+                          opacity: 0.8
+                        }}
+                      >
+                        <Maximize2 size={14} />
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        width: 48,
+                        height: 48,
+                        minWidth: 48,
+                        borderRadius: 8,
+                        background: catMeta.bg,
+                        border: `1px solid ${catMeta.border}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: catMeta.color,
+                        flexShrink: 0
+                      }}
+                    >
+                      <IconComp size={20} />
+                    </div>
+                  )}
+
+                  {/* Main Details: Meta badges, Title, Truncated Description */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {/* Meta Row */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 3 }}>
                       <span
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',
-                          gap: 5,
-                          fontSize: 11.5,
-                          fontWeight: 800,
-                          padding: '3px 10px',
-                          borderRadius: 6,
+                          gap: 4,
+                          fontSize: 10.5,
+                          fontWeight: 700,
+                          padding: '2px 7px',
+                          borderRadius: 5,
                           background: catMeta.bg,
                           color: catMeta.color,
                           border: `1px solid ${catMeta.border}`
                         }}
                       >
-                        <IconComp size={13} />
+                        <IconComp size={11} />
                         {catMeta.label}
                       </span>
 
@@ -1102,17 +1274,17 @@ export default function ShowcaseManage() {
                           style={{
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: 4,
-                            fontSize: 11,
+                            gap: 3,
+                            fontSize: 10,
                             fontWeight: 800,
-                            padding: '3px 8px',
-                            borderRadius: 6,
+                            padding: '2px 6px',
+                            borderRadius: 5,
                             background: 'rgba(245, 158, 11, 0.15)',
                             color: '#f59e0b',
                             border: '1px solid rgba(245, 158, 11, 0.3)'
                           }}
                         >
-                          <Flame size={12} /> IMPORTANT / FEATURED
+                          <Flame size={10} /> FEATURED
                         </span>
                       )}
 
@@ -1120,184 +1292,152 @@ export default function ShowcaseManage() {
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',
-                          gap: 4,
-                          fontSize: 11,
-                          fontWeight: 700,
-                          padding: '3px 8px',
-                          borderRadius: 6,
+                          gap: 3,
+                          fontSize: 10.5,
+                          fontWeight: 600,
+                          padding: '2px 6px',
+                          borderRadius: 5,
                           background: isPublished ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)',
                           color: isPublished ? '#10b981' : '#f59e0b'
                         }}
                       >
-                        {isPublished ? <Eye size={11} /> : <EyeOff size={11} />}
-                        <span>{isPublished ? 'Live on Showcase' : 'Draft / Unpublished'}</span>
+                        {isPublished ? <Eye size={10} /> : <EyeOff size={10} />}
+                        <span>{isPublished ? 'Live' : 'Draft'}</span>
                       </span>
 
                       {isAuthor && (
-                        <span style={{ fontSize: 10.5, fontWeight: 700, padding: '3px 7px', borderRadius: 6, background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6' }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 5, background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6' }}>
                           You
                         </span>
                       )}
+
+                      <span style={{ fontSize: 11, color: 'var(--color-text-faint)', marginLeft: 'auto' }}>
+                        {new Date(post.created_at || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
                     </div>
 
-                    {/* Quick Card Actions */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      {canEdit && (
+                    {/* Compact Title */}
+                    <h4 
+                      style={{ 
+                        fontSize: 14.5, 
+                        fontWeight: 700, 
+                        color: 'var(--color-text)', 
+                        margin: '2px 0 3px', 
+                        lineHeight: 1.3,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                      }}
+                      title={post.title}
+                    >
+                      {post.title}
+                    </h4>
+
+                    {/* Truncated Description with Expand Action */}
+                    <div style={{ fontSize: 12.5, color: 'var(--color-text-muted)', lineHeight: 1.4 }}>
+                      <span
+                        style={{
+                          display: '-webkit-box',
+                          WebkitLineClamp: 1,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden'
+                        }}
+                      >
+                        {post.description}
+                      </span>
+                    </div>
+
+                    {/* Author & Links Footer Bar */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 4, fontSize: 11, color: 'var(--color-text-faint)' }}>
+                      <span>
+                        By: <strong style={{ color: 'var(--color-text)' }}>{post.author_name || 'Faculty Member'}</strong>
+                      </span>
+                      {hasLongDescription && (
                         <button
                           type="button"
-                          className="btn btn-ghost btn-xs"
-                          onClick={() => handleTogglePublish(post)}
-                          title={isPublished ? 'Unpublish from public view' : 'Publish to Showcase'}
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 10px', fontSize: 12 }}
+                          onClick={() => setPreviewModal(post)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: 'var(--accent-primary, #10b981)',
+                            cursor: 'pointer',
+                            fontSize: 11,
+                            padding: 0,
+                            fontWeight: 700,
+                            textDecoration: 'underline'
+                          }}
                         >
-                          {isPublished ? <EyeOff size={13} color="#f59e0b" /> : <Eye size={13} color="#10b981" />}
-                          <span>{isPublished ? 'Unpublish' : 'Publish'}</span>
+                          Read full content
                         </button>
                       )}
-
-                      {canEdit && (
-                        <button
-                          type="button"
-                          className="btn btn-ghost btn-xs"
-                          onClick={() => handleOpenEdit(post)}
-                          title="Edit Post"
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 10px', fontSize: 12 }}
+                      {post.project_url && (
+                        <a
+                          href={post.project_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ color: 'var(--accent-text, #3b82f6)', display: 'inline-flex', alignItems: 'center', gap: 3, fontWeight: 600 }}
                         >
-                          <Edit3 size={13} />
-                          <span>Edit</span>
-                        </button>
+                          <ExternalLink size={10} /> Link
+                        </a>
                       )}
-
-                      {canDelete && (
-                        <button
-                          type="button"
-                          onClick={() => setDeleteTarget(post)}
-                          className="btn btn-ghost btn-xs"
-                          title="Delete this post (HOD Only)"
-                          style={{ color: 'var(--color-red)', padding: '5px 10px', fontSize: 12 }}
-                        >
-                          <Trash2 size={13} />
-                          <span>Delete</span>
-                        </button>
+                      {post.expires_at && (
+                        <span style={{ color: '#f59e0b', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                          <Calendar size={10} /> Exp: {new Date(post.expires_at).toLocaleDateString()}
+                        </span>
                       )}
                     </div>
                   </div>
 
-                  {/* Title */}
-                  <h4 style={{ fontSize: 18, fontWeight: 800, color: 'var(--color-text)', margin: '14px 0 8px', letterSpacing: '-0.01em' }}>
-                    {post.title}
-                  </h4>
-
-                  {/* Description / Content Body */}
-                  <p style={{ fontSize: 13.5, color: 'var(--color-text-muted)', lineHeight: 1.6, margin: '0 0 14px', whiteSpace: 'pre-wrap' }}>
-                    {post.description}
-                  </p>
-
-                  {/* Full Fidelity Poster Display Frame (Uncropped Contain Mode with Lightbox) */}
-                  {postImageUrl && (
-                    <div
-                      style={{
-                        marginTop: 16,
-                        marginBottom: 16,
-                        borderRadius: 14,
-                        overflow: 'hidden',
-                        border: '1px solid var(--border)',
-                        background: 'rgba(0, 0, 0, 0.45)',
-                        position: 'relative',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        maxHeight: 520
-                      }}
+                  {/* Actions Toolbar */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-xs"
                       onClick={() => setPreviewModal(post)}
-                      title="Click to expand poster in full view"
+                      title="Preview full post details"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 8px', fontSize: 11.5 }}
                     >
-                      <img
-                        src={postImageUrl}
-                        alt={post.title}
-                        style={{
-                          width: '100%',
-                          maxHeight: 520,
-                          objectFit: 'contain',
-                          display: 'block'
-                        }}
-                      />
-                      <div
-                        style={{
-                          position: 'absolute',
-                          bottom: 12,
-                          right: 12,
-                          background: 'rgba(0, 0, 0, 0.75)',
-                          color: '#ffffff',
-                          padding: '6px 12px',
-                          borderRadius: 8,
-                          fontSize: 12,
-                          fontWeight: 700,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          backdropFilter: 'blur(6px)',
-                          border: '1px solid rgba(255, 255, 255, 0.2)'
-                        }}
+                      <Eye size={12} />
+                      <span className="hidden-mobile">Preview</span>
+                    </button>
+
+                    {canEdit && (
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-xs"
+                        onClick={() => handleTogglePublish(post)}
+                        title={isPublished ? 'Unpublish from public view' : 'Publish to Showcase'}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 8px', fontSize: 11.5 }}
                       >
-                        <Maximize2 size={13} /> Click to expand
-                      </div>
-                    </div>
-                  )}
+                        {isPublished ? <EyeOff size={12} color="#f59e0b" /> : <Eye size={12} color="#10b981" />}
+                        <span className="hidden-mobile">{isPublished ? 'Unpublish' : 'Publish'}</span>
+                      </button>
+                    )}
 
-                  {/* Attached Link */}
-                  {post.project_url && (
-                    <div style={{ marginTop: 12 }}>
-                      <a
-                        href={post.project_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="btn btn-sm btn-ghost"
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          borderRadius: 8,
-                          border: '1px solid var(--border-strong)',
-                          color: 'var(--accent-text, var(--color-green))',
-                          fontWeight: 700,
-                          fontSize: 12.5,
-                          padding: '7px 14px'
-                        }}
+                    {canEdit && (
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-xs"
+                        onClick={() => handleOpenEdit(post)}
+                        title="Edit Post"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 8px', fontSize: 11.5 }}
                       >
-                        <ExternalLink size={13} /> Visit Attached Link / Repo
-                      </a>
-                    </div>
-                  )}
+                        <Edit3 size={12} />
+                        <span className="hidden-mobile">Edit</span>
+                      </button>
+                    )}
 
-                  {/* Footer Metadata */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      flexWrap: 'wrap',
-                      gap: 12,
-                      marginTop: 18,
-                      paddingTop: 14,
-                      borderTop: '1px solid var(--border)',
-                      fontSize: 12,
-                      color: 'var(--color-text-faint)'
-                    }}
-                  >
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                      <User size={13} /> Author: <strong style={{ color: 'var(--color-text)' }}>{post.author_name || 'Faculty Member'}</strong> {post.author_designation ? `(${post.author_designation})` : ''}
-                    </span>
-
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                      <Clock size={12} /> Posted: {new Date(post.created_at || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                    </span>
-
-                    {post.expires_at && (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#f59e0b' }}>
-                        <Calendar size={12} /> Valid Until: {new Date(post.expires_at).toLocaleDateString()}
-                      </span>
+                    {canDelete && (
+                      <button
+                        type="button"
+                        onClick={() => setDeleteTarget(post)}
+                        className="btn btn-ghost btn-xs"
+                        title="Delete this post (HOD Only)"
+                        style={{ color: 'var(--color-red)', padding: '5px 8px', fontSize: 11.5 }}
+                      >
+                        <Trash2 size={12} />
+                        <span className="hidden-mobile">Delete</span>
+                      </button>
                     )}
                   </div>
                 </div>
@@ -1307,7 +1447,7 @@ export default function ShowcaseManage() {
         )}
       </div>
 
-      {/* ─── FULLSCREEN LIGHTBOX PREVIEW MODAL ─── */}
+      {/* ─── FULLSCREEN PREVIEW & DETAIL LIGHTBOX MODAL ─── */}
       {previewModal && (
         <div 
           className="modal-backdrop" 
@@ -1327,28 +1467,45 @@ export default function ShowcaseManage() {
           <div 
             className="card animate-scaleUp"
             style={{
-              maxWidth: 960,
+              maxWidth: 820,
               width: '100%',
               background: 'var(--bg-card)',
               border: '1px solid var(--border)',
               borderRadius: 18,
               overflow: 'hidden',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)'
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column'
             }}
             onClick={e => e.stopPropagation()}
           >
+            {/* Modal Header */}
             <div style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               padding: '16px 22px',
-              borderBottom: '1px solid var(--border)'
+              borderBottom: '1px solid var(--border)',
+              background: 'var(--bg-card)'
             }}>
               <div style={{ minWidth: 0, flex: 1, paddingRight: 16 }}>
-                <span className="badge badge-green" style={{ fontSize: 11, marginBottom: 4 }}>
-                  {previewModal.category || 'Department Poster'}
-                </span>
-                <h4 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <span className="badge badge-green" style={{ fontSize: 11 }}>
+                    {previewModal.category || 'Department Poster'}
+                  </span>
+                  {previewModal.published === false && (
+                    <span className="badge badge-amber" style={{ fontSize: 11 }}>
+                      Draft / Unpublished
+                    </span>
+                  )}
+                  {(previewModal.is_featured || previewModal.is_important) && (
+                    <span className="badge badge-amber" style={{ fontSize: 11 }}>
+                      Featured
+                    </span>
+                  )}
+                </div>
+                <h4 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: 'var(--color-text)', lineHeight: 1.3 }}>
                   {previewModal.title}
                 </h4>
               </div>
@@ -1363,55 +1520,125 @@ export default function ShowcaseManage() {
               </button>
             </div>
 
-            <div style={{
-              background: 'rgba(0, 0, 0, 0.35)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              maxHeight: '75vh',
-              overflow: 'auto',
-              padding: 20
-            }}>
-              <img
-                src={previewModal.cover_image_url || previewModal.image_url}
-                alt={previewModal.title}
-                style={{
-                  maxWidth: '100%',
-                  maxHeight: '70vh',
-                  objectFit: 'contain',
-                  borderRadius: 10,
-                  boxShadow: '0 10px 35px rgba(0,0,0,0.45)'
-                }}
-              />
+            {/* Scrollable Modal Content */}
+            <div style={{ overflowY: 'auto', flex: 1 }}>
+              {/* Image Preview if present */}
+              {(previewModal.cover_image_url || previewModal.image_url) && (
+                <div style={{
+                  background: 'rgba(0, 0, 0, 0.45)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  maxHeight: '44vh',
+                  overflow: 'hidden',
+                  padding: 14,
+                  borderBottom: '1px solid var(--border)'
+                }}>
+                  <img
+                    src={previewModal.cover_image_url || previewModal.image_url}
+                    alt={previewModal.title}
+                    style={{
+                      maxWidth: '100%',
+                      maxHeight: '40vh',
+                      objectFit: 'contain',
+                      borderRadius: 8,
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.5)'
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Full Description & Content Body */}
+              <div style={{ padding: '20px 24px' }}>
+                <h5 style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-faint)', letterSpacing: '0.05em', margin: '0 0 8px' }}>
+                  Post Content & Description
+                </h5>
+                <p style={{
+                  fontSize: 14,
+                  lineHeight: 1.7,
+                  color: 'var(--color-text)',
+                  whiteSpace: 'pre-wrap',
+                  margin: '0 0 16px'
+                }}>
+                  {previewModal.description}
+                </p>
+
+                {/* Attached Link */}
+                {previewModal.project_url && (
+                  <div style={{ marginTop: 14 }}>
+                    <a
+                      href={previewModal.project_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-sm btn-ghost"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        borderRadius: 8,
+                        border: '1px solid var(--border-strong)',
+                        color: 'var(--accent-text, var(--color-green))',
+                        fontWeight: 700,
+                        fontSize: 12.5,
+                        padding: '7px 14px'
+                      }}
+                    >
+                      <ExternalLink size={13} /> Visit Project / Resource Link
+                    </a>
+                  </div>
+                )}
+              </div>
             </div>
 
+            {/* Modal Footer */}
             <div style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '14px 22px',
+              padding: '12px 22px',
               borderTop: '1px solid var(--border)',
               background: 'var(--bg-input)'
             }}>
-              <span style={{ fontSize: 12.5, color: 'var(--color-text-faint)' }}>
-                Author: {previewModal.author_name || 'Faculty'}
-              </span>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <a
-                  href={previewModal.cover_image_url || previewModal.image_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  download
-                  className="btn btn-secondary btn-sm"
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}
-                >
-                  <Download size={14} /> Open Original
-                </a>
+              <div style={{ fontSize: 12, color: 'var(--color-text-faint)' }}>
+                <span>Author: <strong style={{ color: 'var(--color-text)' }}>{previewModal.author_name || 'Faculty'}</strong></span>
+                {previewModal.created_at && (
+                  <span style={{ marginLeft: 10 }}>
+                    • Posted {new Date(previewModal.created_at).toLocaleDateString()}
+                  </span>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {(previewModal.cover_image_url || previewModal.image_url) && (
+                  <a
+                    href={previewModal.cover_image_url || previewModal.image_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download
+                    className="btn btn-secondary btn-sm"
+                    style={{ display: 'flex', alignItems: 'center', gap: 5, fontWeight: 600, fontSize: 12 }}
+                  >
+                    <Download size={13} /> Original
+                  </a>
+                )}
+                {(user && user.id === previewModal.author_id || isHOD) && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => {
+                      const p = previewModal;
+                      setPreviewModal(null);
+                      handleOpenEdit(p);
+                    }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12 }}
+                  >
+                    <Edit3 size={13} /> Edit
+                  </button>
+                )}
                 <button
                   type="button"
                   className="btn btn-primary btn-sm"
                   onClick={() => setPreviewModal(null)}
-                  style={{ fontWeight: 700 }}
+                  style={{ fontWeight: 700, fontSize: 12 }}
                 >
                   Done
                 </button>

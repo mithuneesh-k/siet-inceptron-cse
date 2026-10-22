@@ -475,8 +475,8 @@ router.patch('/advisor/achievements/:id', facultyAdvisorMiddleware, async (req, 
 // Concurrency serialization lock for atomic faculty account creation
 let facultyCreationLock = Promise.resolve();
 
-// GET /api/admin/faculty - List all faculty
-router.get('/faculty', hodMiddleware, async (req, res) => {
+// GET /api/admin/faculty - List all faculty (visible to all staff / advisors; mutations restricted to HOD)
+router.get('/faculty', async (req, res) => {
   const cacheKey = 'admin:faculty';
   let cached = await cache.get(cacheKey);
   if (cached) {
@@ -594,13 +594,19 @@ router.post('/faculty', hodMiddleware, async (req, res) => {
           : `FAC${String((currentFacultyCount || 0) + 1).padStart(3, '0')}`;
 
         // 3. Check for duplicates in email, username, and employee_id
-        const [{ data: existingEmail }, { data: existingFacultyProfile }] = await Promise.all([
-          supabase.from('users').select('id').ilike('email', normalizedEmail).maybeSingle(),
-          supabase.from('faculty').select('id, user_id, username, employee_id')
+        let existingEmail = null;
+        let existingFacultyProfile = null;
+        try {
+          const emailRes = await supabase.from('users').select('id').ilike('email', normalizedEmail).maybeSingle();
+          existingEmail = emailRes?.data;
+        } catch {}
+
+        try {
+          const profileRes = await supabase.from('faculty').select('id, user_id, username, employee_id')
             .or(`username.ilike.${targetUsername},employee_id.ilike.${targetEmployeeId}`)
-            .maybeSingle()
-            .catch(() => ({ data: null }))
-        ]);
+            .maybeSingle();
+          existingFacultyProfile = profileRes?.data;
+        } catch {}
 
         if (existingEmail) {
           return resolve(res.status(409).json({ error: 'A user with this email already exists.' }));
@@ -691,7 +697,7 @@ router.post('/faculty', hodMiddleware, async (req, res) => {
 
         const newTotal = (currentFacultyCount || 0) + 1;
 
-        resolve(res.status(201).json({
+        const facultyData = {
           id: newUser.id,
           email: normalizedEmail,
           username: targetUsername,
@@ -699,6 +705,12 @@ router.post('/faculty', hodMiddleware, async (req, res) => {
           temporary_password: rawPassword,
           total: newTotal,
           ...profile
+        };
+
+        resolve(res.status(201).json({
+          success: true,
+          faculty: facultyData,
+          ...facultyData
         }));
       } catch (err) {
         console.error('Faculty creation error:', err);

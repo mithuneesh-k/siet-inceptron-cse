@@ -7,6 +7,7 @@ import client from '../api/client';
 import { Home, Zap, Trophy, GraduationCap, Users, User, Shield, CheckCircle, Code, Sun, Moon, Bell, AlertCircle, ChevronRight, Palette, Laptop, Check } from 'lucide-react';
 import { subscribeAchievementEvents } from '../utils/achievementEvents';
 import { AnnouncementImage } from '../utils/announcementHelpers';
+import NotificationBell from './NotificationBell';
 import './Navbar.css';
 
 export default function Navbar() {
@@ -243,6 +244,7 @@ export default function Navbar() {
         </div>
 
         <div className="navbar-actions">
+          {user && user.role !== 'student' && <NotificationBell />}
           <SwitchMode width={64} height={32} />
           <div ref={paletteRef} style={{ position: 'relative' }}>
             <button

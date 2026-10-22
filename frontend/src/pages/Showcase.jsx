@@ -533,11 +533,6 @@ export default function Showcase() {
         </div>
 
         <div className="sc-hero-content-wrap">
-          {/* Micro-eyebrow badge */}
-          <div className="sc-eyebrow-pill-gold">
-            <Sparkles size={13} />
-            <span>OUR INSTITUTIONAL PURPOSE & INNOVATION</span>
-          </div>
 
           {/* Editorial Display Heading (with Golden Ampersand) */}
           <h1 className="sc-hero-editorial-title">
@@ -693,10 +688,6 @@ export default function Showcase() {
         <div className="sc-container-inner sc-cms-width">
           <div className="sc-cms-section-header">
             <div>
-              <div className="sc-section-micro-badge">
-                <Rocket size={13} />
-                <span>STUDENT SOFTWARE & ENGINEERING BUILDS</span>
-              </div>
               <h2 className="sc-cms-section-title">Technical Projects & Engineering Builds</h2>
               <p className="sc-cms-section-desc">
                 Explore real technical projects, mobile applications, full-stack web platforms, and engineering systems built by CSE department students and faculty.
@@ -746,10 +737,6 @@ export default function Showcase() {
         <div className="sc-container-inner sc-cms-width">
           <div className="sc-cms-section-header">
             <div>
-              <div className="sc-section-micro-badge gold-badge">
-                <Trophy size={13} />
-                <span>COMPETITIVE CODING & PODIUM FINISHES</span>
-              </div>
               <h2 className="sc-cms-section-title">Hackathon Winners & Coding Competitions</h2>
               <p className="sc-cms-section-desc">
                 Celebrating SIET CSE innovators and coding teams who clinched top podiums, 1st prize trophies, cash awards, and national hackathon victories (Smart India Hackathon, regional hackathons, and collegiate coding sprints).
@@ -1161,9 +1148,6 @@ export default function Showcase() {
       {/* ─── CALL TO ACTION SECTION ─── */}
       <section className="sc-cta-forest-section">
         <div className="sc-cta-box-inner">
-          <div className="sc-eyebrow-pill-gold" style={{ marginBottom: 14 }}>
-            <span>FACULTY & STUDENT ACCESS</span>
-          </div>
           <h2 className="sc-cta-headline">Ready to Enter INCEPTRON?</h2>
           <p className="sc-cta-subtext">
             Faculty and administrators can log in to manage student records, verify achievement milestones, and publish department highlights.
