@@ -145,9 +145,13 @@ export default function TeamOdManagement() {
     }
   };
 
+  const todayStr = new Date().toISOString().slice(0, 10);
+
   // Filter records
   const filteredRecords = records.filter(r => {
-    if (statusFilter !== 'all' && r.reporting_status !== statusFilter) {
+    if (statusFilter === 'overdue') {
+      if (!(r.end_date < todayStr && r.reporting_status === 'pending')) return false;
+    } else if (statusFilter !== 'all' && r.reporting_status !== statusFilter) {
       return false;
     }
     if (!search.trim()) return true;
@@ -161,8 +165,6 @@ export default function TeamOdManagement() {
       (r.team_details || '').toLowerCase().includes(q)
     );
   });
-
-  const todayStr = new Date().toISOString().slice(0, 10);
 
   return (
     <div className="team-od-management-container animate-fadeIn">
@@ -231,6 +233,53 @@ export default function TeamOdManagement() {
           {refreshing ? 'Syncing…' : 'Refresh Feed'}
         </button>
       </div>
+
+      {/* ── HOD Alert & Notification Banners ── */}
+      {stats.overdue_pending > 0 && (
+        <div
+          className="animate-fadeIn"
+          style={{
+            background: 'rgba(220, 38, 38, 0.12)',
+            border: '1.5px solid rgba(220, 38, 38, 0.45)',
+            borderRadius: 12,
+            padding: '14px 18px',
+            marginBottom: 20,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 12
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <AlertTriangle size={22} color="#EF4444" style={{ flexShrink: 0 }} />
+            <div>
+              <div style={{ fontWeight: 700, color: '#EF4444', fontSize: 14 }}>
+                Action Required: {stats.overdue_pending} team(s) have concluded their events and are overdue for post-event reporting.
+              </div>
+              <div style={{ fontSize: 12.5, color: 'var(--color-text-muted)', marginTop: 2 }}>
+                The event end date has passed. You can send immediate reminder notifications to responsible faculty or update their status.
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setStatusFilter('overdue')}
+            className="btn btn-sm"
+            style={{
+              background: '#DC2626',
+              color: '#ffffff',
+              border: 'none',
+              fontWeight: 700,
+              fontSize: 12.5,
+              padding: '8px 16px',
+              borderRadius: 8
+            }}
+          >
+            Review Overdue ({stats.overdue_pending})
+          </button>
+        </div>
+      )}
 
       {/* Summary Statistics Cards */}
       <div
@@ -383,6 +432,22 @@ export default function TeamOdManagement() {
           >
             Pending ({stats.pending})
           </button>
+          {stats.overdue_pending > 0 && (
+            <button
+              type="button"
+              onClick={() => setStatusFilter('overdue')}
+              className={`btn btn-sm ${statusFilter === 'overdue' ? 'btn-primary' : 'btn-ghost'}`}
+              style={{
+                borderRadius: 8,
+                fontSize: 12.5,
+                background: statusFilter === 'overdue' ? '#DC2626' : 'rgba(220, 38, 38, 0.15)',
+                color: statusFilter === 'overdue' ? '#fff' : '#EF4444',
+                borderColor: '#DC2626'
+              }}
+            >
+              ⚠️ Overdue ({stats.overdue_pending})
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setStatusFilter('not_reported')}
