@@ -81,13 +81,60 @@ export default function Admin() {
   const canAccessTeamOd = Boolean(user && (user.role === 'faculty' || user.role === 'admin' || user.is_admin));
   const panelTitle = isFacultyRole ? 'Faculty Panel' : 'Admin Panel';
 
+  const [teamOdBadge, setTeamOdBadge] = useState({ count: 0, pending: 0, overdue: 0 });
+
+  const fetchTeamOdBadge = useCallback(async () => {
+    if (!isFullAdmin) return;
+    try {
+      const res = await client.get('/team-od/pending-count');
+      if (res.data?.success) {
+        setTeamOdBadge({
+          count: res.data.count || 0,
+          pending: res.data.pending || 0,
+          overdue: res.data.overdue || 0
+        });
+      }
+    } catch {}
+  }, [isFullAdmin]);
+
+  useEffect(() => {
+    fetchTeamOdBadge();
+    const interval = setInterval(fetchTeamOdBadge, 15000);
+    return () => clearInterval(interval);
+  }, [fetchTeamOdBadge]);
+
   const tabs = [
     { id: 'overview', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><BarChart2 size={16} /> Overview</span> },
     { id: 'students', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Users size={16} /> Students</span> },
     { id: 'manage', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Settings size={16} /> Manage</span> },
     ...(isAdmin ? [{ id: 'faculty', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><GraduationCap size={16} /> Faculty</span> }] : []),
     ...(canAccessTeamOd ? [{ id: 'team-od', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><CalendarCheck size={16} /> Team OD & Event Reporting</span> }] : []),
-    ...(isFullAdmin ? [{ id: 'team-od-mgmt', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><FileSpreadsheet size={16} /> Team OD Reporting Management</span> }] : []),
+    ...(isFullAdmin ? [{
+      id: 'team-od-mgmt',
+      l: (
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative' }}>
+          <FileSpreadsheet size={16} />
+          <span>Team OD Reporting Management</span>
+          {teamOdBadge.count > 0 && (
+            <span
+              style={{
+                marginLeft: 4,
+                padding: '1px 7px',
+                borderRadius: 10,
+                fontSize: 10.5,
+                fontWeight: 800,
+                background: teamOdBadge.overdue > 0 ? '#DC2626' : 'var(--accent-primary, #10b981)',
+                color: '#ffffff',
+                boxShadow: teamOdBadge.overdue > 0 ? '0 2px 6px rgba(220, 38, 38, 0.45)' : '0 2px 6px rgba(16, 185, 129, 0.35)'
+              }}
+              title={`${teamOdBadge.count} active records (${teamOdBadge.overdue} overdue reporting)`}
+            >
+              {teamOdBadge.count}
+            </span>
+          )}
+        </span>
+      )
+    }] : []),
   ];
 
   useEffect(() => {
