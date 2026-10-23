@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   FileSpreadsheet, Search, RefreshCw, AlertCircle, CheckCircle2, 
   Trash2, BellRing, Calendar, MapPin, Building2, User, Clock, 
-  ShieldAlert, Check, X, Filter, AlertTriangle, Users
+  ShieldAlert, Check, X, Filter, AlertTriangle, Users, Bell, Send, MessageSquare
 } from 'lucide-react';
 import client from '../api/client';
 import ConfirmModal from './ConfirmModal';
@@ -24,6 +24,11 @@ export default function TeamOdManagement() {
   // Reported Action State
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [actionInProgress, setActionInProgress] = useState(false);
+
+  // Notify Faculty Modal State
+  const [notifyTarget, setNotifyTarget] = useState(null);
+  const [notifyText, setNotifyText] = useState('');
+  const [notifySending, setNotifySending] = useState(false);
 
   // Toast / Feedback State
   const [toast, setToast] = useState(null);
@@ -142,6 +147,26 @@ export default function TeamOdManagement() {
       showToast(err.response?.data?.error || 'Failed to update status to Informed.', 'error');
     } finally {
       setActionInProgress(false);
+    }
+  };
+
+  // Handle "Notify Faculty" custom notice / reminder
+  const handleSendFacultyNotification = async () => {
+    if (!notifyTarget) return;
+    try {
+      setNotifySending(true);
+      const res = await client.post(`/team-od/${notifyTarget.id}/notify-faculty`, {
+        message: notifyText.trim()
+      });
+      if (res.data?.success) {
+        showToast(res.data.message || `Notification sent to faculty for ${notifyTarget.team_name}.`, 'success');
+        setNotifyTarget(null);
+        setNotifyText('');
+      }
+    } catch (err) {
+      showToast(err.response?.data?.error || 'Failed to send notification to faculty.', 'error');
+    } finally {
+      setNotifySending(false);
     }
   };
 
@@ -271,13 +296,37 @@ export default function TeamOdManagement() {
               color: '#ffffff',
               border: 'none',
               fontWeight: 700,
-              fontSize: 12.5,
-              padding: '8px 16px',
+              fontSize: 12,
+              padding: '6px 14px',
               borderRadius: 8
             }}
           >
-            Review Overdue ({stats.overdue_pending})
+            Filter Overdue Teams ({stats.overdue_pending})
           </button>
+        </div>
+      )}
+
+      {stats.pending > 0 && stats.overdue_pending === 0 && (
+        <div
+          className="animate-fadeIn"
+          style={{
+            background: 'rgba(16, 185, 129, 0.1)',
+            border: '1px solid rgba(16, 185, 129, 0.3)',
+            borderRadius: 12,
+            padding: '12px 18px',
+            marginBottom: 20,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Bell size={18} color="var(--accent-primary, #10b981)" />
+            <span style={{ fontSize: 13, color: 'var(--color-text)', fontWeight: 600 }}>
+              {stats.pending} active Team OD submission(s) currently registered across the department.
+            </span>
+          </div>
         </div>
       )}
 
@@ -415,7 +464,7 @@ export default function TeamOdManagement() {
         </div>
 
         {/* Status Filter Tabs */}
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           <button
             type="button"
             onClick={() => setStatusFilter('all')}
@@ -800,6 +849,31 @@ export default function TeamOdManagement() {
                       </span>
                     )}
 
+                    {/* Direct Notify Faculty Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNotifyTarget(r);
+                        setNotifyText(`HOD Notification: Please meet the HOD or submit post-event outcome reporting for team "${r.team_name}" (Event: "${r.event_name}", Ended: ${r.end_date || 'N/A'}).`);
+                      }}
+                      disabled={actionInProgress}
+                      className="btn btn-ghost btn-sm"
+                      title="Send in-app reminder or message to faculty"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        color: 'var(--color-text)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 8,
+                        padding: '6px 12px',
+                        fontSize: 12
+                      }}
+                    >
+                      <Bell size={13} color="var(--accent-primary, #10b981)" />
+                      Notify Faculty
+                    </button>
+
                     {/* REPORTED BUTTON (Opens Confirmation Dialog) */}
                     <button
                       type="button"
@@ -839,6 +913,123 @@ export default function TeamOdManagement() {
         onConfirm={handleConfirmReported}
         onCancel={() => setDeleteTarget(null)}
       />
+
+      {/* ── Send Notification to Faculty Modal ── */}
+      {notifyTarget && (
+        <div
+          className="modal-overlay"
+          onClick={e => { if (e.target === e.currentTarget) setNotifyTarget(null); }}
+          style={{ zIndex: 10000 }}
+        >
+          <div className="modal animate-scaleIn" style={{ maxWidth: 520, borderRadius: 16 }}>
+            <div className="modal-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Bell size={20} color="var(--accent-primary, #10b981)" />
+                <h3 className="modal-title" style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>
+                  Notify Faculty Advisor
+                </h3>
+              </div>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() => setNotifyTarget(null)}
+                style={{ padding: 4 }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 4 }}>
+                Recipient Faculty Member:
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text)' }}>
+                {notifyTarget.faculty_name} ({notifyTarget.faculty_designation || 'Faculty'})
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2 }}>
+                Team: <strong>{notifyTarget.team_name}</strong> | Event: <strong>{notifyTarget.event_name}</strong>
+              </div>
+            </div>
+
+            {/* Quick Template Buttons */}
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 6 }}>
+                Quick Message Templates:
+              </label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {[
+                  {
+                    label: 'Meet HOD Regarding Team',
+                    text: `Your team "${notifyTarget.team_name}" has not reported back after the event "${notifyTarget.event_name}". Please meet the HOD.`
+                  },
+                  {
+                    label: 'Submit Post-Event Report',
+                    text: `Reminder: The event "${notifyTarget.event_name}" has concluded. Please submit the post-event attendance report and team outcome.`
+                  },
+                  {
+                    label: 'Upload Achievement / Proof',
+                    text: `Congratulations on participating in "${notifyTarget.event_name}". Please submit certificate/photos for Team "${notifyTarget.team_name}".`
+                  }
+                ].map((tpl, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setNotifyText(tpl.text)}
+                    style={{
+                      fontSize: 11,
+                      padding: '4px 10px',
+                      borderRadius: 6,
+                      background: 'var(--bg-glass-card, rgba(255,255,255,0.04))',
+                      border: '1px solid var(--border)',
+                      color: 'var(--accent-text, #10b981)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    + {tpl.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Notification Textarea */}
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, color: 'var(--color-text)', marginBottom: 6 }}>
+                In-App Notification Message:
+              </label>
+              <textarea
+                value={notifyText}
+                onChange={e => setNotifyText(e.target.value)}
+                rows={4}
+                className="form-input"
+                style={{ width: '100%', fontSize: 13, lineHeight: 1.5, resize: 'vertical' }}
+                placeholder="Type the message to deliver directly to faculty's notification bell…"
+                required
+              />
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10 }}>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => setNotifyTarget(null)}
+                disabled={notifySending}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleSendFacultyNotification}
+                disabled={notifySending || !notifyText.trim()}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+              >
+                <Send size={14} />
+                {notifySending ? 'Sending Notification…' : 'Send Notification'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
