@@ -2,10 +2,19 @@ import { useState, useEffect, useCallback } from 'react';
 import { 
   CalendarCheck, PlusCircle, ListFilter, RefreshCw, AlertCircle, 
   CheckCircle2, Search, Calendar, MapPin, Building2, Users, FileText, 
-  Clock, ShieldAlert, ArrowRight, UserCheck, Check, X, GraduationCap, Sparkles
+  Clock, ShieldAlert, ArrowRight, UserCheck, Check, X, GraduationCap,
+  CheckCheck, Trash2, Crown
 } from 'lucide-react';
 import client from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
+
+// Helper to compute initials for stylish student avatars
+function getStudentInitials(name) {
+  if (!name) return 'ST';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
 
 export default function TeamOdFaculty({ onRecordCreated }) {
   const { user } = useAuth();
@@ -27,8 +36,9 @@ export default function TeamOdFaculty({ onRecordCreated }) {
   const [formSuccess, setFormSuccess] = useState('');
   const [submissionConfirmation, setSubmissionConfirmation] = useState(null);
 
-  // Classroom Student Selection State - strictly scoped to faculty's class
+  // Classroom Student Selection State - strictly scoped to faculty's class with cross-section support
   const facultyClass = user?.advising_class || 'CSE-C';
+  const [sectionFilter, setSectionFilter] = useState('allotted'); // 'allotted' | 'CSE-A' | 'CSE-B' | 'CSE-C' | 'all'
   const [classroomStudents, setClassroomStudents] = useState([]);
   const [classroomLoading, setClassroomLoading] = useState(false);
   const [studentSearch, setStudentSearch] = useState('');
@@ -40,12 +50,16 @@ export default function TeamOdFaculty({ onRecordCreated }) {
   const [recordsLoading, setRecordsLoading] = useState(false);
   const [search, setSearch] = useState('');
 
-  // Load classroom students strictly for that faculty's allotted class
+  // Load classroom students with class/section scoping
   const loadClassroomStudents = useCallback(async () => {
     setClassroomLoading(true);
     try {
       const params = {};
-      if (facultyClass) params.class = facultyClass;
+      if (sectionFilter === 'allotted') {
+        if (facultyClass) params.class = facultyClass;
+      } else if (sectionFilter !== 'all') {
+        params.class = sectionFilter;
+      }
       if (user?.advising_batch) params.batch = user.advising_batch;
       const res = await client.get('/admin/students', { params });
       const list = Array.isArray(res.data) ? res.data : [];
@@ -55,7 +69,7 @@ export default function TeamOdFaculty({ onRecordCreated }) {
     } finally {
       setClassroomLoading(false);
     }
-  }, [facultyClass, user?.advising_batch]);
+  }, [facultyClass, sectionFilter, user?.advising_batch]);
 
   useEffect(() => {
     loadClassroomStudents();
@@ -106,7 +120,11 @@ export default function TeamOdFaculty({ onRecordCreated }) {
   };
 
   const filteredClassroomStudents = classroomStudents
-    .filter(s => !facultyClass || s.class === facultyClass)
+    .filter(s => {
+      if (sectionFilter === 'allotted') return !facultyClass || s.class === facultyClass;
+      if (sectionFilter === 'all') return true;
+      return s.class === sectionFilter;
+    })
     .filter(s => {
       if (!studentSearch.trim()) return true;
       const q = studentSearch.toLowerCase();
@@ -116,6 +134,46 @@ export default function TeamOdFaculty({ onRecordCreated }) {
         (s.class || '').toLowerCase().includes(q)
       );
     });
+
+  const handleSelectAllFiltered = () => {
+    const currentKeys = new Set(selectedStudents.map(s => String(s.user_id || s.id)));
+    const newItems = [];
+    filteredClassroomStudents.forEach(s => {
+      const key = String(s.user_id || s.id);
+      if (!currentKeys.has(key)) {
+        newItems.push({
+          id: s.id,
+          user_id: s.user_id,
+          name: s.name,
+          roll_no: s.roll_no || s.reg_no,
+          class: s.class,
+          role: selectedStudents.length + newItems.length === 0 ? 'Team Lead' : 'Member'
+        });
+      }
+    });
+    if (newItems.length > 0) {
+      updateTeamDetailsFromSelection([...selectedStudents, ...newItems]);
+    }
+  };
+
+  const handleClearAllSelected = () => {
+    updateTeamDetailsFromSelection([]);
+  };
+
+  const handleClearSelection = () => {
+    updateTeamDetailsFromSelection([]);
+  };
+
+  const handleSetTeamLead = (studentId) => {
+    const updated = selectedStudents.map(s => {
+      const isTarget = s.id === studentId || s.user_id === studentId;
+      return {
+        ...s,
+        role: isTarget ? 'Team Lead' : (s.role === 'Team Lead' ? 'Member' : s.role)
+      };
+    });
+    updateTeamDetailsFromSelection(updated);
+  };
 
   // Load faculty's submitted records
   const loadMyRecords = useCallback(async () => {
@@ -580,45 +638,144 @@ export default function TeamOdFaculty({ onRecordCreated }) {
                     padding: 16
                   }}
                 >
-                  {/* Classroom filter and Search bar */}
-                  <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        Allotted Classroom:
+                  {/* Top Bar: Section Filters & Search */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 14, marginBottom: 14 }}>
+                    {/* Section Switcher Tabs */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginRight: 4 }}>
+                        Section:
                       </span>
-                      <span
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 700,
-                          padding: '4px 12px',
-                          borderRadius: 6,
-                          background: 'var(--color-green)',
-                          color: '#ffffff',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          boxShadow: '0 2px 6px rgba(16, 185, 129, 0.25)'
-                        }}
-                      >
-                        <GraduationCap size={13} /> {facultyClass} ⭐
-                      </span>
-                      {user?.advising_batch && (
-                        <span style={{ fontSize: 11.5, color: 'var(--color-text-muted)', fontWeight: 600 }}>
-                          ({user.advising_batch})
-                        </span>
-                      )}
+                      {[
+                        { id: 'allotted', label: `My Allotted (${facultyClass} ⭐)` },
+                        { id: 'CSE-A', label: 'CSE-A' },
+                        { id: 'CSE-B', label: 'CSE-B' },
+                        { id: 'CSE-C', label: 'CSE-C' },
+                        { id: 'all', label: 'All CSE' },
+                      ].map(sec => {
+                        const isActive = sectionFilter === sec.id;
+                        return (
+                          <button
+                            key={sec.id}
+                            type="button"
+                            onClick={() => setSectionFilter(sec.id)}
+                            style={{
+                              fontSize: 11.5,
+                              padding: '4px 10px',
+                              borderRadius: 6,
+                              cursor: 'pointer',
+                              fontWeight: isActive ? 700 : 500,
+                              background: isActive ? 'var(--color-green)' : 'rgba(255,255,255,0.05)',
+                              color: isActive ? '#ffffff' : 'var(--color-text-muted)',
+                              border: isActive ? '1px solid var(--color-green)' : '1px solid var(--border)',
+                              transition: 'all 0.15s ease'
+                            }}
+                          >
+                            {sec.label}
+                          </button>
+                        );
+                      })}
                     </div>
 
-                    <div style={{ position: 'relative', minWidth: 220, flex: 1, maxWidth: 320 }}>
+                    {/* Search Bar with clear button */}
+                    <div style={{ position: 'relative', minWidth: 240, flex: 1, maxWidth: 360 }}>
                       <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)', pointerEvents: 'none' }} />
                       <input
                         type="text"
                         value={studentSearch}
                         onChange={e => setStudentSearch(e.target.value)}
-                        placeholder="Search name or roll no..."
+                        placeholder="Search student name or roll no…"
                         className="form-input"
-                        style={{ width: '100%', paddingLeft: 34, paddingTop: 6, paddingBottom: 6, fontSize: 12.5 }}
+                        style={{ width: '100%', paddingLeft: 34, paddingRight: studentSearch ? 30 : 12, paddingTop: 7, paddingBottom: 7, fontSize: 12.5 }}
                       />
+                      {studentSearch && (
+                        <button
+                          type="button"
+                          onClick={() => setStudentSearch('')}
+                          style={{
+                            position: 'absolute',
+                            right: 8,
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            background: 'none',
+                            border: 'none',
+                            color: 'var(--color-text-muted)',
+                            cursor: 'pointer',
+                            fontSize: 12,
+                            padding: 4
+                          }}
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Actions & Stats Row */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: 10,
+                      padding: '8px 12px',
+                      background: 'rgba(0,0,0,0.2)',
+                      borderRadius: 8,
+                      marginBottom: 12,
+                      fontSize: 12
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-text-muted)' }}>
+                      <span>Showing <strong style={{ color: 'var(--color-text)' }}>{filteredClassroomStudents.length}</strong> students</span>
+                      <span>·</span>
+                      <span style={{ color: selectedStudents.length > 0 ? 'var(--accent-text, #10b981)' : 'inherit', fontWeight: selectedStudents.length > 0 ? 700 : 500 }}>
+                        <strong style={{ color: selectedStudents.length > 0 ? 'var(--accent-text, #10b981)' : 'var(--color-text)' }}>{selectedStudents.length}</strong> selected for team
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {filteredClassroomStudents.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={handleSelectAllFiltered}
+                          style={{
+                            background: 'none',
+                            border: '1px solid var(--border)',
+                            color: 'var(--accent-text, #10b981)',
+                            borderRadius: 6,
+                            padding: '3px 8px',
+                            fontSize: 11.5,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4
+                          }}
+                        >
+                          <CheckCheck size={12} />
+                          Select All Filtered
+                        </button>
+                      )}
+                      {selectedStudents.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={handleClearSelection}
+                          style={{
+                            background: 'none',
+                            border: '1px solid rgba(220, 38, 38, 0.4)',
+                            color: '#EF4444',
+                            borderRadius: 6,
+                            padding: '3px 8px',
+                            fontSize: 11.5,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4
+                          }}
+                        >
+                          <Trash2 size={12} />
+                          Clear Selection
+                        </button>
+                      )}
                     </div>
                   </div>
 
