@@ -606,6 +606,74 @@ async function run() {
     assert.strictEqual(res.status, 404);
   });
 
+  await asyncTest('25. GET /api/team-od/pending-count returns accurate active count for HOD', async () => {
+    const res = await callRouter(teamOdRouter, {
+      method: 'GET',
+      url: '/pending-count',
+      user: hodUser
+    });
+
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.body.success, true);
+    assert(typeof res.body.count === 'number');
+    assert(typeof res.body.pending === 'number');
+    assert(typeof res.body.not_reported === 'number');
+  });
+
+  await asyncTest('26. Ordinary faculty CANNOT access /pending-count (HTTP 403)', async () => {
+    const res = await callRouter(teamOdRouter, {
+      method: 'GET',
+      url: '/pending-count',
+      user: facultyUserA
+    });
+
+    assert.strictEqual(res.status, 403);
+  });
+
+  await asyncTest('27. HOD can dispatch direct in-app notification to responsible faculty', async () => {
+    // Create a fresh record for testing notification dispatch
+    const subRes = await callRouter(teamOdRouter, {
+      method: 'POST',
+      url: '/',
+      user: facultyUserA,
+      body: {
+        team_name: 'Notification Test Squad',
+        event_name: 'AI Hackfest',
+        venue: 'Main Lab',
+        college_name: 'SIET Campus',
+        start_date: '2026-12-01',
+        end_date: '2026-12-02',
+        team_details: '1. Test Student (714025104999)'
+      }
+    });
+    assert.strictEqual(subRes.status, 201);
+    const testRecId = subRes.body.data.id;
+
+    // Dispatch HOD custom notice
+    const notifyRes = await callRouter(teamOdRouter, {
+      method: 'POST',
+      url: `/${testRecId}/notify-faculty`,
+      user: hodUser,
+      body: {
+        message: 'Please meet the HOD today at 2 PM regarding AI Hackfest participation.'
+      }
+    });
+
+    assert.strictEqual(notifyRes.status, 200);
+    assert.strictEqual(notifyRes.body.success, true);
+
+    // Verify recipient Faculty A received it
+    const facNotifs = await callRouter(notificationsRouter, {
+      method: 'GET',
+      url: '/',
+      user: facultyUserA
+    });
+    assert.strictEqual(facNotifs.status, 200);
+    const found = facNotifs.body.data.find(n => n.team_od_id === testRecId);
+    assert(found, 'Faculty A must receive HOD direct notice');
+    assert(found.message.includes('AI Hackfest'));
+  });
+
   console.log(`\n🎉 Results: ${passedCount}/${testCount} Team OD & Reporting tests passed successfully!\n`);
 }
 
