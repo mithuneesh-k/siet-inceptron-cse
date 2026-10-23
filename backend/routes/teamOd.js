@@ -525,6 +525,8 @@ router.get('/mine', authMiddleware, async (req, res) => {
     console.error('Error in GET /api/team-od/mine:', err);
     return res.status(500).json({ error: 'Internal server error retrieving your Team OD records.' });
   }
+});
+
 // ─── GET /api/team-od/pending-count ──────────────────────────────────────────
 // Returns badge count of active/pending and overdue records for HOD dashboard tabs.
 router.get('/pending-count', hodMiddleware, async (req, res) => {
@@ -937,6 +939,80 @@ router.patch('/:id/informed', hodMiddleware, async (req, res) => {
   } catch (err) {
     console.error('Error in PATCH /api/team-od/:id/informed:', err);
     return res.status(500).json({ error: 'Internal server error updating informed status.' });
+  }
+});
+
+// ─── POST /api/team-od/:id/notify-faculty ────────────────────────────────────
+// HOD action: Sends a direct custom message or reminder notification to responsible faculty.
+router.post('/:id/notify-faculty', hodMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { message, customNote } = req.body;
+
+    let existingRecord = null;
+    try {
+      const { data, error } = await supabase
+        .from('team_od_events')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+      if (!error && data) existingRecord = data;
+    } catch {}
+
+    if (!existingRecord) {
+      existingRecord = inMemoryTeamOd.find(r => r.id === id);
+    }
+
+    if (!existingRecord) {
+      return res.status(404).json({ error: 'Team OD record not found.' });
+    }
+
+    const facultyRecipientId = await resolveFacultyUserId(existingRecord.faculty_id);
+    if (!facultyRecipientId) {
+      return res.status(400).json({ error: 'Unable to resolve responsible faculty member for this record.' });
+    }
+
+    const defaultMsg = `HOD Notification: Please provide an update / post-event reporting for team "${existingRecord.team_name}" (Event: "${existingRecord.event_name}", Ended: ${existingRecord.end_date || 'N/A'}).`;
+    const finalMsg = message ? message.trim() : (customNote ? `HOD Notice regarding Team "${existingRecord.team_name}": ${customNote.trim()}` : defaultMsg);
+
+    const notifData = {
+      recipient_id: facultyRecipientId,
+      message: finalMsg,
+      team_od_id: id,
+      is_read: false,
+      created_at: new Date().toISOString()
+    };
+
+    let notificationCreated = false;
+    try {
+      const { data: inserted, error: nErr } = await supabase
+        .from('faculty_notifications')
+        .insert([notifData])
+        .select()
+        .single();
+      if (!nErr && inserted) {
+        notificationCreated = true;
+      }
+    } catch {}
+
+    if (!notificationCreated) {
+      const fallbackNotif = {
+        id: crypto.randomUUID(),
+        ...notifData
+      };
+      inMemoryNotifications.unshift(fallbackNotif);
+      persistLocalNotifs();
+      notificationCreated = true;
+    }
+
+    return res.json({
+      success: true,
+      message: `Notification successfully delivered to faculty for team '${existingRecord.team_name}'.`,
+      notification: notifData
+    });
+  } catch (err) {
+    console.error('Error in POST /api/team-od/:id/notify-faculty:', err);
+    return res.status(500).json({ error: 'Internal server error sending faculty notification.' });
   }
 });
 
