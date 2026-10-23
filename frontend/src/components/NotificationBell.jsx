@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Bell, Check, CheckCheck, Clock, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Bell, Check, CheckCheck, Clock, AlertCircle, CalendarCheck, ArrowRight } from 'lucide-react';
 import client from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function NotificationBell() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
@@ -76,6 +78,34 @@ export default function NotificationBell() {
       console.error('Failed to mark all as read:', err);
     } finally {
       setActionInProgress(false);
+    }
+  };
+
+  const handleNotificationClick = async (n) => {
+    if (!n.is_read) {
+      try {
+        await client.patch(`/notifications/${n.id}/read`);
+        setNotifications(prev => prev.map(item => item.id === n.id ? { ...item, is_read: true } : item));
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      } catch {}
+    }
+    setIsOpen(false);
+
+    const isTeamOd = Boolean(n.team_od_id || (n.message && n.message.toLowerCase().includes('team od')));
+    if (isTeamOd) {
+      const isHod = Boolean(
+        user && (
+          user.role === 'admin' ||
+          user.is_hod === true ||
+          user.designation?.toUpperCase()?.includes('HOD') ||
+          user.designation?.toUpperCase() === 'HEAD OF DEPARTMENT'
+        )
+      );
+      if (isHod) {
+        navigate('/admin?tab=team-od-mgmt');
+      } else {
+        navigate('/admin?tab=team-od');
+      }
     }
   };
 
@@ -238,9 +268,12 @@ export default function NotificationBell() {
                   minute: '2-digit'
                 }) : '';
 
+                const isTeamOd = Boolean(n.team_od_id || (n.message && n.message.toLowerCase().includes('team od')));
+
                 return (
                   <div
                     key={n.id}
+                    onClick={() => handleNotificationClick(n)}
                     style={{
                       padding: '12px 16px',
                       borderBottom: '1px solid var(--border-light, rgba(255,255,255,0.06))',
@@ -248,21 +281,29 @@ export default function NotificationBell() {
                       display: 'flex',
                       flexDirection: 'column',
                       gap: 6,
-                      transition: 'background 0.2s'
+                      cursor: 'pointer',
+                      transition: 'background 0.2s',
                     }}
+                    onMouseEnter={e => e.currentTarget.style.background = n.is_read ? 'rgba(255,255,255,0.04)' : 'rgba(16, 185, 129, 0.14)'}
+                    onMouseLeave={e => e.currentTarget.style.background = n.is_read ? 'transparent' : 'var(--accent-soft-2, rgba(16, 185, 129, 0.08))'}
                   >
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
-                      <p
-                        style={{
-                          margin: 0,
-                          fontSize: 12.5,
-                          lineHeight: 1.5,
-                          fontWeight: n.is_read ? 500 : 650,
-                          color: 'var(--color-text)'
-                        }}
-                      >
-                        {n.message}
-                      </p>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                        {isTeamOd && (
+                          <CalendarCheck size={15} color="var(--accent-primary, #10b981)" style={{ marginTop: 2, flexShrink: 0 }} />
+                        )}
+                        <p
+                          style={{
+                            margin: 0,
+                            fontSize: 12.5,
+                            lineHeight: 1.5,
+                            fontWeight: n.is_read ? 500 : 650,
+                            color: 'var(--color-text)'
+                          }}
+                        >
+                          {n.message}
+                        </p>
+                      </div>
                       {!n.is_read && (
                         <button
                           type="button"
@@ -288,20 +329,36 @@ export default function NotificationBell() {
                         </button>
                       )}
                     </div>
-                    {dateStr && (
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 4,
-                          fontSize: 11,
-                          color: 'var(--color-text-muted)'
-                        }}
-                      >
-                        <Clock size={11} />
-                        <span>{dateStr}</span>
-                      </div>
-                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                      {dateStr && (
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            fontSize: 11,
+                            color: 'var(--color-text-muted)'
+                          }}
+                        >
+                          <Clock size={11} />
+                          <span>{dateStr}</span>
+                        </div>
+                      )}
+                      {isTeamOd && (
+                        <span
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 600,
+                            color: 'var(--accent-primary, #10b981)',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 3
+                          }}
+                        >
+                          Open in OD Reporting <ArrowRight size={11} />
+                        </span>
+                      )}
+                    </div>
                   </div>
                 );
               })
