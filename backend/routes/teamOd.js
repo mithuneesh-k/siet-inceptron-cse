@@ -525,6 +525,35 @@ router.get('/mine', authMiddleware, async (req, res) => {
     console.error('Error in GET /api/team-od/mine:', err);
     return res.status(500).json({ error: 'Internal server error retrieving your Team OD records.' });
   }
+// ─── GET /api/team-od/pending-count ──────────────────────────────────────────
+// Returns badge count of active/pending and overdue records for HOD dashboard tabs.
+router.get('/pending-count', hodMiddleware, async (req, res) => {
+  try {
+    let allRecords = [];
+    try {
+      const { data, error } = await supabase
+        .from('team_od_events')
+        .select('id, reporting_status, end_date');
+      if (!error && data) allRecords = data;
+    } catch {}
+    if (allRecords.length === 0) {
+      allRecords = inMemoryTeamOd;
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    const pendingCount = allRecords.filter(r => r.reporting_status === 'pending').length;
+    const notReportedCount = allRecords.filter(r => r.reporting_status === 'not_reported').length;
+    const overdueCount = allRecords.filter(r => r.end_date < today && r.reporting_status === 'pending').length;
+
+    return res.json({
+      success: true,
+      count: pendingCount + notReportedCount,
+      pending: pendingCount,
+      not_reported: notReportedCount,
+      overdue: overdueCount
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to retrieve pending count' });
+  }
 });
 
 // ─── GET /api/team-od ────────────────────────────────────────────────────────
