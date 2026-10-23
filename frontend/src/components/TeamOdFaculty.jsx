@@ -156,10 +156,6 @@ export default function TeamOdFaculty({ onRecordCreated }) {
     }
   };
 
-  const handleClearAllSelected = () => {
-    updateTeamDetailsFromSelection([]);
-  };
-
   const handleClearSelection = () => {
     updateTeamDetailsFromSelection([]);
   };
@@ -633,9 +629,10 @@ export default function TeamOdFaculty({ onRecordCreated }) {
                 <div
                   style={{
                     background: 'var(--bg-glass-card, rgba(255,255,255,0.02))',
-                    border: '1.5px solid var(--border-strong)',
-                    borderRadius: 12,
-                    padding: 16
+                    border: '1.5px solid var(--border-strong, rgba(255,255,255,0.12))',
+                    borderRadius: 14,
+                    padding: 18,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.15)'
                   }}
                 >
                   {/* Top Bar: Section Filters & Search */}
@@ -779,31 +776,34 @@ export default function TeamOdFaculty({ onRecordCreated }) {
                     </div>
                   </div>
 
-                  {/* Student Picker List */}
+                  {/* Student Picker List Grid (Clean, unclipped, spacious) */}
                   <div
                     style={{
-                      maxHeight: 210,
+                      maxHeight: 320,
                       overflowY: 'auto',
                       border: '1px solid var(--border)',
-                      borderRadius: 8,
-                      background: 'var(--bg-card)',
-                      padding: 6,
-                      marginBottom: 16
+                      borderRadius: 10,
+                      background: 'var(--bg-card, #0f1a2b)',
+                      padding: 12,
+                      marginBottom: 16,
+                      boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.25)'
                     }}
                   >
                     {classroomLoading ? (
-                      <div style={{ padding: '24px', textAlign: 'center', fontSize: 13, color: 'var(--color-text-muted)' }}>
-                        <RefreshCw size={18} className="sc-spin-anim" style={{ margin: '0 auto 6px' }} />
-                        Loading classroom students...
+                      <div style={{ padding: '36px', textAlign: 'center', fontSize: 13, color: 'var(--color-text-muted)' }}>
+                        <RefreshCw size={20} className="sc-spin-anim" style={{ margin: '0 auto 8px' }} />
+                        Loading classroom students…
                       </div>
                     ) : filteredClassroomStudents.length === 0 ? (
-                      <div style={{ padding: '24px', textAlign: 'center', fontSize: 13, color: 'var(--color-text-muted)' }}>
-                        No students found matching "{studentSearch}" in section {facultyClass}.
+                      <div style={{ padding: '36px 20px', textAlign: 'center', fontSize: 13, color: 'var(--color-text-muted)' }}>
+                        No students found matching "{studentSearch}" in section {sectionFilter === 'allotted' ? facultyClass : sectionFilter}.
                       </div>
                     ) : (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 6 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 10 }}>
                         {filteredClassroomStudents.map(s => {
                           const isSelected = selectedStudents.some(sel => sel.user_id === s.user_id || sel.id === s.id);
+                          const initials = getStudentInitials(s.name);
+
                           return (
                             <div
                               key={s.id || s.user_id}
@@ -812,31 +812,68 @@ export default function TeamOdFaculty({ onRecordCreated }) {
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'space-between',
-                                padding: '8px 12px',
-                                borderRadius: 6,
+                                padding: '10px 14px',
+                                borderRadius: 10,
                                 cursor: 'pointer',
-                                background: isSelected ? 'var(--accent-soft-2, rgba(16, 185, 129, 0.15))' : 'transparent',
-                                border: isSelected ? '1px solid var(--color-green)' : '1px solid var(--border-light, rgba(255,255,255,0.05))',
-                                transition: 'all 0.15s ease'
+                                background: isSelected ? 'var(--accent-soft-2, rgba(16, 185, 129, 0.12))' : 'var(--bg-glass-card, rgba(255,255,255,0.03))',
+                                border: isSelected ? '1.5px solid var(--color-green)' : '1px solid var(--border-light, rgba(255,255,255,0.08))',
+                                boxShadow: isSelected ? '0 4px 14px rgba(16, 185, 129, 0.16)' : 'none',
+                                transition: 'all 0.18s ease'
                               }}
                             >
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                                <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  onChange={() => {}}
-                                  style={{ cursor: 'pointer', accentColor: 'var(--color-green)' }}
-                                />
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                                {/* Avatar Initials Chip */}
+                                <div
+                                  style={{
+                                    width: 34,
+                                    height: 34,
+                                    borderRadius: '50%',
+                                    background: isSelected
+                                      ? 'linear-gradient(135deg, #059669, #10B981)'
+                                      : 'linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.04))',
+                                    color: '#ffffff',
+                                    fontSize: 11.5,
+                                    fontWeight: 700,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    flexShrink: 0,
+                                    boxShadow: isSelected ? '0 2px 6px rgba(16, 185, 129, 0.35)' : 'none'
+                                  }}
+                                >
+                                  {initials}
+                                </div>
+
                                 <div style={{ minWidth: 0 }}>
-                                  <div style={{ fontSize: 12.5, fontWeight: isSelected ? 700 : 600, color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  <div style={{ fontSize: 13, fontWeight: isSelected ? 700 : 600, color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                     {s.name}
                                   </div>
-                                  <div style={{ fontSize: 11, color: 'var(--color-text-muted)', fontFamily: 'monospace' }}>
-                                    {s.roll_no || s.reg_no} · {s.class}
+                                  <div style={{ fontSize: 11, color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                                    <span style={{ fontFamily: 'monospace' }}>{s.roll_no || s.reg_no}</span>
+                                    <span>·</span>
+                                    <span style={{ background: 'rgba(255,255,255,0.08)', padding: '1px 5px', borderRadius: 4, fontSize: 10.5 }}>{s.class}</span>
                                   </div>
                                 </div>
                               </div>
-                              {isSelected && <Check size={14} color="var(--color-green)" />}
+
+                              {/* Custom Styled Checkbox Indicator */}
+                              <div
+                                style={{
+                                  width: 22,
+                                  height: 22,
+                                  borderRadius: 6,
+                                  border: isSelected ? '2px solid var(--color-green)' : '2px solid var(--border-strong, rgba(255,255,255,0.25))',
+                                  background: isSelected ? 'var(--color-green)' : 'transparent',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  transition: 'all 0.15s ease',
+                                  flexShrink: 0,
+                                  marginLeft: 8
+                                }}
+                              >
+                                {isSelected && <Check size={14} color="#ffffff" strokeWidth={3} />}
+                              </div>
                             </div>
                           );
                         })}
@@ -845,91 +882,128 @@ export default function TeamOdFaculty({ onRecordCreated }) {
                   </div>
 
                   {/* Selected Members Section with Roles */}
-                  {selectedStudents.length > 0 ? (
+                  {selectedStudents.length > 0 && (
                     <div>
-                      <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--color-text)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <Users size={14} color="var(--color-green)" />
-                        Selected Team Members ({selectedStudents.length}):
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)', marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <Users size={15} color="var(--color-green)" />
+                          <span>Configured Team Members ({selectedStudents.length}):</span>
+                        </div>
+                        <span style={{ fontSize: 11.5, color: 'var(--color-text-muted)' }}>
+                          Click role pills to assign responsibilities
+                        </span>
                       </div>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
-                        {selectedStudents.map((s, idx) => (
-                          <div
-                            key={s.id || s.user_id}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              flexWrap: 'wrap',
-                              gap: 10,
-                              background: 'var(--bg-card)',
-                              padding: '8px 14px',
-                              borderRadius: 8,
-                              border: '1px solid var(--border)'
-                            }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <span style={{ fontSize: 11, fontWeight: 800, background: 'var(--green-100, #dcfce7)', color: 'var(--green-800, #166534)', padding: '2px 6px', borderRadius: 4 }}>
-                                #{idx + 1}
-                              </span>
-                              <div>
-                                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)' }}>{s.name}</span>
-                                <span style={{ fontSize: 11.5, color: 'var(--color-text-muted)', marginLeft: 6, fontFamily: 'monospace' }}>({s.roll_no})</span>
-                              </div>
-                            </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+                        {selectedStudents.map((s, idx) => {
+                          const isLead = s.role === 'Team Lead';
 
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              {/* Quick Role Buttons */}
-                              <div style={{ display: 'flex', gap: 4 }}>
-                                {['Team Lead', 'Member', 'Developer', 'Hardware/IoT', 'Presenter'].map(roleOption => (
-                                  <button
-                                    key={roleOption}
-                                    type="button"
-                                    onClick={() => updateStudentRole(s.id || s.user_id, roleOption)}
-                                    style={{
-                                      fontSize: 11,
-                                      padding: '2px 8px',
-                                      borderRadius: 4,
-                                      cursor: 'pointer',
-                                      background: s.role === roleOption ? 'var(--color-green)' : 'transparent',
-                                      color: s.role === roleOption ? '#ffffff' : 'var(--color-text-muted)',
-                                      border: s.role === roleOption ? '1px solid var(--color-green)' : '1px solid var(--border)'
-                                    }}
-                                  >
-                                    {roleOption === 'Team Lead' ? '👑 Lead' : roleOption}
-                                  </button>
-                                ))}
+                          return (
+                            <div
+                              key={s.id || s.user_id}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                flexWrap: 'wrap',
+                                gap: 10,
+                                background: isLead ? 'rgba(245, 158, 11, 0.08)' : 'var(--bg-card, #0f1a2b)',
+                                padding: '10px 14px',
+                                borderRadius: 10,
+                                border: isLead ? '1.5px solid rgba(245, 158, 11, 0.45)' : '1px solid var(--border)'
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <span
+                                  style={{
+                                    fontSize: 11,
+                                    fontWeight: 800,
+                                    background: isLead ? '#F59E0B' : 'var(--green-100, #dcfce7)',
+                                    color: isLead ? '#000000' : 'var(--green-800, #166534)',
+                                    padding: '2px 7px',
+                                    borderRadius: 6
+                                  }}
+                                >
+                                  #{idx + 1}
+                                </span>
+                                <div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--color-text)' }}>{s.name}</span>
+                                    {isLead && (
+                                      <span style={{ fontSize: 10.5, fontWeight: 800, color: '#F59E0B', background: 'rgba(245, 158, 11, 0.15)', padding: '1px 6px', borderRadius: 4, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                                        👑 TEAM LEAD
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div style={{ fontSize: 11.5, color: 'var(--color-text-muted)', fontFamily: 'monospace', marginTop: 2 }}>
+                                    {s.roll_no} · {s.class}
+                                  </div>
+                                </div>
                               </div>
 
-                              <button
-                                type="button"
-                                onClick={() => toggleStudentSelection(s)}
-                                title="Remove from team"
-                                style={{
-                                  background: 'none',
-                                  border: 'none',
-                                  cursor: 'pointer',
-                                  color: 'var(--color-text-muted)',
-                                  padding: 4,
-                                  display: 'flex',
-                                  alignItems: 'center'
-                                }}
-                              >
-                                <X size={15} />
-                              </button>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                                {/* Quick Role Buttons */}
+                                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                                  {['Team Lead', 'Member', 'Developer', 'Hardware/IoT', 'Presenter', 'Documentation'].map(roleOption => {
+                                    const isCurrentRole = s.role === roleOption;
+                                    return (
+                                      <button
+                                        key={roleOption}
+                                        type="button"
+                                        onClick={() => updateStudentRole(s.id || s.user_id, roleOption)}
+                                        style={{
+                                          fontSize: 11,
+                                          padding: '3px 8px',
+                                          borderRadius: 5,
+                                          cursor: 'pointer',
+                                          background: isCurrentRole
+                                            ? (roleOption === 'Team Lead' ? '#F59E0B' : 'var(--color-green)')
+                                            : 'transparent',
+                                          color: isCurrentRole ? '#ffffff' : 'var(--color-text-muted)',
+                                          border: isCurrentRole
+                                            ? (roleOption === 'Team Lead' ? '1px solid #F59E0B' : '1px solid var(--color-green)')
+                                            : '1px solid var(--border)',
+                                          fontWeight: isCurrentRole ? 700 : 500,
+                                          transition: 'all 0.15s ease'
+                                        }}
+                                      >
+                                        {roleOption === 'Team Lead' ? '👑 Lead' : roleOption}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => toggleStudentSelection(s)}
+                                  title="Remove from team"
+                                  style={{
+                                    background: 'rgba(220, 38, 38, 0.1)',
+                                    border: '1px solid rgba(220, 38, 38, 0.3)',
+                                    cursor: 'pointer',
+                                    color: '#EF4444',
+                                    padding: '5px 7px',
+                                    borderRadius: 6,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    marginLeft: 4
+                                  }}
+                                >
+                                  <X size={14} />
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
 
                       {/* Formatted Text Preview */}
-                      <div style={{ padding: '8px 12px', background: 'rgba(0,0,0,0.2)', borderRadius: 6, fontSize: 11.5, color: 'var(--color-text-muted)', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
+                      <div style={{ padding: '10px 14px', background: 'rgba(0,0,0,0.25)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12, color: 'var(--color-text-muted)', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text)', textTransform: 'uppercase', marginBottom: 4, fontFamily: 'inherit' }}>
+                          Official Team Roster Preview:
+                        </div>
                         {formData.team_details}
                       </div>
-                    </div>
-                  ) : (
-                    <div style={{ fontSize: 12.5, color: 'var(--color-text-muted)', textAlign: 'center', padding: '10px 0' }}>
-                      💡 Click on students in the list above to add them to this team.
                     </div>
                   )}
                 </div>
