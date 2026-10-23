@@ -135,6 +135,49 @@ async function resolveFacultyUserId(rawId) {
   return strId;
 }
 
+// Helper to resolve all HOD / Admin user IDs
+async function getHodUserIds() {
+  const hodIds = new Set();
+  try {
+    const { data: users, error: uErr } = await supabase
+      .from('users')
+      .select('id, role, is_hod');
+    if (!uErr && Array.isArray(users)) {
+      users.forEach(u => {
+        if (u.role === 'admin' || u.is_hod === true) hodIds.add(u.id);
+      });
+    }
+  } catch {}
+
+  try {
+    const { data: facultyRows, error: fErr } = await supabase
+      .from('faculty')
+      .select('user_id, is_hod, designation');
+    if (!fErr && Array.isArray(facultyRows)) {
+      facultyRows.forEach(f => {
+        const des = (f.designation || '').toUpperCase();
+        if (f.is_hod === true || des.includes('HOD') || des === 'HEAD OF DEPARTMENT') {
+          if (f.user_id) hodIds.add(f.user_id);
+        }
+      });
+    }
+  } catch {}
+
+  try {
+    const legacyUsersPath = path.join(__dirname, '../db/users.json');
+    if (fs.existsSync(legacyUsersPath)) {
+      const uList = JSON.parse(fs.readFileSync(legacyUsersPath, 'utf8'));
+      if (Array.isArray(uList)) {
+        uList.forEach(u => {
+          if (u.role === 'admin' || u.is_hod) hodIds.add(u.id);
+        });
+      }
+    }
+  } catch {}
+
+  return Array.from(hodIds);
+}
+
 // ─── Enforce Authentication on All Team OD Endpoints ─────────────────────────
 router.use(authMiddleware);
 
@@ -340,6 +383,57 @@ router.post('/', async (req, res) => {
     if (createdRecord) {
       createdRecord.students = savedStudents;
       createdRecord.student_count = savedStudents.length;
+    }
+
+    // Dispatch notification to HOD / Admin members regarding the new Team OD submission
+    try {
+      const hodIds = await getHodUserIds();
+      const notifMsg = `New Team OD Submission: ${facultyMeta.faculty_name} submitted team "${cleanTeam}" for event "${cleanEvent}" (${cleanVenue}, ${start_date.slice(0, 10)} to ${end_date.slice(0, 10)}, ${savedStudents.length || 'team'} students). Awaiting review in Team OD Reporting Management.`;
+
+      for (const hodId of hodIds) {
+        // Check duplicate notification for this record & recipient
+        let alreadyNotifiedHod = false;
+        try {
+          const { data: exHods } = await supabase
+            .from('faculty_notifications')
+            .select('id')
+            .eq('recipient_id', hodId)
+            .eq('team_od_id', createdRecord.id);
+          if (exHods && exHods.length > 0) alreadyNotifiedHod = true;
+        } catch {}
+
+        if (!alreadyNotifiedHod) {
+          const localDup = inMemoryNotifications.some(n => n.recipient_id === hodId && n.team_od_id === createdRecord.id);
+          if (localDup) alreadyNotifiedHod = true;
+        }
+
+        if (!alreadyNotifiedHod) {
+          const hodNotifData = {
+            recipient_id: hodId,
+            message: notifMsg,
+            team_od_id: createdRecord.id,
+            is_read: false,
+            created_at: new Date().toISOString()
+          };
+
+          try {
+            const { error: hErr } = await supabase
+              .from('faculty_notifications')
+              .insert([hodNotifData]);
+            if (hErr) {
+              if (isMissingTableError(hErr)) {
+                inMemoryNotifications.unshift({ id: crypto.randomUUID(), ...hodNotifData });
+                persistLocalNotifs();
+              }
+            }
+          } catch {
+            inMemoryNotifications.unshift({ id: crypto.randomUUID(), ...hodNotifData });
+            persistLocalNotifs();
+          }
+        }
+      }
+    } catch (hodErr) {
+      console.warn('Could not dispatch HOD notification for new Team OD:', hodErr?.message);
     }
 
     const responseRecord = {
