@@ -536,9 +536,16 @@ router.get('/pending-count', hodMiddleware, async (req, res) => {
       const { data, error } = await supabase
         .from('team_od_events')
         .select('id, reporting_status, end_date');
-      if (!error && data) allRecords = data;
-    } catch {}
-    if (allRecords.length === 0) {
+      if (error) {
+        if (isMissingTableError(error)) {
+          allRecords = inMemoryTeamOd;
+        } else {
+          allRecords = [];
+        }
+      } else {
+        allRecords = data || [];
+      }
+    } catch {
       allRecords = inMemoryTeamOd;
     }
     const today = new Date().toISOString().slice(0, 10);
