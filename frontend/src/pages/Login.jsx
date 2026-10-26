@@ -112,7 +112,7 @@ export default function Login() {
               <form onSubmit={handleSubmit} className="auth-07-form">
                 <div className="auth-07-field">
                   <label htmlFor="login-email" className="auth-07-label">
-                    Username / Employee ID / Email
+                    Username
                   </label>
                   <div className="auth-07-input-wrapper">
                     <User size={18} className="auth-07-input-icon" />
@@ -120,7 +120,7 @@ export default function Login() {
                       id="login-email"
                       type="text"
                       className="auth-07-input"
-                      placeholder="e.g. employee ID, roll number, or email"
+                      placeholder="Enter your username or email"
                       value={form.email}
                       onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                       required
@@ -158,15 +158,6 @@ export default function Login() {
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
-                </div>
-
-                {/* Keep me signed in toggle */}
-                <div className="auth-07-remember-row">
-                  <label className="auth-07-toggle-switch">
-                    <input type="checkbox" defaultChecked />
-                    <span className="auth-07-toggle-slider"></span>
-                  </label>
-                  <span className="auth-07-remember-label">Keep me signed in for 30 days</span>
                 </div>
 
                 <button
@@ -214,16 +205,6 @@ export default function Login() {
                   <GraduationCap size={14} />
                   <span>Advisor</span>
                 </button>
-              </div>
-
-              {/* Faculty & HOD Access Policy Info */}
-              <div className="auth-07-demo-section" style={{ marginTop: 20, padding: '14px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: 12, border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-green, #10b981)', fontWeight: 700, fontSize: 13, marginBottom: 4 }}>
-                  <Shield size={16} /> Authorized Departmental Personnel Only
-                </div>
-                <p style={{ margin: 0, fontSize: 12, color: 'var(--color-text-muted, #94a3b8)', lineHeight: 1.5 }}>
-                  Access is restricted to authorized faculty and departmental administrators (HOD). Student accounts do not access this portal; student records and academic performance are managed securely.
-                </p>
               </div>
             </div>
           </div>
