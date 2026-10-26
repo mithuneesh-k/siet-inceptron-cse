@@ -85,7 +85,12 @@ export default function Navbar() {
     };
   }, [user]);
 
-  const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/');
+  const isActive = (path) => {
+    if (path === '/home') {
+      return location.pathname === '/home' || location.pathname === '/dashboard';
+    }
+    return location.pathname === path || location.pathname.startsWith(path + '/');
+  };
 
   const handleLogout = () => {
     logout();
@@ -105,7 +110,7 @@ export default function Navbar() {
   };
 
   const navLinks = [
-    { to: '/', label: 'Home', shortLabel: 'Home', icon: <Home size={16} /> },
+    { to: '/home', label: 'Home', shortLabel: 'Home', icon: <Home size={16} /> },
     { to: '/news', label: 'News', shortLabel: 'News', icon: <Bell size={16} />, isNews: true },
     { to: '/showcase', label: 'Showcase', shortLabel: 'Showcase', icon: <Laptop size={16} /> },
     { to: '/leaderboard', label: 'Leaderboard', shortLabel: 'Ranks', icon: <Trophy size={16} /> },
@@ -115,7 +120,7 @@ export default function Navbar() {
   return (
     <nav className={`navbar ${scrolled ? 'scrolled' : ''}`}>
       <div className="navbar-inner">
-        <Link to="/" className="navbar-brand">
+        <Link to="/home" className="navbar-brand">
           <div className="brand-logo">
             <img src={theme === 'dark' ? '/dark.png?v=2' : '/inceptron-logo.png?v=2'} alt="Inceptron Logo" className="brand-logo-img" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>

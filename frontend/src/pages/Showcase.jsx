@@ -497,6 +497,7 @@ export default function Showcase() {
           </div>
 
           <div className="sc-nav-menu-links">
+            <button type="button" onClick={() => navigate('/')}>Intro Video</button>
             <button type="button" onClick={() => scrollToSection('projects')}>Technical Projects</button>
             <button type="button" onClick={() => scrollToSection('hackathons')}>Hackathons</button>
             <button type="button" onClick={() => scrollToSection('research')}>Research</button>
@@ -509,7 +510,7 @@ export default function Showcase() {
             <button
               type="button"
               className="sc-nav-portal-btn"
-              onClick={() => navigate(user ? '/' : '/login')}
+              onClick={() => navigate(user ? '/home' : '/login')}
             >
               <span>{user ? 'Enter Portal' : 'Faculty Login'}</span>
               <ArrowRight size={15} />
@@ -1155,7 +1156,7 @@ export default function Showcase() {
           <button
             type="button"
             className="sc-gold-cta-btn"
-            onClick={() => navigate(user ? '/' : '/login')}
+            onClick={() => navigate(user ? '/home' : '/login')}
           >
             <span>{user ? 'Enter Portal' : 'Faculty Login'}</span>
             <ArrowRight size={18} />

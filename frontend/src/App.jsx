@@ -48,14 +48,14 @@ function ProtectedRoute({ children, adminOnly = false }) {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
   const isStaff = Boolean(user.is_admin || user.role === 'admin' || user.role === 'faculty');
-  if (adminOnly && !isStaff) return <Navigate to="/" replace />;
+  if (adminOnly && !isStaff) return <Navigate to="/home" replace />;
   return children;
 }
 
 function FacultyOnlyRoute({ children }) {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
-  if (user.role !== 'faculty') return <Navigate to="/" replace />;
+  if (user.role !== 'faculty') return <Navigate to="/home" replace />;
   return children;
 }
 
@@ -63,7 +63,7 @@ function AppContent() {
   const { user } = useAuth();
   const location = useLocation();
 
-  const isStandalonePage = location.pathname === '/login' || location.pathname === '/showcase';
+  const isStandalonePage = location.pathname === '/' || location.pathname === '/intro' || location.pathname === '/showcase' || location.pathname === '/login';
   const showHeaderFooter = Boolean(user) && !isStandalonePage;
 
   return (
@@ -72,10 +72,12 @@ function AppContent() {
       {showHeaderFooter && <Navbar />}
       <Suspense fallback={<div className="p-4 text-center">Loading...</div>}>
         <Routes>
-          <Route path="/" element={user ? <Landing /> : <Intro />} />
+          <Route path="/" element={<Intro />} />
+          <Route path="/intro" element={<Intro />} />
           <Route path="/showcase" element={<Showcase />} />
           <Route path="/showcase/manage" element={<ProtectedRoute adminOnly><ShowcaseManage /></ProtectedRoute>} />
-          <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
+          <Route path="/home" element={<Landing />} />
+          <Route path="/login" element={user ? <Navigate to="/home" replace /> : <Login />} />
           <Route path="/register" element={<Navigate to="/login" replace />} />
           <Route path="/dashboard" element={<ProtectedRoute><Landing /></ProtectedRoute>} />
           <Route path="/updates" element={<Navigate to="/news" replace />} />
@@ -87,10 +89,10 @@ function AppContent() {
           <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
           <Route path="/theme" element={<ProtectedRoute><ThemeSettings /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
-          <Route path="/approvals" element={user?.role === 'faculty' ? <Navigate to="/admin?tab=overview" replace /> : <Navigate to="/" replace />} />
-          <Route path="/team-od" element={user?.role === 'faculty' || user?.is_admin ? <Navigate to="/admin?tab=team-od" replace /> : <Navigate to="/" replace />} />
-          <Route path="/team-od/manage" element={user?.role === 'admin' || user?.is_hod ? <Navigate to="/admin?tab=team-od-mgmt" replace /> : <Navigate to="/" replace />} />
-          <Route path="*" element={<Navigate to={user ? "/" : "/showcase"} replace />} />
+          <Route path="/approvals" element={user?.role === 'faculty' ? <Navigate to="/admin?tab=overview" replace /> : <Navigate to="/home" replace />} />
+          <Route path="/team-od" element={user?.role === 'faculty' || user?.is_admin ? <Navigate to="/admin?tab=team-od" replace /> : <Navigate to="/home" replace />} />
+          <Route path="/team-od/manage" element={user?.role === 'admin' || user?.is_hod ? <Navigate to="/admin?tab=team-od-mgmt" replace /> : <Navigate to="/home" replace />} />
+          <Route path="*" element={<Navigate to={user ? "/home" : "/"} replace />} />
         </Routes>
       </Suspense>
       {showHeaderFooter && <Footer />}

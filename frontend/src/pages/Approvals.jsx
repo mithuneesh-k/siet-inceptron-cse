@@ -125,7 +125,7 @@ export default function Approvals({ embedded = false }) {
 
   const isFaculty = Boolean(user && user.role === 'faculty');
   if (!isFaculty) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/home" replace />;
   }
 
   const handleApprove = async (ach) => {

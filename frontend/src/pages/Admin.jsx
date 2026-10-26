@@ -410,7 +410,7 @@ export default function Admin() {
     }
   }, [user, isFullAdmin]);
 
-  if (!isAdmin) return <Navigate to="/" replace />;
+  if (!isAdmin) return <Navigate to="/home" replace />;
 
   return (
     <div className="page-content">

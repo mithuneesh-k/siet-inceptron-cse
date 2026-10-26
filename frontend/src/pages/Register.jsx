@@ -41,7 +41,7 @@ export default function Register() {
     setLoading(true);
     try {
       await register(form);
-      navigate('/');
+      navigate('/home');
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed.');
     } finally {

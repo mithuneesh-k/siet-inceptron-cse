@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import SwitchMode from '../components/ui/switch-mode';
-import { Eye, EyeOff, Lock, User, ArrowRight, AlertCircle, ArrowLeft, Shield, GraduationCap, Zap } from 'lucide-react';
+import { Eye, EyeOff, Lock, User, ArrowRight, AlertCircle, ArrowLeft, Shield, GraduationCap } from 'lucide-react';
 
 export default function Login() {
   const { login } = useAuth();
@@ -24,7 +24,7 @@ export default function Login() {
       if (loggedUser?.is_admin || loggedUser?.role === 'admin' || loggedUser?.role === 'faculty') {
         navigate('/admin?tab=team-od');
       } else {
-        navigate('/');
+        navigate('/home');
       }
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed. Please check your credentials.');
@@ -135,61 +135,6 @@ export default function Login() {
                 </p>
               </div>
 
-              {/* ⚡ 1-Click Automatic Sign-In Section */}
-              <div className="auth-07-auto-login-section">
-                <div className="auth-07-auto-login-header">
-                  <Zap size={14} color="var(--color-green, #10b981)" />
-                  <span>⚡ 1-Click Automatic Sign In</span>
-                </div>
-                <div className="auth-07-auto-login-cards">
-                  {/* Automatic Sign In as HOD */}
-                  <button
-                    id="autologin-hod-btn"
-                    type="button"
-                    className="auth-07-auto-card hod-card"
-                    onClick={() => handleAutoLogin('admin@siet.ac.in', 'password123', '/admin?tab=team-od', 'hod')}
-                    disabled={loading}
-                    title="Click to automatically sign in as HOD Administrator"
-                  >
-                    <div className="auto-card-left">
-                      <div className="auto-card-icon-wrap hod-icon">
-                        <Shield size={18} />
-                      </div>
-                      <div className="auto-card-text">
-                        <div className="auto-card-title">Sign In as HOD / Admin</div>
-                        <div className="auto-card-sub">admin@siet.ac.in • Full HOD Management</div>
-                      </div>
-                    </div>
-                    <span className="auto-card-badge hod-badge">Instant HOD Login →</span>
-                  </button>
-
-                  {/* Automatic Sign In as Faculty */}
-                  <button
-                    id="autologin-faculty-btn"
-                    type="button"
-                    className="auth-07-auto-card faculty-card"
-                    onClick={() => handleAutoLogin('sanjaykrishna', '123456', '/admin?tab=team-od', 'faculty')}
-                    disabled={loading}
-                    title="Click to automatically sign in as Faculty (Sanjay Krishna)"
-                  >
-                    <div className="auto-card-left">
-                      <div className="auto-card-icon-wrap faculty-icon">
-                        <GraduationCap size={18} />
-                      </div>
-                      <div className="auto-card-text">
-                        <div className="auto-card-title">Sign In as Faculty (Sanjay Krishna)</div>
-                        <div className="auto-card-sub">sanjaykrishna • CSE-C Advisor</div>
-                      </div>
-                    </div>
-                    <span className="auto-card-badge faculty-badge">Instant Faculty Login →</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="auth-07-divider" style={{ margin: '18px 0 14px' }}>
-                <span>OR SIGN IN MANUALLY</span>
-              </div>
-
               {error && (
                 <div className="auth-07-error-alert" role="alert">
                   <AlertCircle size={18} className="auth-07-error-icon" />
@@ -280,6 +225,33 @@ export default function Login() {
                   )}
                 </button>
               </form>
+
+              {/* Quick Auto Login Buttons */}
+              <div className="auth-07-quick-login-row">
+                <button
+                  id="autologin-hod-btn"
+                  type="button"
+                  className="auth-07-small-btn hod-small-btn"
+                  onClick={() => handleAutoLogin('admin@siet.ac.in', 'password123', '/admin?tab=team-od', 'hod')}
+                  disabled={loading}
+                  title="Sign In as HOD"
+                >
+                  <Shield size={14} />
+                  <span>HOD</span>
+                </button>
+
+                <button
+                  id="autologin-faculty-btn"
+                  type="button"
+                  className="auth-07-small-btn advisor-small-btn"
+                  onClick={() => handleAutoLogin('sanjaykrishna', '123456', '/admin?tab=team-od', 'faculty')}
+                  disabled={loading}
+                  title="Sign In as Advisor"
+                >
+                  <GraduationCap size={14} />
+                  <span>Advisor</span>
+                </button>
+              </div>
 
               {/* Faculty & HOD Access Policy Info */}
               <div className="auth-07-demo-section" style={{ marginTop: 20, padding: '14px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: 12, border: '1px solid rgba(255, 255, 255, 0.08)' }}>
@@ -441,35 +413,28 @@ export default function Login() {
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
         }
 
-        [data-theme="light"] .auth-07-auto-login-section {
-          background: #f8fafc !important;
-          border-color: #e2e8f0 !important;
-        }
-
-        [data-theme="light"] .auth-07-auto-card {
-          background: #ffffff !important;
-          border-color: #e2e8f0 !important;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
-        }
-
-        [data-theme="light"] .auth-07-auto-card.hod-card:hover:not(:disabled) {
+        [data-theme="light"] .auth-07-small-btn.hod-small-btn {
           background: #fffbeb !important;
+          border-color: #fde68a !important;
+          color: #b45309 !important;
+        }
+
+        [data-theme="light"] .auth-07-small-btn.hod-small-btn:hover:not(:disabled) {
+          background: #fef3c7 !important;
           border-color: #f59e0b !important;
-          box-shadow: 0 4px 14px rgba(245, 158, 11, 0.15) !important;
+          box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15) !important;
         }
 
-        [data-theme="light"] .auth-07-auto-card.faculty-card:hover:not(:disabled) {
+        [data-theme="light"] .auth-07-small-btn.advisor-small-btn {
           background: #f0fdf4 !important;
+          border-color: #bbf7d0 !important;
+          color: #047857 !important;
+        }
+
+        [data-theme="light"] .auth-07-small-btn.advisor-small-btn:hover:not(:disabled) {
+          background: #dcfce7 !important;
           border-color: #10b981 !important;
-          box-shadow: 0 4px 14px rgba(16, 185, 129, 0.15) !important;
-        }
-
-        [data-theme="light"] .auto-card-title {
-          color: #0f172a !important;
-        }
-
-        [data-theme="light"] .auto-card-sub {
-          color: #64748b !important;
+          box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15) !important;
         }
 
         [data-theme="light"] .auth-07-demo-btn {
@@ -1009,133 +974,59 @@ export default function Login() {
           box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
         }
 
-        /* ⚡ 1-Click Automatic Sign-In Section */
-        .auth-07-auto-login-section {
-          background: rgba(255, 255, 255, 0.02);
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: 14px;
-          padding: 14px;
-          margin-bottom: 16px;
-        }
-
-        .auth-07-auto-login-header {
+        /* Quick Auto Login Buttons */
+        .auth-07-quick-login-row {
           display: flex;
           align-items: center;
-          gap: 6px;
-          font-size: 11px;
-          font-weight: 800;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: var(--color-green, #10b981);
-          margin-bottom: 10px;
-          padding: 0 2px;
-        }
-
-        .auth-07-auto-login-cards {
-          display: flex;
-          flex-direction: column;
-          gap: 9px;
-        }
-
-        .auth-07-auto-card {
+          gap: 10px;
+          margin-top: 14px;
           width: 100%;
-          display: flex;
+        }
+
+        .auth-07-small-btn {
+          flex: 1;
+          display: inline-flex;
           align-items: center;
-          justify-content: space-between;
-          padding: 11px 14px;
-          border-radius: 11px;
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          justify-content: center;
+          gap: 7px;
+          padding: 8px 14px;
+          font-size: 13px;
+          font-weight: 600;
+          border-radius: 9px;
           cursor: pointer;
-          text-align: left;
           transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .auth-07-auto-card:hover:not(:disabled) {
-          transform: translateY(-2px);
+        .auth-07-small-btn.hod-small-btn {
+          background: rgba(245, 158, 11, 0.08);
+          border: 1px solid rgba(245, 158, 11, 0.28);
+          color: #f59e0b;
         }
 
-        .auth-07-auto-card.hod-card:hover:not(:disabled) {
-          background: rgba(245, 158, 11, 0.09);
-          border-color: rgba(245, 158, 11, 0.4);
-          box-shadow: 0 4px 18px rgba(245, 158, 11, 0.2);
+        .auth-07-small-btn.hod-small-btn:hover:not(:disabled) {
+          background: rgba(245, 158, 11, 0.16);
+          border-color: rgba(245, 158, 11, 0.55);
+          box-shadow: 0 2px 10px rgba(245, 158, 11, 0.2);
+          transform: translateY(-1px);
         }
 
-        .auth-07-auto-card.faculty-card:hover:not(:disabled) {
-          background: rgba(16, 185, 129, 0.09);
-          border-color: rgba(16, 185, 129, 0.4);
-          box-shadow: 0 4px 18px rgba(16, 185, 129, 0.2);
+        .auth-07-small-btn.advisor-small-btn {
+          background: rgba(16, 185, 129, 0.08);
+          border: 1px solid rgba(16, 185, 129, 0.28);
+          color: #10b981;
         }
 
-        .auth-07-auto-card:disabled {
-          opacity: 0.6;
+        .auth-07-small-btn.advisor-small-btn:hover:not(:disabled) {
+          background: rgba(16, 185, 129, 0.16);
+          border-color: rgba(16, 185, 129, 0.55);
+          box-shadow: 0 2px 10px rgba(16, 185, 129, 0.2);
+          transform: translateY(-1px);
+        }
+
+        .auth-07-small-btn:disabled {
+          opacity: 0.5;
           cursor: not-allowed;
           transform: none;
-        }
-
-        .auto-card-left {
-          display: flex;
-          align-items: center;
-          gap: 11px;
-        }
-
-        .auto-card-icon-wrap {
-          width: 36px;
-          height: 36px;
-          border-radius: 9px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-        }
-
-        .auto-card-icon-wrap.hod-icon {
-          background: rgba(245, 158, 11, 0.15);
-          color: #f59e0b;
-        }
-
-        .auto-card-icon-wrap.faculty-icon {
-          background: rgba(16, 185, 129, 0.15);
-          color: #10b981;
-        }
-
-        .auto-card-text {
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-        }
-
-        .auto-card-title {
-          font-size: 13px;
-          font-weight: 700;
-          color: var(--color-text, #f8fafc);
-        }
-
-        .auto-card-sub {
-          font-size: 11px;
-          color: var(--color-text-muted, #94a3b8);
-          font-family: monospace;
-        }
-
-        .auto-card-badge {
-          font-size: 11px;
-          font-weight: 700;
-          padding: 5px 10px;
-          border-radius: 6px;
-          white-space: nowrap;
-          letter-spacing: 0.02em;
-        }
-
-        .auto-card-badge.hod-badge {
-          background: rgba(245, 158, 11, 0.15);
-          color: #f59e0b;
-          border: 1px solid rgba(245, 158, 11, 0.35);
-        }
-
-        .auto-card-badge.faculty-badge {
-          background: rgba(16, 185, 129, 0.15);
-          color: #10b981;
-          border: 1px solid rgba(16, 185, 129, 0.35);
         }
 
         /* RESPONSIVE DESIGN FOR MOBILE & TABLET */
