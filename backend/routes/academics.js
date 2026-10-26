@@ -174,4 +174,64 @@ router.get('/students/:roll_no', authMiddleware, async (req, res) => {
   }
 });
 
+// ─── POST /api/academics/upload-marksheet ─────────────────────────────────────
+// Faculty Advisor & Admin: Upload Excel, CSV, or PDF marksheets to auto-update student marks
+const multer = require('multer');
+const os = require('os');
+const path = require('path');
+const fs = require('fs');
+const {
+  processSpreadsheetMarksheet,
+  processPdfMarksheet
+} = require('../services/marksheetParserService');
+
+const marksheetUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 40 * 1024 * 1024 } // Up to 40 MB for large PDF marksheets
+});
+
+router.post('/upload-marksheet', authMiddleware, adminMiddleware, marksheetUpload.single('file'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No marksheet file uploaded. Please select an Excel (.xlsx, .xls), CSV, or PDF file.' });
+  }
+
+  const { semester, exam_session } = req.body;
+  const originalName = req.file.originalname || 'marksheet';
+  const ext = path.extname(originalName).toLowerCase();
+
+  try {
+    let result;
+
+    if (ext === '.pdf') {
+      const tempPath = path.join(os.tmpdir(), `marksheet-${Date.now()}-${Math.random().toString(36).slice(2)}.pdf`);
+      fs.writeFileSync(tempPath, req.file.buffer);
+      try {
+        result = await processPdfMarksheet(tempPath, originalName, { semester, exam_session });
+      } finally {
+        if (fs.existsSync(tempPath)) {
+          fs.unlinkSync(tempPath);
+        }
+      }
+    } else if (['.xlsx', '.xls', '.csv'].includes(ext)) {
+      result = await processSpreadsheetMarksheet(req.file.buffer, originalName, { semester, exam_session });
+    } else {
+      return res.status(400).json({
+        error: `Unsupported file type "${ext}". Please upload an Excel sheet (.xlsx, .xls), CSV (.csv), or PDF (.pdf) file.`
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `Marksheet processed successfully! Updated ${result.matchedStudents} student records.`,
+      summary: result
+    });
+  } catch (err) {
+    console.error('Error processing marksheet upload:', err);
+    res.status(500).json({
+      error: 'Failed to process marksheet: ' + (err.message || 'Internal server error')
+    });
+  }
+});
+
 module.exports = router;
+

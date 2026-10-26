@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useUndoableDelete } from '../contexts/UndoDeleteContext';
 import StudentActionModal from '../components/StudentActionModal';
 import ImportModal from '../components/ImportModal';
+import MarksheetUploadModal from '../components/MarksheetUploadModal';
 import CustomSelect from '../components/CustomSelect';
 import FilterModal from '../components/FilterModal';
 import FacultyAdvisorModal from '../components/FacultyAdvisorModal';
@@ -46,6 +47,7 @@ export default function Admin() {
   const [showFilters, setShowFilters] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showMarksheetModal, setShowMarksheetModal] = useState(false);
   const [editStudent, setEditStudent] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null); // student to delete
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -107,6 +109,7 @@ export default function Admin() {
     { id: 'overview', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><BarChart2 size={16} /> Overview</span> },
     { id: 'students', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Users size={16} /> Students</span> },
     { id: 'manage', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Settings size={16} /> Manage</span> },
+    { id: 'marksheets', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><FileSpreadsheet size={16} /> Marksheets</span> },
     ...(isAdmin ? [{ id: 'faculty', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><GraduationCap size={16} /> Faculty</span> }] : []),
     ...(canAccessTeamOd ? [{ id: 'team-od', l: <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><CalendarCheck size={16} /> Team OD & Event Reporting</span> }] : []),
     ...(isFullAdmin ? [{
@@ -587,6 +590,14 @@ export default function Admin() {
                         <Trash2 size={14} /> Delete ({selectedIds.size})
                       </button>
                     )}
+                    <button 
+                      className="btn btn-secondary btn-sm" 
+                      onClick={() => setShowMarksheetModal(true)} 
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, borderColor: 'rgba(16, 185, 129, 0.4)', color: 'var(--accent-text, #10b981)' }}
+                      title="Upload Excel, CSV, or PDF marksheets to auto-update student marks & standing arrears"
+                    >
+                      <FileSpreadsheet size={14} /> Update Marksheet
+                    </button>
                     {isFullAdmin ? (
                       <>
                         <button className="btn btn-secondary btn-sm" onClick={() => setShowImportModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -738,6 +749,78 @@ export default function Admin() {
                 </div>
               </div>
             )}
+
+            {/* ── ACADEMIC MARKSHEETS TAB ── */}
+            {tab === 'marksheets' && (
+              <div className="animate-fadeIn">
+                <div className="section-header" style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                  <div>
+                    <h3 style={{ fontSize: 18, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-text)' }}>
+                      <FileSpreadsheet size={22} className="text-gradient" /> Academic Marksheets & Performance
+                    </h3>
+                    <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '4px 0 0' }}>
+                      Upload autonomous / university marksheets or advisor Excel sheets to automatically update student marks, CGPA, and standing arrears (RA).
+                    </p>
+                  </div>
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => setShowMarksheetModal(true)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                  >
+                    <Plus size={16} /> Upload Marksheet
+                  </button>
+                </div>
+
+                <div className="card" style={{ padding: '24px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+                    <div style={{ background: 'var(--bg-secondary)', padding: '18px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, color: '#10b981', fontWeight: 700 }}>
+                        <FileSpreadsheet size={20} /> Excel & CSV Support
+                      </div>
+                      <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', lineHeight: '1.5', margin: 0 }}>
+                        Advisors can upload class grade sheets in <code>.xlsx</code>, <code>.xls</code>, or <code>.csv</code> format. The system automatically searches for students by <strong>Register No</strong> or <strong>Name</strong>.
+                      </p>
+                    </div>
+                    <div style={{ background: 'var(--bg-secondary)', padding: '18px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, color: '#38bdf8', fontWeight: 700 }}>
+                        <GraduationCap size={20} /> Autonomous PDF Marksheets
+                      </div>
+                      <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', lineHeight: '1.5', margin: 0 }}>
+                        Upload multi-page semester PDF marksheets. All student pages, courses, SGPA, CGPA, and <strong>RA</strong> arrear statuses are parsed and imported directly.
+                      </p>
+                    </div>
+                    <div style={{ background: 'var(--bg-secondary)', padding: '18px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, color: '#f59e0b', fontWeight: 700 }}>
+                        <Award size={20} /> Standing Arrear (RA) Rules
+                      </div>
+                      <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', lineHeight: '1.5', margin: 0 }}>
+                        Any course with result <strong>RA</strong> or <strong>RA*</strong> is tracked as a standing arrear until cleared with a PASS in a subsequent semester.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div style={{ textAlign: 'center', padding: '36px 20px', border: '2px dashed var(--border)', borderRadius: '14px', background: 'rgba(16, 185, 129, 0.03)' }}>
+                    <div style={{ width: 56, height: 56, borderRadius: '16px', background: 'rgba(16, 185, 129, 0.12)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
+                      <FileSpreadsheet size={28} />
+                    </div>
+                    <h4 style={{ margin: '0 0 8px', fontSize: '17px', fontWeight: '700', color: 'var(--color-text)' }}>
+                      Update Marks & Process Marksheets
+                    </h4>
+                    <p style={{ margin: '0 auto 20px', fontSize: '13px', color: 'var(--color-text-muted)', maxWidth: '520px', lineHeight: '1.5' }}>
+                      Advisors can simply upload their class mark sheets or university PDFs. Our system will automatically search by student name & register number, calculate SGPA/CGPA and standing arrears, and sync the records immediately.
+                    </p>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => setShowMarksheetModal(true)}
+                      style={{ padding: '10px 30px', fontSize: '14px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                    >
+                      <Plus size={16} /> Upload Marksheet Now
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* ── MANAGE FACULTY ── */}
             {tab === 'faculty' && isAdmin && (
               <div className="animate-fadeIn">
@@ -924,6 +1007,17 @@ export default function Admin() {
         <ImportModal
           onClose={() => setShowImportModal(false)}
           onImported={loadManagedStudents}
+          showToast={showToast}
+        />
+      )}
+
+      {/* ── Marksheet Upload Modal ── */}
+      {showMarksheetModal && (
+        <MarksheetUploadModal
+          onClose={() => setShowMarksheetModal(false)}
+          onSuccess={() => {
+            loadManagedStudents();
+          }}
           showToast={showToast}
         />
       )}

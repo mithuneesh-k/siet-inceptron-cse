@@ -188,13 +188,55 @@ async function getStudentAcademicDetails(rollNo) {
     signedPhotoUrl = await getSignedPhotoUrl(student.photo_path, 3600);
   }
 
+  const semesters = semestersRes.data || [];
+  const courses = coursesRes.data || [];
+
+  // Determine latest semester metrics
+  const latestSemester = semesters.length ? semesters[semesters.length - 1] : null;
+  const currentCgpa = latestSemester && latestSemester.cgpa !== null && latestSemester.cgpa !== undefined
+    ? parseFloat(latestSemester.cgpa)
+    : null;
+  const totalCreditsEarned = latestSemester && latestSemester.cumulative_credits !== null && latestSemester.cumulative_credits !== undefined
+    ? latestSemester.cumulative_credits
+    : semesters.reduce((acc, s) => acc + (s.earned_credits || 0), 0);
+
+  // Compute standing arrears: courses where latest attempt is RA/RA* and hasn't been passed in any session
+  const courseStatus = {};
+  for (const c of courses) {
+    const code = c.course_code;
+    if (!courseStatus[code]) {
+      courseStatus[code] = { passed: false, hasRA: false };
+    }
+    if (c.result === 'PASS') {
+      courseStatus[code].passed = true;
+    } else if (c.result === 'RA' || c.result === 'RA*' || c.grade === 'RA' || c.grade === 'U') {
+      courseStatus[code].hasRA = true;
+    }
+  }
+  const standingArrears = Object.values(courseStatus).filter(c => c.hasRA && !c.passed).length;
+
+  const semesterSummaries = semesters.map(s => ({
+    semester: s.semester,
+    exam_session: s.exam_session,
+    sgpa: s.sgpa,
+    cgpa: s.cgpa,
+    credits_registered: s.semester_credits,
+    credits_earned: s.earned_credits,
+    cumulative_credits: s.cumulative_credits
+  }));
+
   return {
     student: {
       ...student,
+      register_no: student.institution_roll_no || student.roll_no,
+      current_cgpa: currentCgpa,
+      total_credits_earned: totalCreditsEarned,
+      standing_arrears: standingArrears,
       photo_url: signedPhotoUrl || `/api/academics/photo/${student.roll_no}`
     },
-    semesters: semestersRes.data || [],
-    courses: coursesRes.data || []
+    semesters,
+    semesterSummaries,
+    courses
   };
 }
 
