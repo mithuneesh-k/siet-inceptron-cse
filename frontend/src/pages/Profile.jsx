@@ -9,7 +9,7 @@ import CustomSelect from '../components/CustomSelect';
 import TruncatedText from '../components/TruncatedText';
 import {
   Shield, Book, GraduationCap, Terminal, Briefcase, AtSign,
-  Camera, Globe, Phone, Plus, Cake, Edit3, Award, Lightbulb, Hourglass, Upload, CheckCircle
+  Camera, Globe, Phone, Plus, Cake, Calendar, Edit3, Award, Lightbulb, Hourglass, Upload, CheckCircle
 } from 'lucide-react';
 
 import { dispatchAchievementEvent, subscribeAchievementEvents } from '../utils/achievementEvents';
@@ -494,14 +494,25 @@ export default function Profile() {
                 <GraduationCap size={22} className="text-gradient" /> Academic Performance
               </h2>
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                <span className="badge" style={{ background: 'var(--accent-soft)', color: 'var(--accent-text)', border: '1px solid var(--accent-border)', fontSize: '13px', padding: '4px 12px' }}>
-                  Roll No: {academics.student.roll_no}
+                <span className="badge" style={{ background: 'var(--accent-soft)', color: 'var(--accent-text)', border: '1px solid var(--accent-border)', fontSize: '13px', padding: '4px 12px', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <Calendar size={13} /> DOB: {(() => {
+                    const d = academics.student.date_of_birth || user?.date_of_birth;
+                    if (!d) return '—';
+                    try {
+                      const parts = d.split('-');
+                      if (parts.length === 3) {
+                        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                        const m = parseInt(parts[1], 10) - 1;
+                        if (m >= 0 && m < 12) return `${parts[2]} ${months[m]} ${parts[0]}`;
+                      }
+                      const parsed = new Date(d);
+                      if (!isNaN(parsed.getTime())) {
+                        return parsed.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                      }
+                    } catch {}
+                    return d;
+                  })()}
                 </span>
-                {academics.student.register_no && (
-                  <span className="badge" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--color-text-muted)', fontSize: '13px', padding: '4px 12px' }}>
-                    Reg: {academics.student.register_no}
-                  </span>
-                )}
               </div>
             </div>
 

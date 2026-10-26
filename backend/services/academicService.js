@@ -159,7 +159,7 @@ async function getStudentAcademicDetails(rollNo) {
   if (!rollNo) return null;
   const normalizedRoll = rollNo.trim().toUpperCase();
 
-  const [studentRes, semestersRes, coursesRes] = await Promise.all([
+  const [studentRes, semestersRes, coursesRes, profileRes] = await Promise.all([
     supabase
       .from('academic_students')
       .select('*')
@@ -175,7 +175,12 @@ async function getStudentAcademicDetails(rollNo) {
       .select('*')
       .ilike('roll_no', normalizedRoll)
       .order('course_semester', { ascending: true })
-      .order('course_code', { ascending: true })
+      .order('course_code', { ascending: true }),
+    supabase
+      .from('students')
+      .select('date_of_birth')
+      .ilike('roll_no', normalizedRoll)
+      .maybeSingle()
   ]);
 
   if (studentRes.error || !studentRes.data) {
@@ -229,6 +234,7 @@ async function getStudentAcademicDetails(rollNo) {
     student: {
       ...student,
       register_no: student.institution_roll_no || student.roll_no,
+      date_of_birth: profileRes.data?.date_of_birth || null,
       current_cgpa: currentCgpa,
       total_credits_earned: totalCreditsEarned,
       standing_arrears: standingArrears,
