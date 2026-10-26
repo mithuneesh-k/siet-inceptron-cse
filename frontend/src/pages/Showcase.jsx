@@ -242,9 +242,6 @@ export default function Showcase() {
 
   // Card Rendering Helper matching the pristine white card design with natural uncropped posters
   const renderShowcaseCard = (post, linkLabel = 'View Project') => {
-    const canEdit = Boolean(isAdmin);
-    const canDelete = Boolean(isAdmin);
-
     const catLower = (post.category || '').toLowerCase();
     const isProject = catLower === 'project' || catLower === 'innovation';
     const isHackathon = catLower === 'achievement' || catLower === 'hackathon';
@@ -288,35 +285,6 @@ export default function Showcase() {
               </span>
             )}
           </div>
-
-          {(canEdit || canDelete) && (
-            <div className="sc-card-action-btns">
-              {canEdit && (
-                <button
-                  type="button"
-                  className="sc-action-btn edit-btn"
-                  onClick={() => handleOpenEditModal(post)}
-                  title="Edit Post"
-                  aria-label="Edit post"
-                >
-                  <Edit3 size={13} />
-                  <span>Edit</span>
-                </button>
-              )}
-              {canDelete && (
-                <button
-                  type="button"
-                  className="sc-action-btn delete-btn"
-                  onClick={() => setDeleteTarget(post)}
-                  title="Delete Post (HOD Only)"
-                  aria-label="Delete post"
-                >
-                  <Trash2 size={13} />
-                  <span>Delete</span>
-                </button>
-              )}
-            </div>
-          )}
         </div>
 
         {post.cover_image_url && (
@@ -432,23 +400,13 @@ export default function Showcase() {
     );
   };
 
-  const renderEmptySection = (icon, title, desc, defaultCategory) => (
+  const renderEmptySection = (icon, title, desc) => (
     <div className="sc-empty-state-box">
       <div className="sc-empty-icon-circle">
         {icon}
       </div>
       <h3 className="sc-empty-title">{title}</h3>
       <p className="sc-empty-description">{desc}</p>
-      {isAdmin && (
-        <button
-          type="button"
-          className="sc-gold-pill-btn"
-          onClick={() => handleOpenAddModal(defaultCategory)}
-        >
-          <Plus size={15} />
-          <span>Publish {defaultCategory}</span>
-        </button>
-      )}
     </div>
   );
 
@@ -694,23 +652,6 @@ export default function Showcase() {
                 Explore real technical projects, mobile applications, full-stack web platforms, and engineering systems built by CSE department students and faculty.
               </p>
             </div>
-
-            {isAdmin && (
-              <div className="sc-cms-actions-group">
-                <Link to="/showcase/manage" className="sc-outline-forest-btn">
-                  <Settings size={14} />
-                  <span>Manage CMS</span>
-                </Link>
-                <button
-                  type="button"
-                  className="sc-forest-primary-btn"
-                  onClick={() => handleOpenAddModal('Project')}
-                >
-                  <Plus size={15} />
-                  <span>Add Project</span>
-                </button>
-              </div>
-            )}
           </div>
 
           {postsLoading ? (
@@ -743,17 +684,6 @@ export default function Showcase() {
                 Celebrating SIET CSE innovators and coding teams who clinched top podiums, 1st prize trophies, cash awards, and national hackathon victories (Smart India Hackathon, regional hackathons, and collegiate coding sprints).
               </p>
             </div>
-
-            {isAdmin && (
-              <button
-                type="button"
-                className="sc-forest-primary-btn"
-                onClick={() => handleOpenAddModal('Achievement')}
-              >
-                <Plus size={15} />
-                <span>Add Hackathon Record</span>
-              </button>
-            )}
           </div>
 
           {postsLoading ? (
@@ -786,17 +716,6 @@ export default function Showcase() {
                 Peer-reviewed research papers, patent disclosures, journal highlights, and computational investigations authored by department faculty and scholars.
               </p>
             </div>
-
-            {isAdmin && (
-              <button
-                type="button"
-                className="sc-forest-primary-btn"
-                onClick={() => handleOpenAddModal('Research')}
-              >
-                <Plus size={15} />
-                <span>Publish Research</span>
-              </button>
-            )}
           </div>
 
           {postsLoading ? (
@@ -829,17 +748,6 @@ export default function Showcase() {
                 Stay informed on upcoming coding sprints, department symposiums, industry certifications, and internship opportunities for students.
               </p>
             </div>
-
-            {isAdmin && (
-              <button
-                type="button"
-                className="sc-forest-primary-btn"
-                onClick={() => handleOpenAddModal('Internship')}
-              >
-                <Plus size={15} />
-                <span>Post Opportunity</span>
-              </button>
-            )}
           </div>
 
           {postsLoading ? (
