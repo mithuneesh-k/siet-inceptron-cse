@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import SwitchMode from '../components/ui/switch-mode';
-import { Eye, EyeOff, Lock, User, ArrowRight, AlertCircle, ArrowLeft, Shield, GraduationCap } from 'lucide-react';
+import { Eye, EyeOff, Lock, User, ArrowRight, AlertCircle, Shield, GraduationCap } from 'lucide-react';
 
 export default function Login() {
   const { login } = useAuth();
@@ -51,11 +51,7 @@ export default function Login() {
   return (
     <div className="login-experience">
       {/* Top Navigation Controls */}
-      <div className="login-top-controls">
-        <Link to="/showcase" className="login-back-btn">
-          <ArrowLeft size={16} />
-          <span>Back to Showcase</span>
-        </Link>
+      <div className="login-top-controls" style={{ justifyContent: 'flex-end' }}>
         <SwitchMode width={72} height={36} />
       </div>
 
@@ -98,40 +94,11 @@ export default function Login() {
               </div>
 
               <div className="auth-07-card-header">
-                {/* Role Switcher Tabs */}
-                <div className="login-role-tabs">
-                  <button
-                    type="button"
-                    className={`login-role-tab ${loginRole === 'faculty' ? 'active' : ''}`}
-                    onClick={() => {
-                      setLoginRole('faculty');
-                      setError('');
-                    }}
-                  >
-                    <GraduationCap size={16} />
-                    <span>Faculty Sign In</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className={`login-role-tab ${loginRole === 'hod' ? 'active' : ''}`}
-                    onClick={() => {
-                      setLoginRole('hod');
-                      setError('');
-                    }}
-                  >
-                    <Shield size={16} />
-                    <span>HOD / Admin Sign In</span>
-                  </button>
-                </div>
-
                 <h2 className="auth-07-card-title">
-                  {loginRole === 'hod' ? 'HOD & Admin Portal' : 'Faculty Portal'}
+                  Sign In to Portal
                 </h2>
                 <p className="auth-07-card-subtitle">
-                  {loginRole === 'hod'
-                    ? 'Department management, staff approvals & Team OD reporting.'
-                    : 'Teacher authentication, classroom student monitoring & Team OD submission.'}
+                  Enter your credentials to access the SIET CSE Department Portal.
                 </p>
               </div>
 
@@ -153,7 +120,7 @@ export default function Login() {
                       id="login-email"
                       type="text"
                       className="auth-07-input"
-                      placeholder={loginRole === 'hod' ? 'e.g. admin@siet.ac.in or hodcse' : 'e.g. sanjaykrishna, employee ID or email'}
+                      placeholder="e.g. employee ID, roll number, or email"
                       value={form.email}
                       onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                       required
@@ -207,10 +174,6 @@ export default function Login() {
                   type="submit"
                   className="auth-07-submit-btn"
                   disabled={loading}
-                  style={{
-                    background: loginRole === 'hod' ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : undefined,
-                    color: loginRole === 'hod' ? '#0f172a' : undefined
-                  }}
                 >
                   {loading ? (
                     <>
@@ -219,7 +182,7 @@ export default function Login() {
                     </>
                   ) : (
                     <>
-                      <span>{loginRole === 'hod' ? 'Sign In as HOD / Administrator' : 'Sign In as Faculty'}</span>
+                      <span>Sign In</span>
                       <ArrowRight size={18} />
                     </>
                   )}
